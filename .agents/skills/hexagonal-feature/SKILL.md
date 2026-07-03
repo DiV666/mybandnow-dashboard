@@ -5,7 +5,7 @@ description: >
   Trigger: When creating a new aggregate, a new use case, a new module, or any combination of domain/application/infrastructure layers.
 license: Apache-2.0
 metadata:
-  author: rubricae-dev
+  author: kloding-dev
   version: '1.0'
   scope: [root, backend]
   auto_invoke:

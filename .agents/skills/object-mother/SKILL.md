@@ -5,7 +5,7 @@ description: >
   Trigger: When writing unit tests for Domain or Application layers — creating Object Mothers, TestCase subclasses, or mock assertions.
 license: Apache-2.0
 metadata:
-  author: rubricae-dev
+  author: kloding-dev
   version: '1.0'
   scope: [root, backend]
   auto_invoke:

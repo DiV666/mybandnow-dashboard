@@ -5,7 +5,7 @@ description: >
   Trigger: When updating skill metadata (metadata.scope/metadata.auto_invoke), regenerating Auto-invoke tables, or running ./skills/skill-sync/assets/sync.sh (including --dry-run/--scope).
 license: Apache-2.0
 metadata:
-  author: rubricae-dev
+  author: kloding-dev
   version: '2.0'
   scope: [root]
   auto_invoke:
@@ -27,7 +27,7 @@ Each skill that should appear in Auto-invoke sections needs these fields in `met
 
 ```yaml
 metadata:
-  author: rubricae-dev
+  author: kloding-dev
   version: '1.0'
   scope: [root] # Which AGENTS.md to update (see table below)
 
@@ -75,7 +75,7 @@ Given this skill metadata:
 ```yaml
 # skills/test-unit/SKILL.md
 metadata:
-  author: rubricae-dev
+  author: kloding-dev
   version: '2.0'
   scope: [root, backend]
   auto_invoke:

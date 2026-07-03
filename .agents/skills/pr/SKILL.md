@@ -5,7 +5,7 @@ description: >
   Trigger: When opening a Pull Request or filling out a PR description.
 license: Apache-2.0
 metadata:
-  author: rubricae-dev
+  author: kloding-dev
   version: '2.0'
   scope: [root]
   auto_invoke:

@@ -5,7 +5,7 @@ description: >
   Trigger: When modifying src/Contexts/Shared/infrastructure/config/env.ts or validating startup configurations.
 license: Apache-2.0
 metadata:
-  author: rubricae-dev
+  author: kloding-dev
   version: '2.0'
   scope: [root, backend]
   auto_invoke:

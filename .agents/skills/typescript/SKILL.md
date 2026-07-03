@@ -5,7 +5,7 @@ description: >
   Trigger: When implementing or refactoring TypeScript in .ts files (types, interfaces, generics, const maps, type guards).
 license: Apache-2.0
 metadata:
-  author: rubricae-dev
+  author: kloding-dev
   version: '2.0'
   scope: [root, backend]
   auto_invoke:

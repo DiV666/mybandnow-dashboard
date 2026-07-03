@@ -5,7 +5,7 @@ description: >
   Trigger: When inspecting CI pipelines or troubleshooting build/deployment errors.
 license: Apache-2.0
 metadata:
-  author: rubricae-dev
+  author: kloding-dev
   version: "2.0"
   scope: [root]
   auto_invoke:

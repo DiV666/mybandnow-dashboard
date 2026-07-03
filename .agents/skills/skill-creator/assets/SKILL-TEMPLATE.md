@@ -5,7 +5,7 @@ description: >
   Trigger: {When the AI should load this skill - be specific}.
 license: Apache-2.0
 metadata:
-  author: rubricae-dev
+  author: kloding-dev
   version: '1.0'
 ---
 

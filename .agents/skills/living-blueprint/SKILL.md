@@ -8,7 +8,7 @@ description: >
   or when updating the Confluence business documentation.
 license: Apache-2.0
 metadata:
-  author: rubricae-dev
+  author: kloding-dev
   version: '1.0'
   scope: [root]
   auto_invoke:

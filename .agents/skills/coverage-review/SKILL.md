@@ -3,7 +3,7 @@ name: coverage-review
 description: "Trigger: coverage review, test coverage, lcov, build-tests. Review merged coverage, enforce the 90% target, and report overall metrics plus weakest hotspots."
 license: Apache-2.0
 metadata:
-  author: rubricae-dev
+  author: kloding-dev
   version: '1.0'
   scope: [root]
   auto_invoke:

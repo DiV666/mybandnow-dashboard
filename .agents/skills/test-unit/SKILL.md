@@ -5,7 +5,7 @@ description: >
   Trigger: When writing unit tests for Domain (Aggregates, Value Objects) or Application (Commands, Queries, Handlers).
 license: Apache-2.0
 metadata:
-  author: rubricae-dev
+  author: kloding-dev
   version: '2.0'
   scope: [root, backend]
   auto_invoke:

@@ -5,7 +5,7 @@ description: >
   Trigger: ALWAYS before writing any production code and before proposing any commit.
 license: Apache-2.0
 metadata:
-  author: rubricae-dev
+  author: kloding-dev
   version: '1.0'
   scope: [root, backend]
   auto_invoke:
