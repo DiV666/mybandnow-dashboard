@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "echo 'Tests not implemented yet' && exit 0",
+    "test:unit": "echo 'Unit tests not implemented yet' && exit 0",
+    "test:e2e": "echo 'E2E tests (Playwright) not implemented yet' && exit 0"
   },
   "dependencies": {
     "@popperjs/core": "2.11.8",

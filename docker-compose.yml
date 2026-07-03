@@ -1,0 +1,16 @@
+services:
+  mybandnow-web:
+    tty: true
+    container_name: mybandnow-web
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./:/opt/mybandnow-web
+    environment:
+      - NODE_ENV=development
+    ports:
+      - "5173:5173"
+    hostname: mybandnow-web
+    # Forzamos a Vite a escuchar en todas las interfaces de red del contenedor
+    command: npm run dev -- --host 0.0.0.0
