@@ -17,7 +17,11 @@ function hasResponseStatus(
 	}
 
 	const { response } = error;
-	if (typeof response !== "object" || response === null || !("status" in response)) {
+	if (
+		typeof response !== "object" ||
+		response === null ||
+		!("status" in response)
+	) {
 		return false;
 	}
 
