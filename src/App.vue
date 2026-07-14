@@ -1,9 +1,12 @@
 <template>
   <router-view />
+  <SessionExpiredModal />
+  <CompleteProfileModal />
 </template>
 
 <script setup lang="ts">
-// El App.vue ahora solo actúa como un contenedor para el Vue Router
+import SessionExpiredModal from './ui/components/SessionExpiredModal.vue';
+import CompleteProfileModal from './ui/components/CompleteProfileModal.vue';
 </script>
 
 <style>

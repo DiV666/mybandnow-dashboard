@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import type { RouteRecordRaw } from 'vue-router';
-// Importamos Layouts para agrupar vistas
+// Import layouts to group related views.
 import PublicLayout from '../layouts/PublicLayout.vue';
 import DashboardLayout from '../layouts/DashboardLayout.vue';
 
@@ -17,14 +17,19 @@ const routes: Array<RouteRecordRaw> = [
       {
         path: 'login',
         name: 'Login',
-        component: () => import('../views/public/LoginView.vue'),
+        component: () => import('../views/auth/LoginView.vue'),
       },
     ],
   },
   {
+    path: '/session-closed',
+    name: 'SessionClosed',
+    component: () => import('../views/SessionClosedView.vue'),
+  },
+  {
     path: '/dashboard',
-    component: DashboardLayout, // Todo lo que esté aquí dentro tendrá el Sidebar
-    meta: { requiresAuth: true }, // ¡Bloqueo de seguridad!
+    component: DashboardLayout, // All nested routes render inside the dashboard shell.
+    meta: { requiresAuth: true }, // Protect the dashboard behind authentication.
     children: [
       {
         path: '',
@@ -32,9 +37,9 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('../views/dashboard/DashboardHomeView.vue'),
       },
       {
-        path: 'bands',
-        name: 'BandsManager',
-        component: () => import('../views/dashboard/BandsView.vue'),
+        path: 'create-first-band',
+        name: 'CreateFirstBand',
+        component: () => import('../views/dashboard/band/CreateFirstBandView.vue'),
       },
       {
         path: 'members',
@@ -60,15 +65,19 @@ export const router = createRouter({
   routes,
 });
 
-// Navigation Guard básico para proteger el dashboard
-router.beforeEach((to, from, next) => {
+import { useAuthStore } from '../stores/useAuthStore.js';
+
+// Basic navigation guard for authenticated dashboard routes.
+router.beforeEach((to, _from, next) => {
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
-  // TODO: Conectar esto con tu store de autenticación (ej. Pinia)
-  const isAuthenticated = true; // MOCK DE AUTENTICACIÓN A TRUE PARA PODER VER EL DASHBOARD DURANTE EL DESARROLLO
+  
+  // Use the real authentication store state.
+  const authStore = useAuthStore();
+  const isAuthenticated = authStore.isAuthenticated;
 
   if (requiresAuth && !isAuthenticated) {
-    next({ name: 'Login' }); // Patada al login
+    next({ name: 'Login' }); // Redirect unauthenticated users to login.
   } else {
-    next(); // Adelante
+    next(); // Allow the navigation.
   }
 });

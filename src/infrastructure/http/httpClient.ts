@@ -1,29 +1,40 @@
-import axios from 'axios';
+import axios from "axios";
+import {
+	getHttpClientAuthToken,
+	notifyUnauthorized,
+	runBeforeMutatingRequest,
+} from "./httpClientRuntime.js";
 
-// Creamos la instancia aislada
+// Create an isolated HTTP client instance.
 export const httpClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api',
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+	baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api",
+	timeout: 10000,
+	headers: {
+		"Content-Type": "application/json",
+	},
 });
 
-// Interceptor para inyectar el x-correlation-id
-httpClient.interceptors.request.use(
-  (config) => {
-    // Usamos el API nativo de Crypto para generar el UUID
-    const correlationId = crypto.randomUUID();
-    
-    // Inyectamos el header en cada petición
-    config.headers['x-correlation-id'] = correlationId;
-    
-    // Opcional: Console.log para debug en desarrollo
-    // console.debug(`[HTTP] Request -> correlation-id: ${correlationId}`);
-    
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
+// Inject the correlation id and pause mutating requests until the profile is ready.
+httpClient.interceptors.request.use(async (config) => {
+	const correlationId = crypto.randomUUID();
+	const token = getHttpClientAuthToken();
+
+	config.headers["x-correlation-id"] = correlationId;
+
+	if (token) {
+		config.headers["Authorization"] = `Bearer ${token}`;
+	}
+
+	await runBeforeMutatingRequest(config.method ?? "", config.url ?? "");
+
+	return config;
+}, Promise.reject);
+
+// Capture unauthorized responses and notify the session handler.
+httpClient.interceptors.response.use(
+	(response) => response,
+	(error: { response?: { status?: number } }) => {
+		notifyUnauthorized(error.response?.status);
+		return Promise.reject(error);
+	},
 );
