@@ -1,9 +1,9 @@
 <template>
   <div class="public-layout">
     <!-- Navbar público básico -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
+    <nav class="navbar navbar-expand-lg surface-container border-bottom shadow-sm">
       <div class="container">
-        <router-link class="navbar-brand fw-bold" :to="{ name: 'Landing' }">Mybandnow</router-link>
+        <router-link class="navbar-brand fw-bold text-body text-decoration-none" :to="{ name: 'Landing' }">Mybandnow</router-link>
         <div>
           <router-link class="btn btn-outline-primary" :to="{ name: 'Login' }">Iniciar Sesión</router-link>
         </div>
