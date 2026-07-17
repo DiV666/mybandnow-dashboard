@@ -1,6 +1,7 @@
 import axios from "axios";
 import {
 	getHttpClientAuthToken,
+	notifyBackendUnavailable,
 	notifyUnauthorized,
 	runBeforeMutatingRequest,
 } from "./httpClientRuntime.js";
@@ -33,8 +34,20 @@ httpClient.interceptors.request.use(async (config) => {
 // Capture unauthorized responses and notify the session handler.
 httpClient.interceptors.response.use(
 	(response) => response,
-	(error: { response?: { status?: number } }) => {
-		notifyUnauthorized(error.response?.status);
+	(error: unknown) => {
+		const status =
+			typeof error === "object" &&
+			error !== null &&
+			"response" in error &&
+			typeof error.response === "object" &&
+			error.response !== null &&
+			"status" in error.response &&
+			typeof error.response.status === "number"
+				? error.response.status
+				: undefined;
+
+		notifyUnauthorized(status);
+		notifyBackendUnavailable(error);
 		return Promise.reject(error);
 	},
 );

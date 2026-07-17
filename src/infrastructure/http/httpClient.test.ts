@@ -81,8 +81,9 @@ describe("httpClient", () => {
 	it("notifies the runtime when a 401 response is received", async () => {
 		const unauthorizedError = { response: { status: 401 } };
 		const onUnauthorized = vi.fn();
+		const onBackendUnavailable = vi.fn();
 
-		configureHttpClientRuntime({ onUnauthorized });
+		configureHttpClientRuntime({ onUnauthorized, onBackendUnavailable });
 		httpClient.defaults.adapter = vi.fn<AxiosAdapter>(async () => {
 			throw unauthorizedError;
 		});
@@ -90,5 +91,22 @@ describe("httpClient", () => {
 		await expect(httpClient.get("/v1/profile")).rejects.toBe(unauthorizedError);
 
 		expect(onUnauthorized).toHaveBeenCalledOnce();
+		expect(onBackendUnavailable).not.toHaveBeenCalled();
+	});
+
+	it("notifies the runtime when a network error happens without a response", async () => {
+		const networkError = { code: "ERR_NETWORK", message: "Network Error" };
+		const onUnauthorized = vi.fn();
+		const onBackendUnavailable = vi.fn();
+
+		configureHttpClientRuntime({ onUnauthorized, onBackendUnavailable });
+		httpClient.defaults.adapter = vi.fn<AxiosAdapter>(async () => {
+			throw networkError;
+		});
+
+		await expect(httpClient.get("/v1/profile")).rejects.toBe(networkError);
+
+		expect(onBackendUnavailable).toHaveBeenCalledOnce();
+		expect(onUnauthorized).not.toHaveBeenCalled();
 	});
 });

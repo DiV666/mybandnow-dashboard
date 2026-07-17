@@ -4,12 +4,24 @@ type HttpClientRuntimeConfig = {
 	getAuthToken?: () => string | null;
 	beforeMutatingRequest?: (method: string, url: string) => Promise<void> | void;
 	onUnauthorized?: () => void;
+	onBackendUnavailable?: () => void;
 };
+
+interface HttpClientErrorResponse {
+	status?: number;
+}
+
+interface HttpClientErrorLike {
+	response?: HttpClientErrorResponse;
+	code?: string;
+	message?: string;
+}
 
 const defaultRuntime = (): Required<HttpClientRuntimeConfig> => ({
 	getAuthToken: () => browserSessionStorage.getAuthToken(),
 	beforeMutatingRequest: () => undefined,
 	onUnauthorized: () => undefined,
+	onBackendUnavailable: () => undefined,
 });
 
 let runtime = defaultRuntime();
@@ -52,5 +64,38 @@ export async function runBeforeMutatingRequest(
 export function notifyUnauthorized(status: number | undefined): void {
 	if (status === 401) {
 		runtime.onUnauthorized();
+	}
+}
+
+const backendUnavailableCodes = new Set([
+	"ECONNABORTED",
+	"ECONNREFUSED",
+	"ERR_CONNECTION_REFUSED",
+	"ERR_NETWORK",
+]);
+
+function isHttpClientErrorLike(error: unknown): error is HttpClientErrorLike {
+	return typeof error === "object" && error !== null;
+}
+
+export function notifyBackendUnavailable(error: unknown): void {
+	if (!isHttpClientErrorLike(error)) {
+		return;
+	}
+
+	if (error.response) {
+		return;
+	}
+
+	const normalizedMessage = error.message?.toLowerCase() ?? "";
+	const hasKnownCode =
+		typeof error.code === "string" && backendUnavailableCodes.has(error.code);
+	const hasNetworkMessage =
+		normalizedMessage.includes("network") ||
+		normalizedMessage.includes("connection refused") ||
+		normalizedMessage.includes("failed to fetch");
+
+	if (hasKnownCode || hasNetworkMessage) {
+		runtime.onBackendUnavailable();
 	}
 }

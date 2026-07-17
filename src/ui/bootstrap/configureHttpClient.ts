@@ -1,9 +1,11 @@
 import { configureHttpClientRuntime } from "../../infrastructure/http/httpClientRuntime.js";
 import { useAuthStore } from "../stores/useAuthStore.js";
+import { useBackendStatusStore } from "../stores/useBackendStatusStore.js";
 import { useMusicianStore } from "../stores/useMusicianStore.js";
 
 export function configureHttpClient(): void {
 	const authStore = useAuthStore();
+	const backendStatusStore = useBackendStatusStore();
 	const musicianStore = useMusicianStore();
 
 	configureHttpClientRuntime({
@@ -14,9 +16,13 @@ export function configureHttpClient(): void {
 			}
 		},
 		onUnauthorized: () => {
+			backendStatusStore.clear();
 			if (authStore.isAuthenticated) {
 				authStore.setSessionExpired(true);
 			}
+		},
+		onBackendUnavailable: () => {
+			backendStatusStore.markUnavailable();
 		},
 	});
 }
