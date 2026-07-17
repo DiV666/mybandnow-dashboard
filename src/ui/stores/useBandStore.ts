@@ -9,6 +9,9 @@ export const useBandStore = defineStore("band", () => {
 		browserSessionStorage.getSelectedBandId(),
 	);
 	const isLoaded = ref(false);
+	const hasSkippedBandOnboarding = ref(
+		browserSessionStorage.getSkippedBandOnboarding(),
+	);
 
 	const selectedBand = computed(() => {
 		if (!selectedBandId.value) return null;
@@ -16,6 +19,9 @@ export const useBandStore = defineStore("band", () => {
 	});
 
 	const hasBands = computed(() => bands.value.length > 0);
+	const shouldRedirectToCreateFirstBand = computed(
+		() => isLoaded.value && !hasBands.value && !hasSkippedBandOnboarding.value,
+	);
 
 	function setBands(newBands: Band[]) {
 		bands.value = newBands;
@@ -23,6 +29,9 @@ export const useBandStore = defineStore("band", () => {
 
 		// Select a valid band when none is selected or the previous selection disappeared.
 		if (newBands.length > 0) {
+			hasSkippedBandOnboarding.value = false;
+			browserSessionStorage.clearSkippedBandOnboarding();
+
 			if (
 				!selectedBandId.value ||
 				!newBands.some((b) => b.id.value === selectedBandId.value)
@@ -40,11 +49,18 @@ export const useBandStore = defineStore("band", () => {
 		browserSessionStorage.setSelectedBandId(bandId);
 	}
 
+	function skipBandOnboarding() {
+		hasSkippedBandOnboarding.value = true;
+		browserSessionStorage.setSkippedBandOnboarding(true);
+	}
+
 	function clear() {
 		bands.value = [];
 		selectedBandId.value = null;
+		hasSkippedBandOnboarding.value = false;
 		isLoaded.value = false;
 		browserSessionStorage.clearSelectedBandId();
+		browserSessionStorage.clearSkippedBandOnboarding();
 	}
 
 	return {
@@ -52,9 +68,12 @@ export const useBandStore = defineStore("band", () => {
 		selectedBandId,
 		selectedBand,
 		hasBands,
+		hasSkippedBandOnboarding,
+		shouldRedirectToCreateFirstBand,
 		isLoaded,
 		setBands,
 		selectBand,
+		skipBandOnboarding,
 		clear,
 	};
 });

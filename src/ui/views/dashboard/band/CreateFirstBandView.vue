@@ -1,16 +1,31 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { CreateBandUseCase } from '../../../../application/band/CreateBandUseCase.js';
 import { AxiosBandRepository } from '../../../../infrastructure/band/AxiosBandRepository.js';
+import { useBandStore } from '../../../stores/useBandStore.js';
 
+interface HttpErrorResponse {
+  status?: number;
+}
+
+interface HttpErrorLike {
+  response?: HttpErrorResponse;
+}
+
+const router = useRouter();
+const bandStore = useBandStore();
 const bandName = ref('');
 const errorMsg = ref('');
 const isLoading = ref(false);
-
-// We use window.location to force full reload
+const showCreateBandForm = ref(false);
 
 const bandRepository = new AxiosBandRepository();
 const createBandUseCase = new CreateBandUseCase(bandRepository);
+
+function isHttpErrorLike(error: unknown): error is HttpErrorLike {
+  return typeof error === 'object' && error !== null && 'response' in error;
+}
 
 async function handleCreateBand() {
   errorMsg.value = '';
@@ -26,15 +41,10 @@ async function handleCreateBand() {
     const newBandId = crypto.randomUUID();
     await createBandUseCase.run(newBandId, bandName.value);
     
-    // Al crear, la API devuelve 201. Necesitamos refrescar o añadirla manualmente
-    // Para simplificar, añadimos un objeto Band "fake" al store y navegamos, 
-    // o forzamos recarga de bandas llamando de nuevo a GetMyBandsUseCase.
-    // Como el dashboard ya recarga al montarse, podemos redirigir y el store se rehidratará.
-    // Pero como estamos dentro del DashboardLayout, onMounted ya corrió.
-    // Lo más limpio es recargar la página entera o pedir las bandas de nuevo.
+    // The dashboard shell already mounted, so we force a refresh to reload bands.
     window.location.href = '/dashboard'; 
-  } catch (error: any) {
-    if (error.response?.status === 409) {
+  } catch (error: unknown) {
+    if (isHttpErrorLike(error) && error.response?.status === 409) {
       errorMsg.value = 'Hubo un conflicto al crear la banda. Inténtalo de nuevo.';
     } else {
       errorMsg.value = 'Ocurrió un error inesperado al crear tu banda.';
@@ -42,6 +52,15 @@ async function handleCreateBand() {
   } finally {
     isLoading.value = false;
   }
+}
+
+function handleSkipForNow() {
+  bandStore.skipBandOnboarding();
+  router.push({ name: 'DashboardHome' });
+}
+
+function handleShowCreateBandForm() {
+  showCreateBandForm.value = true;
 }
 </script>
 
@@ -53,35 +72,55 @@ async function handleCreateBand() {
           <h2 class="mb-3 text-primary">¡Bienvenido a Mybandnow!</h2>
           <p class="text-muted mb-4">
             Parece que aún no formas parte de ninguna banda. <br>
-            Crea tu primer grupo musical para empezar a gestionar tus canciones, músicos y videoclips.
+            Puedes crear tu primer grupo musical ahora o continuar y hacerlo más tarde.
           </p>
-          
-          <div v-if="errorMsg" class="alert alert-danger" role="alert">
-            {{ errorMsg }}
-          </div>
-          
-          <form @submit.prevent="handleCreateBand">
-            <div class="mb-4 text-start">
-              <label for="bandName" class="form-label fw-bold">Nombre de la Banda</label>
-              <input 
-                type="text" 
-                class="form-control form-control-lg" 
-                id="bandName" 
-                v-model="bandName"
-                placeholder="Ej. The Rolling Stones"
-                required
-              >
-            </div>
-            
-            <button 
-              type="submit" 
-              class="btn btn-primary btn-lg w-100" 
-              :disabled="isLoading"
+
+          <div class="d-grid gap-3">
+            <button
+              v-if="!showCreateBandForm"
+              type="button"
+              class="btn btn-primary btn-lg"
+              @click="handleShowCreateBandForm"
             >
-              <span v-if="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-              {{ isLoading ? 'Creando...' : 'Crear mi banda' }}
+              Crear una banda
             </button>
-          </form>
+
+            <div v-if="errorMsg" class="alert alert-danger mb-0" role="alert">
+              {{ errorMsg }}
+            </div>
+
+            <form v-if="showCreateBandForm" @submit.prevent="handleCreateBand">
+              <div class="mb-4 text-start">
+                <label for="bandName" class="form-label fw-bold">Nombre de la Banda</label>
+                <input 
+                  type="text" 
+                  class="form-control form-control-lg" 
+                  id="bandName" 
+                  v-model="bandName"
+                  placeholder="Ej. The Rolling Stones"
+                  required
+                >
+              </div>
+              
+              <button 
+                type="submit" 
+                class="btn btn-primary btn-lg w-100" 
+                :disabled="isLoading"
+              >
+                <span v-if="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                {{ isLoading ? 'Creando...' : 'Crear mi banda' }}
+              </button>
+            </form>
+
+            <button
+              type="button"
+              class="btn btn-link"
+              :disabled="isLoading"
+              @click="handleSkipForNow"
+            >
+              Omitir por ahora
+            </button>
+          </div>
         </div>
       </div>
     </div>
