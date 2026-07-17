@@ -11,6 +11,8 @@ const {
 	repositoryGetByBandIdMock,
 	repositorySaveInstrumentMock,
 	repositoryGetInstrumentsBySongIdMock,
+	repositoryGetInstrumentByIdMock,
+	repositoryUploadInstrumentVideoMock,
 	repositoryCtor,
 } = vi.hoisted(() => ({
 	sessionStorage: {
@@ -23,12 +25,16 @@ const {
 	},
 	repositorySaveMock: vi.fn<(bandId: string, song: Song) => Promise<void>>(),
 	repositoryGetByBandIdMock: vi.fn<(bandId: string) => Promise<unknown[]>>(),
-	repositorySaveInstrumentMock: vi.fn<
-		(songId: string, instrument: SongInstrument) => Promise<void>
-	>(),
-	repositoryGetInstrumentsBySongIdMock: vi.fn<
-		(songId: string) => Promise<unknown[]>
-	>(),
+	repositorySaveInstrumentMock:
+		vi.fn<(songId: string, instrument: SongInstrument) => Promise<void>>(),
+	repositoryGetInstrumentsBySongIdMock:
+		vi.fn<(songId: string) => Promise<unknown[]>>(),
+	repositoryGetInstrumentByIdMock:
+		vi.fn<(songId: string, instrumentId: string) => Promise<unknown>>(),
+	repositoryUploadInstrumentVideoMock:
+		vi.fn<
+			(songId: string, instrumentId: string, videoFile: File) => Promise<void>
+		>(),
 	repositoryCtor: vi.fn(),
 }));
 
@@ -56,6 +62,25 @@ vi.mock("../../../infrastructure/song/AxiosSongRepository.js", () => ({
 
 		async getInstrumentsBySongId(songId: string): Promise<unknown[]> {
 			return repositoryGetInstrumentsBySongIdMock(songId);
+		}
+
+		async getInstrumentById(
+			songId: string,
+			instrumentId: string,
+		): Promise<unknown> {
+			return repositoryGetInstrumentByIdMock(songId, instrumentId);
+		}
+
+		async uploadInstrumentVideo(
+			songId: string,
+			instrumentId: string,
+			videoFile: File,
+		): Promise<void> {
+			return repositoryUploadInstrumentVideoMock(
+				songId,
+				instrumentId,
+				videoFile,
+			);
 		}
 	},
 }));
@@ -304,11 +329,15 @@ function findByText(
 	return findElement(root, (node) => textContent(node).includes(text));
 }
 
-function findInput(root: TestElementNode, id: string): TestElementNode {
-	const input = findElement(
+function queryInput(root: TestElementNode, id: string): TestElementNode | null {
+	return findElement(
 		root,
 		(node) => node.type === "input" && node.props.id === id,
 	);
+}
+
+function findInput(root: TestElementNode, id: string): TestElementNode {
+	const input = queryInput(root, id);
 
 	if (!input) {
 		throw new Error(`Input with id '${id}' was not found.`);
@@ -330,7 +359,10 @@ function findSubmitButton(root: TestElementNode): TestElementNode {
 	return button;
 }
 
-function findButtonByText(root: TestElementNode, text: string): TestElementNode {
+function findButtonByText(
+	root: TestElementNode,
+	text: string,
+): TestElementNode {
 	const button = findElement(
 		root,
 		(node) => node.type === "button" && textContent(node).includes(text),
@@ -343,11 +375,28 @@ function findButtonByText(root: TestElementNode, text: string): TestElementNode 
 	return button;
 }
 
-function findForm(root: TestElementNode): TestElementNode {
-	const form = findElement(root, (node) => node.type === "form");
+function findLinkByText(root: TestElementNode, text: string): TestElementNode {
+	const link = findElement(
+		root,
+		(node) => node.type === "a" && textContent(node).includes(text),
+	);
+
+	if (!link) {
+		throw new Error(`Link with text '${text}' was not found.`);
+	}
+
+	return link;
+}
+
+function findSongCreationForm(root: TestElementNode): TestElementNode {
+	const form = findElement(
+		root,
+		(node) =>
+			node.type === "form" && node.props["data-testid"] === "create-song-form",
+	);
 
 	if (!form) {
-		throw new Error("Form was not found.");
+		throw new Error("Create song form was not found.");
 	}
 
 	return form;
@@ -369,6 +418,26 @@ function findSongInstrumentForm(
 	return form;
 }
 
+function findSongInstrumentSubmitButton(
+	root: TestElementNode,
+	songId: string,
+	instrumentId: string,
+): TestElementNode {
+	const form = findSongInstrumentForm(root, `${songId}-${instrumentId}`);
+	const button = findElement(
+		form,
+		(node) => node.type === "button" && node.props.type === "submit",
+	);
+
+	if (!button) {
+		throw new Error(
+			`Upload submit button for instrument '${songId}-${instrumentId}' was not found.`,
+		);
+	}
+
+	return button;
+}
+
 function clickButton(button: TestElementNode) {
 	const onClick = button.props.onClick;
 
@@ -382,6 +451,25 @@ function clickButton(button: TestElementNode) {
 function setInputValue(input: TestElementNode, value: string) {
 	input.value = value;
 	input.dispatchEvent({ type: "input", target: input });
+}
+
+function setFileInputValue(input: TestElementNode, files: File[]) {
+	const onChange = input.props.onChange;
+	const event = {
+		target: {
+			files,
+		},
+	};
+
+	if (typeof onChange === "function") {
+		onChange(event);
+		return;
+	}
+
+	input.dispatchEvent({
+		type: "change",
+		target: event.target,
+	});
 }
 
 async function submitForm(form: TestElementNode) {
@@ -421,6 +509,8 @@ describe("SongsView", () => {
 		repositorySaveInstrumentMock.mockReset();
 		repositoryGetInstrumentsBySongIdMock.mockReset();
 		repositoryGetInstrumentsBySongIdMock.mockResolvedValue([]);
+		repositoryGetInstrumentByIdMock.mockReset();
+		repositoryUploadInstrumentVideoMock.mockReset();
 		repositoryCtor.mockReset();
 		(globalThis as { Document?: typeof Document }).Document ??=
 			class Document {} as typeof Document;
@@ -625,6 +715,26 @@ describe("SongsView", () => {
 		view.unmount();
 	});
 
+	it("hides the create-song form by default and opens it inside a modal", async () => {
+		const view = renderSongsView(() => {
+			const store = useBandStore();
+			store.setBands([createBand("band-1", "The Stones")]);
+		});
+
+		await flushView();
+
+		expect(findByText(view.root, "Crear canción")).not.toBeNull();
+		expect(queryInput(view.root, "songTitle")).toBeNull();
+		expect(queryInput(view.root, "originalVideoclipUrl")).toBeNull();
+
+		clickButton(findButtonByText(view.root, "Crear canción"));
+		await flushView();
+
+		expect(queryInput(view.root, "songTitle")).not.toBeNull();
+		expect(queryInput(view.root, "originalVideoclipUrl")).not.toBeNull();
+		view.unmount();
+	});
+
 	it("disables and guards song creation when no band is selected", async () => {
 		const view = renderSongsView();
 		expect(
@@ -634,16 +744,15 @@ describe("SongsView", () => {
 			),
 		).not.toBeNull();
 		expect(findByText(view.root, "No hay banda seleccionada.")).not.toBeNull();
-		expect(findSubmitButton(view.root).props.disabled).toBe(true);
+		expect(findButtonByText(view.root, "Crear canción").props.disabled).toBe(
+			true,
+		);
 
-		await submitForm(findForm(view.root));
+		clickButton(findButtonByText(view.root, "Crear canción"));
 		await flushView();
 
+		expect(queryInput(view.root, "songTitle")).toBeNull();
 		expect(repositorySaveMock).not.toHaveBeenCalled();
-		expect(
-			findByText(view.root, "Selecciona una banda antes de crear una canción."),
-		).not.toBeNull();
-
 		view.unmount();
 	});
 
@@ -653,6 +762,9 @@ describe("SongsView", () => {
 			store.setBands([createBand("band-1", "The Stones")]);
 		});
 
+		clickButton(findButtonByText(view.root, "Crear canción"));
+		await flushView();
+
 		setInputValue(findInput(view.root, "songTitle"), "");
 		setInputValue(
 			findInput(view.root, "originalVideoclipUrl"),
@@ -660,7 +772,7 @@ describe("SongsView", () => {
 		);
 		await flushView();
 
-		await submitForm(findForm(view.root));
+		await submitForm(findSongCreationForm(view.root));
 		await flushView();
 
 		expect(repositorySaveMock).not.toHaveBeenCalled();
@@ -689,6 +801,9 @@ describe("SongsView", () => {
 			findByText(view.root, "Esta banda todavía no tiene canciones."),
 		).not.toBeNull();
 
+		clickButton(findButtonByText(view.root, "Crear canción"));
+		await flushView();
+
 		setInputValue(findInput(view.root, "songTitle"), "Paint It Black");
 		setInputValue(
 			findInput(view.root, "originalVideoclipUrl"),
@@ -696,7 +811,7 @@ describe("SongsView", () => {
 		);
 		await flushView();
 
-		await submitForm(findForm(view.root));
+		await submitForm(findSongCreationForm(view.root));
 		await flushView();
 
 		expect(repositoryGetByBandIdMock).toHaveBeenNthCalledWith(1, "band-1");
@@ -705,6 +820,7 @@ describe("SongsView", () => {
 		expect(
 			findByText(view.root, "Canción creada correctamente."),
 		).not.toBeNull();
+		expect(queryInput(view.root, "songTitle")).toBeNull();
 
 		view.unmount();
 	});
@@ -737,6 +853,9 @@ describe("SongsView", () => {
 			]);
 		});
 
+		clickButton(findButtonByText(view.root, "Crear canción"));
+		await flushView();
+
 		setInputValue(findInput(view.root, "songTitle"), "Paint It Black");
 		setInputValue(
 			findInput(view.root, "originalVideoclipUrl"),
@@ -744,7 +863,7 @@ describe("SongsView", () => {
 		);
 		await flushView();
 
-		const submitPromise = submitForm(findForm(view.root));
+		const submitPromise = submitForm(findSongCreationForm(view.root));
 		await flushView();
 
 		const store = useBandStore();
@@ -775,6 +894,9 @@ describe("SongsView", () => {
 			store.setBands([createBand("band-1", "The Stones")]);
 		});
 
+		clickButton(findButtonByText(view.root, "Crear canción"));
+		await flushView();
+
 		setInputValue(findInput(view.root, "songTitle"), "Paint It Black");
 		setInputValue(
 			findInput(view.root, "originalVideoclipUrl"),
@@ -782,7 +904,7 @@ describe("SongsView", () => {
 		);
 		await flushView();
 
-		await submitForm(findForm(view.root));
+		await submitForm(findSongCreationForm(view.root));
 		await flushView();
 
 		expect(repositoryCtor).toHaveBeenCalledOnce();
@@ -794,12 +916,10 @@ describe("SongsView", () => {
 			title: "Paint It Black",
 			originalVideoclipUrl: "https://www.youtube.com/watch?v=O4irXQhgMqg",
 		});
-		expect(findInput(view.root, "songTitle").value).toBe("");
-		expect(findInput(view.root, "originalVideoclipUrl").value).toBe("");
+		expect(queryInput(view.root, "songTitle")).toBeNull();
 		expect(
 			findByText(view.root, "Canción creada correctamente."),
 		).not.toBeNull();
-		expect(findSubmitButton(view.root).props.disabled).toBe(false);
 
 		view.unmount();
 	});
@@ -815,6 +935,9 @@ describe("SongsView", () => {
 			store.setBands([createBand("band-1", "The Stones")]);
 		});
 
+		clickButton(findButtonByText(view.root, "Crear canción"));
+		await flushView();
+
 		setInputValue(findInput(view.root, "songTitle"), "Paint It Black");
 		setInputValue(
 			findInput(view.root, "originalVideoclipUrl"),
@@ -822,7 +945,7 @@ describe("SongsView", () => {
 		);
 		await flushView();
 
-		await submitForm(findForm(view.root));
+		await submitForm(findSongCreationForm(view.root));
 		await flushView();
 
 		expect(
@@ -912,6 +1035,490 @@ describe("SongsView", () => {
 		view.unmount();
 	});
 
+	it("shows a view video action after the processed video becomes available", async () => {
+		vi.useFakeTimers();
+		repositoryGetByBandIdMock.mockResolvedValueOnce([
+			{
+				id: "song-1",
+				bandId: "band-1",
+				title: "Paint It Black",
+				originalVideoclipUrl: "https://www.youtube.com/watch?v=O4irXQhgMqg",
+			},
+		]);
+		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
+			{
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentType: "electric-guitar",
+				songId: "song-1",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+				upload: null,
+			},
+		]);
+		repositoryUploadInstrumentVideoMock.mockResolvedValueOnce(undefined);
+		repositoryGetInstrumentByIdMock
+			.mockResolvedValueOnce({
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentType: "electric-guitar",
+				songId: "song-1",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+				video: null,
+				upload: {
+					status: "PROCESSING",
+				},
+			})
+			.mockResolvedValueOnce({
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentType: "electric-guitar",
+				songId: "song-1",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+				video: {
+					id: "video-1",
+					songInstrumentId: "instrument-1",
+					url: "https://cdn.example/video-1.mp4",
+					duration: 123,
+					size: 456,
+					createdAt: "2026-07-15T10:06:00.000Z",
+				},
+				upload: {
+					status: "COMPLETED",
+				},
+			});
+		const view = renderSongsView(() => {
+			const store = useBandStore();
+			store.setBands([createBand("band-1", "The Stones")]);
+		});
+
+		await flushView();
+		await flushView();
+
+		const fileInput = findInput(
+			view.root,
+			"songInstrumentVideo-song-1-instrument-1",
+		);
+		const videoFile = new File(["video-bytes"], "riff.mp4", {
+			type: "video/mp4",
+		});
+		setFileInputValue(fileInput, [videoFile]);
+		await flushView();
+
+		await submitForm(findSongInstrumentForm(view.root, "song-1-instrument-1"));
+		await flushView();
+		await vi.advanceTimersByTimeAsync(5000);
+		await flushView();
+		await vi.advanceTimersByTimeAsync(5000);
+		await flushView();
+
+		expect(findByText(view.root, "Video disponible.")).not.toBeNull();
+		expect(
+			findByText(view.root, "songInstrumentVideo-song-1-instrument-1"),
+		).toBeNull();
+
+		const viewVideoLink = findLinkByText(view.root, "Ver video");
+		expect(viewVideoLink.props.href).toBe("https://cdn.example/video-1.mp4");
+		expect(viewVideoLink.props.target).toBe("_blank");
+		expect(viewVideoLink.props.rel).toBe("noreferrer noopener");
+		expect(findByText(view.root, "<video")).toBeNull();
+
+		view.unmount();
+		vi.useRealTimers();
+	});
+
+	it("keeps the upload in progress after 202 until the backend detail reports a completed video", async () => {
+		vi.useFakeTimers();
+		repositoryGetByBandIdMock.mockResolvedValueOnce([
+			{
+				id: "song-1",
+				bandId: "band-1",
+				title: "Paint It Black",
+				originalVideoclipUrl: "https://www.youtube.com/watch?v=O4irXQhgMqg",
+			},
+		]);
+		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
+			{
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentType: "electric-guitar",
+				songId: "song-1",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+				upload: null,
+			},
+		]);
+		repositoryUploadInstrumentVideoMock.mockResolvedValueOnce(undefined);
+		repositoryGetInstrumentByIdMock
+			.mockResolvedValueOnce({
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentType: "electric-guitar",
+				songId: "song-1",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+				video: null,
+				upload: {
+					status: "PROCESSING",
+				},
+			})
+			.mockResolvedValueOnce({
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentType: "electric-guitar",
+				songId: "song-1",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+				video: {
+					id: "video-1",
+					songInstrumentId: "instrument-1",
+					url: "https://cdn.example/video-1.mp4",
+					duration: 123,
+					size: 456,
+					createdAt: "2026-07-15T10:06:00.000Z",
+				},
+				upload: {
+					status: "COMPLETED",
+				},
+			});
+		const view = renderSongsView(() => {
+			const store = useBandStore();
+			store.setBands([createBand("band-1", "The Stones")]);
+		});
+
+		await flushView();
+		await flushView();
+
+		const fileInput = findInput(
+			view.root,
+			"songInstrumentVideo-song-1-instrument-1",
+		);
+		const videoFile = new File(["video-bytes"], "riff.mp4", {
+			type: "video/mp4",
+		});
+		setFileInputValue(fileInput, [videoFile]);
+		await flushView();
+
+		await submitForm(findSongInstrumentForm(view.root, "song-1-instrument-1"));
+		await flushView();
+
+		expect(repositoryUploadInstrumentVideoMock).toHaveBeenCalledOnce();
+		expect(findByText(view.root, "Video subido correctamente.")).toBeNull();
+		expect(findByText(view.root, "Procesando video...")).not.toBeNull();
+
+		await vi.advanceTimersByTimeAsync(5000);
+		await flushView();
+		expect(repositoryGetInstrumentByIdMock).toHaveBeenNthCalledWith(
+			1,
+			"song-1",
+			"instrument-1",
+		);
+
+		await vi.advanceTimersByTimeAsync(5000);
+		await flushView();
+		expect(repositoryGetInstrumentByIdMock).toHaveBeenNthCalledWith(
+			2,
+			"song-1",
+			"instrument-1",
+		);
+		expect(findByText(view.root, "Video disponible.")).not.toBeNull();
+		expect(
+			findByText(view.root, "songInstrumentVideo-song-1-instrument-1"),
+		).toBeNull();
+
+		view.unmount();
+		vi.useRealTimers();
+	});
+
+	it("does one extra detail read when processing completes before the video becomes available", async () => {
+		vi.useFakeTimers();
+		repositoryGetByBandIdMock.mockResolvedValueOnce([
+			{
+				id: "song-1",
+				bandId: "band-1",
+				title: "Paint It Black",
+				originalVideoclipUrl: "https://www.youtube.com/watch?v=O4irXQhgMqg",
+			},
+		]);
+		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
+			{
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentType: "electric-guitar",
+				songId: "song-1",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+				upload: null,
+			},
+		]);
+		repositoryUploadInstrumentVideoMock.mockResolvedValueOnce(undefined);
+		repositoryGetInstrumentByIdMock
+			.mockResolvedValueOnce({
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentType: "electric-guitar",
+				songId: "song-1",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+				video: null,
+				upload: {
+					status: "COMPLETED",
+				},
+			})
+			.mockResolvedValueOnce({
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentType: "electric-guitar",
+				songId: "song-1",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+				video: {
+					id: "video-1",
+					songInstrumentId: "instrument-1",
+					url: "https://cdn.example/video-1.mp4",
+					duration: 123,
+					size: 456,
+					createdAt: "2026-07-15T10:06:00.000Z",
+				},
+				upload: {
+					status: "COMPLETED",
+				},
+			});
+		const view = renderSongsView(() => {
+			const store = useBandStore();
+			store.setBands([createBand("band-1", "The Stones")]);
+		});
+
+		await flushView();
+		await flushView();
+
+		const fileInput = findInput(
+			view.root,
+			"songInstrumentVideo-song-1-instrument-1",
+		);
+		const videoFile = new File(["video-bytes"], "riff.mp4", {
+			type: "video/mp4",
+		});
+		setFileInputValue(fileInput, [videoFile]);
+		await flushView();
+
+		await submitForm(findSongInstrumentForm(view.root, "song-1-instrument-1"));
+		await flushView();
+
+		await vi.advanceTimersByTimeAsync(5000);
+		await flushView();
+		expect(repositoryGetInstrumentByIdMock).toHaveBeenNthCalledWith(
+			1,
+			"song-1",
+			"instrument-1",
+		);
+
+		await vi.advanceTimersByTimeAsync(5000);
+		await flushView();
+		expect(repositoryGetInstrumentByIdMock).toHaveBeenCalledTimes(2);
+		expect(findByText(view.root, "Video disponible.")).not.toBeNull();
+
+		view.unmount();
+		vi.useRealTimers();
+	});
+
+	it("disables the upload submit button until a valid MP4 file is selected", async () => {
+		repositoryGetByBandIdMock.mockResolvedValueOnce([
+			{
+				id: "song-1",
+				bandId: "band-1",
+				title: "Paint It Black",
+				originalVideoclipUrl: "https://www.youtube.com/watch?v=O4irXQhgMqg",
+			},
+		]);
+		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
+			{
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentType: "electric-guitar",
+				songId: "song-1",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+			},
+		]);
+		const view = renderSongsView(() => {
+			const store = useBandStore();
+			store.setBands([createBand("band-1", "The Stones")]);
+		});
+
+		await flushView();
+		await flushView();
+
+		expect(
+			findSongInstrumentSubmitButton(view.root, "song-1", "instrument-1").props
+				.disabled,
+		).toBe(true);
+
+		const fileInput = findInput(
+			view.root,
+			"songInstrumentVideo-song-1-instrument-1",
+		);
+		const videoFile = new File(["video-bytes"], "riff.mp4", {
+			type: "video/mp4",
+		});
+		setFileInputValue(fileInput, [videoFile]);
+		await flushView();
+
+		expect(
+			findSongInstrumentSubmitButton(view.root, "song-1", "instrument-1").props
+				.disabled,
+		).toBe(false);
+
+		view.unmount();
+	});
+
+	it("keeps the upload submit button disabled after an invalid file selection", async () => {
+		repositoryGetByBandIdMock.mockResolvedValueOnce([
+			{
+				id: "song-1",
+				bandId: "band-1",
+				title: "Paint It Black",
+				originalVideoclipUrl: "https://www.youtube.com/watch?v=O4irXQhgMqg",
+			},
+		]);
+		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
+			{
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentType: "electric-guitar",
+				songId: "song-1",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+			},
+		]);
+		const view = renderSongsView(() => {
+			const store = useBandStore();
+			store.setBands([createBand("band-1", "The Stones")]);
+		});
+
+		await flushView();
+		await flushView();
+
+		const fileInput = findInput(
+			view.root,
+			"songInstrumentVideo-song-1-instrument-1",
+		);
+		setFileInputValue(fileInput, [
+			new File(["audio-bytes"], "riff.mp3", { type: "audio/mpeg" }),
+		]);
+		await flushView();
+
+		expect(
+			findSongInstrumentSubmitButton(view.root, "song-1", "instrument-1").props
+				.disabled,
+		).toBe(true);
+
+		view.unmount();
+	});
+
+	it("starts the async upload status flow after the backend accepts the video", async () => {
+		repositoryGetByBandIdMock.mockResolvedValueOnce([
+			{
+				id: "song-1",
+				bandId: "band-1",
+				title: "Paint It Black",
+				originalVideoclipUrl: "https://www.youtube.com/watch?v=O4irXQhgMqg",
+			},
+		]);
+		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
+			{
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentType: "electric-guitar",
+				songId: "song-1",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+			},
+		]);
+		repositoryUploadInstrumentVideoMock.mockResolvedValueOnce(undefined);
+		const view = renderSongsView(() => {
+			const store = useBandStore();
+			store.setBands([createBand("band-1", "The Stones")]);
+		});
+
+		await flushView();
+		await flushView();
+
+		const fileInput = findInput(
+			view.root,
+			"songInstrumentVideo-song-1-instrument-1",
+		);
+		const videoFile = new File(["video-bytes"], "riff.mp4", {
+			type: "video/mp4",
+		});
+		setFileInputValue(fileInput, [videoFile]);
+		await flushView();
+
+		await submitForm(findSongInstrumentForm(view.root, "song-1-instrument-1"));
+		await flushView();
+
+		expect(repositoryUploadInstrumentVideoMock).toHaveBeenCalledOnce();
+		expect(repositoryUploadInstrumentVideoMock).toHaveBeenCalledWith(
+			"song-1",
+			"instrument-1",
+			videoFile,
+		);
+		expect(findByText(view.root, "Procesando video...")).not.toBeNull();
+		expect(findByText(view.root, "Video subido correctamente.")).toBeNull();
+		expect(findByText(view.root, "Ver video")).toBeNull();
+
+		view.unmount();
+	});
+
+	it("rejects non-MP4 files before calling the upload use case", async () => {
+		repositoryGetByBandIdMock.mockResolvedValueOnce([
+			{
+				id: "song-1",
+				bandId: "band-1",
+				title: "Paint It Black",
+				originalVideoclipUrl: "https://www.youtube.com/watch?v=O4irXQhgMqg",
+			},
+		]);
+		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
+			{
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentType: "electric-guitar",
+				songId: "song-1",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+			},
+		]);
+		const view = renderSongsView(() => {
+			const store = useBandStore();
+			store.setBands([createBand("band-1", "The Stones")]);
+		});
+
+		await flushView();
+		await flushView();
+
+		const fileInput = findInput(
+			view.root,
+			"songInstrumentVideo-song-1-instrument-1",
+		);
+		setFileInputValue(fileInput, [
+			new File(["audio-bytes"], "riff.mp3", { type: "audio/mpeg" }),
+		]);
+		await flushView();
+
+		await submitForm(findSongInstrumentForm(view.root, "song-1-instrument-1"));
+		await flushView();
+
+		expect(repositoryUploadInstrumentVideoMock).not.toHaveBeenCalled();
+		expect(
+			findByText(view.root, "El vídeo tiene que estar en formato MP4."),
+		).not.toBeNull();
+
+		view.unmount();
+	});
+
 	it("shows an inline error when the musician profile is unavailable", async () => {
 		repositoryGetByBandIdMock.mockResolvedValueOnce([
 			{
@@ -972,6 +1579,9 @@ describe("SongsView", () => {
 			store.setBands([createBand("band-1", "The Stones")]);
 		});
 
+		clickButton(findButtonByText(view.root, "Crear canción"));
+		await flushView();
+
 		setInputValue(findInput(view.root, "songTitle"), "Paint It Black");
 		setInputValue(
 			findInput(view.root, "originalVideoclipUrl"),
@@ -979,7 +1589,7 @@ describe("SongsView", () => {
 		);
 		await flushView();
 
-		const submitPromise = submitForm(findForm(view.root));
+		const submitPromise = submitForm(findSongCreationForm(view.root));
 		await flushView();
 
 		expect(findSubmitButton(view.root).props.disabled).toBe(true);

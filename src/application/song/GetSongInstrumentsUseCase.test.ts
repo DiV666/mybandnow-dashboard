@@ -22,6 +22,9 @@ describe("GetSongInstrumentsUseCase", () => {
 				songId: "song-123",
 				musicianId: "musician-123",
 				createdAt: "2026-07-15T10:00:00.000Z",
+				upload: {
+					status: "READY",
+				},
 			},
 		];
 		repositoryMock.getInstrumentsBySongId.mockResolvedValue(instruments);

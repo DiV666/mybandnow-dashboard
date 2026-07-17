@@ -4,6 +4,7 @@ import type { Song } from "../../domain/song/Song.js";
 import type { SongInstrument } from "../../domain/song/SongInstrument.js";
 import type {
 	SongInstrumentCollectionResponse,
+	SongInstrumentDetailResponse,
 	SongInstrumentListItemResponse,
 } from "../../domain/song/SongInstrumentResponse.js";
 import type {
@@ -24,7 +25,10 @@ export class AxiosSongRepository implements SongRepository {
 		return response.data.items;
 	}
 
-	async saveInstrument(songId: string, instrument: SongInstrument): Promise<void> {
+	async saveInstrument(
+		songId: string,
+		instrument: SongInstrument,
+	): Promise<void> {
 		await httpClient.post(
 			`/v1/songs/${songId}/instruments`,
 			instrument.toPrimitives(),
@@ -39,5 +43,30 @@ export class AxiosSongRepository implements SongRepository {
 		);
 
 		return response.data.items;
+	}
+
+	async getInstrumentById(
+		songId: string,
+		instrumentId: string,
+	): Promise<SongInstrumentDetailResponse> {
+		const response = await httpClient.get<SongInstrumentDetailResponse>(
+			`/v1/songs/${songId}/instruments/${instrumentId}`,
+		);
+
+		return response.data;
+	}
+
+	async uploadInstrumentVideo(
+		songId: string,
+		instrumentId: string,
+		videoFile: File,
+	): Promise<void> {
+		const formData = new FormData();
+		formData.append("video", videoFile);
+
+		await httpClient.post(
+			`/v1/songs/${songId}/instruments/${instrumentId}/upload`,
+			formData,
+		);
 	}
 }

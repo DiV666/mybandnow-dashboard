@@ -104,6 +104,9 @@ describe("AxiosSongRepository", () => {
 						songId: "song-123",
 						musicianId: "musician-123",
 						createdAt: "2026-07-15T10:00:00.000Z",
+						upload: {
+							status: "READY",
+						},
 					},
 				],
 				total: 1,
@@ -121,7 +124,90 @@ describe("AxiosSongRepository", () => {
 				songId: "song-123",
 				musicianId: "musician-123",
 				createdAt: "2026-07-15T10:00:00.000Z",
+				upload: {
+					status: "READY",
+				},
 			},
 		]);
+	});
+
+	it("should return the instrument detail for the selected song instrument", async () => {
+		const getSpy = vi.spyOn(httpClient, "get").mockResolvedValue({
+			data: {
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentType: "electric-guitar",
+				songId: "song-123",
+				musicianId: "musician-123",
+				createdAt: "2026-07-15T10:00:00.000Z",
+				video: {
+					id: "video-1",
+					songInstrumentId: "instrument-1",
+					url: "https://cdn.example/video-1.mp4",
+					duration: 123,
+					size: 456,
+					createdAt: "2026-07-15T10:02:00.000Z",
+				},
+				upload: {
+					status: "COMPLETED",
+				},
+			},
+		} as never);
+
+		const instrument = await repository.getInstrumentById(
+			"song-123",
+			"instrument-1",
+		);
+
+		expect(getSpy).toHaveBeenCalledWith(
+			"/v1/songs/song-123/instruments/instrument-1",
+		);
+		expect(instrument).toEqual({
+			id: "instrument-1",
+			name: "Guitarra principal",
+			instrumentType: "electric-guitar",
+			songId: "song-123",
+			musicianId: "musician-123",
+			createdAt: "2026-07-15T10:00:00.000Z",
+			video: {
+				id: "video-1",
+				songInstrumentId: "instrument-1",
+				url: "https://cdn.example/video-1.mp4",
+				duration: 123,
+				size: 456,
+				createdAt: "2026-07-15T10:02:00.000Z",
+			},
+			upload: {
+				status: "COMPLETED",
+			},
+		});
+	});
+
+	it("should upload an MP4 file as multipart form data for the selected song instrument", async () => {
+		const postSpy = vi
+			.spyOn(httpClient, "post")
+			.mockResolvedValue({ data: undefined } as never);
+		const videoFile = new File(["video-bytes"], "riff.mp4", {
+			type: "video/mp4",
+		});
+
+		await repository.uploadInstrumentVideo(
+			"song-123",
+			"instrument-456",
+			videoFile,
+		);
+
+		expect(postSpy).toHaveBeenCalledTimes(1);
+		expect(postSpy.mock.calls[0][0]).toBe(
+			"/v1/songs/song-123/instruments/instrument-456/upload",
+		);
+		const formData = postSpy.mock.calls[0][1];
+		expect(formData).toBeInstanceOf(FormData);
+		expect((formData as FormData).get("video")).toBe(videoFile);
+		expect(postSpy).toHaveBeenCalledWith(
+			"/v1/songs/song-123/instruments/instrument-456/upload",
+			formData,
+		);
+		expect(postSpy.mock.calls[0]).toHaveLength(2);
 	});
 });
