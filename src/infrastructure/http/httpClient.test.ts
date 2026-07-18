@@ -78,6 +78,25 @@ describe("httpClient", () => {
 		expect(beforeMutatingRequest).toHaveBeenCalledWith("post", "/v1/bands");
 	});
 
+	it("does not force application/json when sending form data", async () => {
+		const adapter = vi.fn<AxiosAdapter>(async (config) =>
+			createAdapterResponse(config),
+		);
+		httpClient.defaults.adapter = adapter;
+		const formData = new FormData();
+		formData.append(
+			"video",
+			new File(["video-bytes"], "riff.mp4", { type: "video/mp4" }),
+		);
+
+		await httpClient.post("/v1/upload", formData);
+
+		expect(adapter).toHaveBeenCalledOnce();
+		const config = adapter.mock.calls[0][0];
+		expect(config.data).toBe(formData);
+		expect(config.headers.getContentType()).not.toContain("application/json");
+	});
+
 	it("notifies the runtime when a 401 response is received", async () => {
 		const unauthorizedError = { response: { status: 401 } };
 		const onUnauthorized = vi.fn();
