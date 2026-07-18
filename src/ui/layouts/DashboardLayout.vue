@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/useAuthStore.js';
 import { useBandStore } from '../stores/useBandStore.js';
@@ -16,6 +16,7 @@ const bandRepository = new AxiosBandRepository();
 const getMyBandsUseCase = new GetMyBandsUseCase(bandRepository);
 
 const isLoading = ref(true);
+const shouldShowBandShell = computed(() => bandStore.hasBands || Boolean(bandStore.selectedBandId));
 
 onMounted(async () => {
   try {
@@ -70,7 +71,7 @@ const logout = () => {
           </option>
         </select>
       </div>
-      <div v-else class="w-100 d-flex align-items-center">
+      <div v-else-if="!shouldShowBandShell" class="w-100 d-flex align-items-center">
         <button
           type="button"
           class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2"
@@ -108,7 +109,7 @@ const logout = () => {
 
     <div class="row flex-grow-1 m-0">
       <!-- Sidebar lateral (oculto si no hay banda seleccionada) -->
-      <nav v-if="bandStore.hasBands" id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block dashboard-sidebar sidebar collapse">
+      <nav v-if="shouldShowBandShell" id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block dashboard-sidebar sidebar collapse">
         <div class="position-sticky pt-3">
           <ul class="nav flex-column gap-1 px-2 pb-3">
             <li class="nav-item">
@@ -136,7 +137,7 @@ const logout = () => {
       </nav>
 
       <!-- Área principal dinámica -->
-      <main :class="['dashboard-main py-4', bandStore.hasBands ? 'col-md-9 ms-sm-auto col-lg-10 px-md-4' : 'col-12 px-4 px-lg-5']">
+      <main :class="['dashboard-main py-4', shouldShowBandShell ? 'col-md-9 ms-sm-auto col-lg-10 px-md-4' : 'col-12 px-4 px-lg-5']">
         <router-view />
       </main>
     </div>
