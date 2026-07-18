@@ -53,7 +53,7 @@ Use these skills for detailed patterns on-demand:
 When performing these actions, ALWAYS invoke the corresponding skill FIRST:
 
 | Action | Skill |
-|--------|-------|
+| -------- | ------- |
 | Adding a new external provider (Axios API) | `hexagonal-feature` |
 | Adding a new use case (command or query) | `hexagonal-feature` |
 | Adding a new use case (command or query) | `security` |
@@ -137,6 +137,9 @@ src/
 ---
 
 ## Development
+
+- Official package manager: `npm`.
+- Avoid accidental `pnpm` usage and do not introduce or update `pnpm-lock.yaml` unless the project is explicitly migrated.
 
 ```bash
 # Start the development container (Vite)
