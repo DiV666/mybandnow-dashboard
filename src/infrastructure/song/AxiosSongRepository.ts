@@ -67,7 +67,7 @@ export class AxiosSongRepository implements SongRepository {
 		await httpClient.post(
 			`/v1/songs/${songId}/instruments/${instrumentId}/upload`,
 			formData,
-			{ timeout: 60000 },
+			{ timeout: 120000 },
 		);
 	}
 }

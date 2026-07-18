@@ -44,11 +44,23 @@ interface SongInstrumentFormState {
 	errorMsg: string;
 }
 
+const songInstrumentUploadProgressStages = {
+	IDLE: "IDLE",
+	REQUEST: "REQUEST",
+	BACKEND: "BACKEND",
+	COMPLETE: "COMPLETE",
+} as const;
+
+type SongInstrumentUploadProgressStage =
+	(typeof songInstrumentUploadProgressStages)[keyof typeof songInstrumentUploadProgressStages];
+
 interface SongInstrumentUploadState {
 	selectedFile: File | null;
 	isSubmitting: boolean;
 	successMsg: string;
 	errorMsg: string;
+	progress: number;
+	progressStage: SongInstrumentUploadProgressStage;
 }
 
 interface FileInputLike {
@@ -68,6 +80,7 @@ type SongInstrumentUploadMap = Record<string, SongInstrumentUploadState>;
 type SongInstrumentDetailMap = Record<string, SongInstrumentDetailResponse>;
 
 const SONG_INSTRUMENT_POLL_INTERVAL_MS = 5000;
+const SONG_INSTRUMENT_PROGRESS_TICK_MS = 400;
 
 const bandStore = useBandStore();
 const musicianStore = useMusicianStore();
@@ -101,6 +114,10 @@ const canSubmit = computed(
 );
 
 const songInstrumentPollTimeouts = new Map<
+	string,
+	ReturnType<typeof setTimeout>
+>();
+const songInstrumentProgressTimeouts = new Map<
 	string,
 	ReturnType<typeof setTimeout>
 >();
@@ -155,6 +172,8 @@ function getSongInstrumentUploadState(
 		isSubmitting: false,
 		successMsg: "",
 		errorMsg: "",
+		progress: 0,
+		progressStage: songInstrumentUploadProgressStages.IDLE,
 	};
 	songInstrumentUploads.value = {
 		...songInstrumentUploads.value,
@@ -254,6 +273,17 @@ function getEffectiveVideo(
 	return getSongInstrumentDetail(songId, instrumentId)?.video ?? null;
 }
 
+function getSongInstrument(
+	songId: string,
+	instrumentId: string,
+): SongInstrumentListItemResponse | null {
+	return (
+		songInstruments.value[songId]?.find(
+			(instrument) => instrument.id === instrumentId,
+		) ?? null
+	);
+}
+
 function isSongInstrumentInProgress(
 	upload: SongInstrumentUploadResponse | null,
 ): boolean {
@@ -266,6 +296,18 @@ function isSongInstrumentInProgress(
 
 function isSongStillVisible(songId: string): boolean {
 	return songs.value.some((song) => song.id === songId);
+}
+
+function clearSongInstrumentProgressTimer(
+	songId: string,
+	instrumentId: string,
+): void {
+	const key = getSongInstrumentUploadKey(songId, instrumentId);
+	const timeoutId = songInstrumentProgressTimeouts.get(key);
+	if (timeoutId) {
+		clearTimeout(timeoutId);
+		songInstrumentProgressTimeouts.delete(key);
+	}
 }
 
 function cancelSongInstrumentPoll(songId: string, instrumentId: string): void {
@@ -285,7 +327,11 @@ function cancelAllSongInstrumentPolls(): void {
 	for (const timeoutId of songInstrumentPollTimeouts.values()) {
 		clearTimeout(timeoutId);
 	}
+	for (const timeoutId of songInstrumentProgressTimeouts.values()) {
+		clearTimeout(timeoutId);
+	}
 	songInstrumentPollTimeouts.clear();
+	songInstrumentProgressTimeouts.clear();
 	songInstrumentPollVersions.clear();
 }
 
@@ -405,24 +451,27 @@ function getSongInstrumentStatusMessage(
 	const uploadState = getSongInstrumentUploadState(songId, instrument.id);
 	const video = getEffectiveVideo(songId, instrument.id);
 	if (video) {
-		return uploadState.successMsg || "Video disponible.";
+		return "";
 	}
 
 	const upload = getEffectiveUpload(songId, instrument);
-	if (uploadState.isSubmitting) {
-		return "Procesando video...";
+	if (
+		uploadState.isSubmitting &&
+		uploadState.progressStage === songInstrumentUploadProgressStages.REQUEST
+	) {
+		return "Subiendo video al servidor...";
 	}
 
 	if (upload?.status === songInstrumentUploadStatuses.PENDING) {
-		return "Subida pendiente...";
+		return "Subida aceptada. Pendiente de validación.";
 	}
 
 	if (upload?.status === songInstrumentUploadStatuses.READY) {
-		return "Video recibido. Esperando procesamiento...";
+		return "Video recibido. Validando archivo...";
 	}
 
 	if (upload?.status === songInstrumentUploadStatuses.PROCESSING) {
-		return "Procesando video...";
+		return "Procesando y sincronizando video...";
 	}
 
 	if (upload?.status === songInstrumentUploadStatuses.COMPLETED) {
@@ -430,6 +479,204 @@ function getSongInstrumentStatusMessage(
 	}
 
 	return uploadState.successMsg;
+}
+
+function getSongInstrumentProgressCap(
+	upload: SongInstrumentUploadResponse | null,
+): number {
+	if (upload?.status === songInstrumentUploadStatuses.PENDING) {
+		return 52;
+	}
+
+	if (upload?.status === songInstrumentUploadStatuses.READY) {
+		return 72;
+	}
+
+	if (upload?.status === songInstrumentUploadStatuses.PROCESSING) {
+		return 88;
+	}
+
+	if (upload?.status === songInstrumentUploadStatuses.COMPLETED) {
+		return 96;
+	}
+
+	return 0;
+}
+
+function getSongInstrumentProgressFloor(
+	upload: SongInstrumentUploadResponse | null,
+): number {
+	if (upload?.status === songInstrumentUploadStatuses.PENDING) {
+		return 24;
+	}
+
+	if (upload?.status === songInstrumentUploadStatuses.READY) {
+		return 48;
+	}
+
+	if (upload?.status === songInstrumentUploadStatuses.PROCESSING) {
+		return 68;
+	}
+
+	if (upload?.status === songInstrumentUploadStatuses.COMPLETED) {
+		return 92;
+	}
+
+	return 0;
+}
+
+function getSongInstrumentProgressIncrement(
+	stage: SongInstrumentUploadProgressStage,
+	progress: number,
+	upload: SongInstrumentUploadResponse | null,
+): number {
+	if (stage === songInstrumentUploadProgressStages.REQUEST) {
+		if (progress < 16) {
+			return 8;
+		}
+
+		if (progress < 30) {
+			return 6;
+		}
+
+		return 4;
+	}
+
+	if (upload?.status === songInstrumentUploadStatuses.PENDING) {
+		return 5;
+	}
+
+	if (upload?.status === songInstrumentUploadStatuses.READY) {
+		return 4;
+	}
+
+	if (upload?.status === songInstrumentUploadStatuses.PROCESSING) {
+		return 3;
+	}
+
+	if (upload?.status === songInstrumentUploadStatuses.COMPLETED) {
+		return 2;
+	}
+
+	return 0;
+}
+
+function scheduleSongInstrumentProgressTick(
+	songId: string,
+	instrumentId: string,
+): void {
+	clearSongInstrumentProgressTimer(songId, instrumentId);
+	const key = getSongInstrumentUploadKey(songId, instrumentId);
+	const timeoutId = setTimeout(() => {
+		if (!isViewMounted || !isSongStillVisible(songId)) {
+			clearSongInstrumentProgressTimer(songId, instrumentId);
+			return;
+		}
+
+		const uploadState = getSongInstrumentUploadState(songId, instrumentId);
+		if (
+			uploadState.progressStage !== songInstrumentUploadProgressStages.REQUEST &&
+			uploadState.progressStage !== songInstrumentUploadProgressStages.BACKEND
+		) {
+			clearSongInstrumentProgressTimer(songId, instrumentId);
+			return;
+		}
+
+		const instrument = getSongInstrument(songId, instrumentId);
+		const upload = instrument ? getEffectiveUpload(songId, instrument) : null;
+		const cap =
+			uploadState.progressStage === songInstrumentUploadProgressStages.REQUEST
+				? 36
+				: getSongInstrumentProgressCap(upload);
+		const nextProgress = Math.min(
+			cap,
+			uploadState.progress +
+				getSongInstrumentProgressIncrement(
+					uploadState.progressStage,
+					uploadState.progress,
+					upload,
+				),
+		);
+
+		if (nextProgress !== uploadState.progress) {
+			setSongInstrumentUploadState(songId, instrumentId, {
+				progress: nextProgress,
+			});
+		}
+
+		if (nextProgress < cap) {
+			scheduleSongInstrumentProgressTick(songId, instrumentId);
+			return;
+		}
+
+		clearSongInstrumentProgressTimer(songId, instrumentId);
+	}, SONG_INSTRUMENT_PROGRESS_TICK_MS);
+	songInstrumentProgressTimeouts.set(key, timeoutId);
+}
+
+function startSongInstrumentRequestProgress(
+	songId: string,
+	instrumentId: string,
+): void {
+	setSongInstrumentUploadState(songId, instrumentId, {
+		progress: 0,
+		progressStage: songInstrumentUploadProgressStages.REQUEST,
+	});
+	scheduleSongInstrumentProgressTick(songId, instrumentId);
+}
+
+function startSongInstrumentBackendProgress(
+	songId: string,
+	instrumentId: string,
+	upload: SongInstrumentUploadResponse | null,
+): void {
+	const current = getSongInstrumentUploadState(songId, instrumentId);
+	setSongInstrumentUploadState(songId, instrumentId, {
+		progress: Math.max(current.progress, getSongInstrumentProgressFloor(upload)),
+		progressStage: songInstrumentUploadProgressStages.BACKEND,
+	});
+	scheduleSongInstrumentProgressTick(songId, instrumentId);
+}
+
+function completeSongInstrumentProgress(songId: string, instrumentId: string): void {
+	clearSongInstrumentProgressTimer(songId, instrumentId);
+	setSongInstrumentUploadState(songId, instrumentId, {
+		progress: 100,
+		progressStage: songInstrumentUploadProgressStages.COMPLETE,
+	});
+}
+
+function resetSongInstrumentProgress(songId: string, instrumentId: string): void {
+	clearSongInstrumentProgressTimer(songId, instrumentId);
+	setSongInstrumentUploadState(songId, instrumentId, {
+		progress: 0,
+		progressStage: songInstrumentUploadProgressStages.IDLE,
+	});
+}
+
+function shouldShowSongInstrumentProgress(
+	songId: string,
+	instrumentId: string,
+): boolean {
+	if (getEffectiveVideo(songId, instrumentId)) {
+		return false;
+	}
+
+	const progressStage = getSongInstrumentUploadState(
+		songId,
+		instrumentId,
+	).progressStage;
+	return (
+		progressStage === songInstrumentUploadProgressStages.REQUEST ||
+		progressStage === songInstrumentUploadProgressStages.BACKEND
+	);
+}
+
+function shouldShowSongInstrumentCompleteBadge(
+	songId: string,
+	instrumentId: string,
+): boolean {
+	return getEffectiveVideo(songId, instrumentId) !== null;
 }
 
 function shouldShowSongInstrumentUploadForm(
@@ -535,7 +782,24 @@ async function runSongInstrumentPoll(
 		}
 
 		if (isSongInstrumentInProgress(detail.upload)) {
+			startSongInstrumentBackendProgress(songId, instrumentId, detail.upload);
 			scheduleSongInstrumentPoll(songId, instrumentId, 1);
+			return;
+		}
+
+		if (detail.upload?.status === songInstrumentUploadStatuses.FAILED) {
+			cancelSongInstrumentPoll(songId, instrumentId);
+			resetSongInstrumentProgress(songId, instrumentId);
+			setSongInstrumentUploadState(songId, instrumentId, {
+				isSubmitting: false,
+				successMsg: "",
+				errorMsg: mapUploadErrorMessage(
+					{
+						message: detail.upload.errorMessage,
+					},
+					"La subida del vídeo falló.",
+				),
+			});
 			return;
 		}
 
@@ -544,6 +808,7 @@ async function runSongInstrumentPoll(
 			detail.video === null &&
 			extraReadsAfterCompletedWithoutVideo > 0
 		) {
+			startSongInstrumentBackendProgress(songId, instrumentId, detail.upload);
 			scheduleSongInstrumentPoll(
 				songId,
 				instrumentId,
@@ -553,13 +818,19 @@ async function runSongInstrumentPoll(
 		}
 
 		cancelSongInstrumentPoll(songId, instrumentId);
+		if (detail.video) {
+			completeSongInstrumentProgress(songId, instrumentId);
+		} else {
+			resetSongInstrumentProgress(songId, instrumentId);
+		}
 		setSongInstrumentUploadState(songId, instrumentId, {
 			isSubmitting: false,
-			successMsg: detail.video ? "Video disponible." : "",
+			successMsg: "",
 			errorMsg: detail.video ? "" : undefined,
 		});
 	} catch (error: unknown) {
 		cancelSongInstrumentPoll(songId, instrumentId);
+		resetSongInstrumentProgress(songId, instrumentId);
 		setSongInstrumentUploadState(songId, instrumentId, {
 			isSubmitting: false,
 			successMsg: "",
@@ -577,10 +848,11 @@ async function syncSongInstrumentAsyncState(
 ): Promise<void> {
 	if (isSongInstrumentInProgress(instrument.upload)) {
 		setSongInstrumentUploadState(songId, instrument.id, {
-			isSubmitting: true,
+			isSubmitting: false,
 			successMsg: "",
 			errorMsg: "",
 		});
+		startSongInstrumentBackendProgress(songId, instrument.id, instrument.upload);
 		scheduleSongInstrumentPoll(songId, instrument.id, 1);
 		return;
 	}
@@ -589,15 +861,17 @@ async function syncSongInstrumentAsyncState(
 		const detail = await refreshSongInstrumentDetail(songId, instrument.id);
 		if (detail.video === null) {
 			setSongInstrumentUploadState(songId, instrument.id, {
-				isSubmitting: true,
+				isSubmitting: false,
 				successMsg: "",
 				errorMsg: "",
 			});
+			startSongInstrumentBackendProgress(songId, instrument.id, detail.upload);
 			scheduleSongInstrumentPoll(songId, instrument.id, 1);
 			return;
 		}
 	}
 
+	resetSongInstrumentProgress(songId, instrument.id);
 	setSongInstrumentUploadState(songId, instrument.id, {
 		isSubmitting: false,
 		successMsg: "",
@@ -772,6 +1046,7 @@ function handleSongInstrumentVideoSelection(
 			: null;
 
 	if (!selectedFile) {
+		resetSongInstrumentProgress(songId, instrumentId);
 		setSongInstrumentUploadState(songId, instrumentId, {
 			selectedFile: null,
 			successMsg: "",
@@ -781,6 +1056,7 @@ function handleSongInstrumentVideoSelection(
 	}
 
 	if (selectedFile.type !== "video/mp4") {
+		resetSongInstrumentProgress(songId, instrumentId);
 		setSongInstrumentUploadState(songId, instrumentId, {
 			selectedFile: null,
 			successMsg: "",
@@ -789,6 +1065,7 @@ function handleSongInstrumentVideoSelection(
 		return;
 	}
 
+	resetSongInstrumentProgress(songId, instrumentId);
 	setSongInstrumentUploadState(songId, instrumentId, {
 		selectedFile,
 		successMsg: "",
@@ -818,6 +1095,7 @@ async function handleUploadSongInstrumentVideo(
 	setSongInstrumentUploadStatus(songId, instrumentId, {
 		status: songInstrumentUploadStatuses.PENDING,
 	});
+	startSongInstrumentRequestProgress(songId, instrumentId);
 
 	try {
 		await uploadSongInstrumentVideoUseCase.run(
@@ -827,11 +1105,15 @@ async function handleUploadSongInstrumentVideo(
 		);
 		setSongInstrumentUploadState(songId, instrumentId, {
 			selectedFile: null,
-			isSubmitting: true,
+			isSubmitting: false,
 			successMsg: "",
+		});
+		startSongInstrumentBackendProgress(songId, instrumentId, {
+			status: songInstrumentUploadStatuses.PENDING,
 		});
 		scheduleSongInstrumentPoll(songId, instrumentId, 1);
 	} catch (error: unknown) {
+		resetSongInstrumentProgress(songId, instrumentId);
 		setSongInstrumentUploadState(songId, instrumentId, {
 			errorMsg: mapUploadErrorMessage(
 				extractUploadErrorDetails(error),
@@ -1083,7 +1365,7 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                               :disabled="isSongInstrumentUploadSubmitDisabled(song.id, instrument)"
                             >
                               <span
-                                v-if="isSongInstrumentUploadDisabled(song.id, instrument)"
+                                v-if="getSongInstrumentUploadState(song.id, instrument.id).isSubmitting"
                                 class="spinner-border spinner-border-sm me-2"
                                 aria-hidden="true"
                               ></span>
@@ -1091,6 +1373,39 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                             </button>
                           </div>
                         </form>
+                        <div
+                          v-if="shouldShowSongInstrumentProgress(song.id, instrument.id)"
+                          class="mt-2"
+                        >
+                          <div
+                            :data-testid="`upload-progress-${song.id}-${instrument.id}`"
+                            class="progress"
+                            role="progressbar"
+                            aria-label="Upload progress"
+                            :aria-valuenow="getSongInstrumentUploadState(song.id, instrument.id).progress"
+                            aria-valuemin="0"
+                            aria-valuemax="100"
+                          >
+                            <div
+                              class="progress-bar progress-bar-striped progress-bar-animated"
+                              :class="getEffectiveVideo(song.id, instrument.id) ? 'bg-success' : 'bg-primary'"
+                              :style="{ width: `${getSongInstrumentUploadState(song.id, instrument.id).progress}%` }"
+                            >
+                              {{ getSongInstrumentUploadState(song.id, instrument.id).progress }}%
+                            </div>
+                          </div>
+                        </div>
+                        <div
+                          v-if="shouldShowSongInstrumentCompleteBadge(song.id, instrument.id)"
+                          class="mt-2"
+                        >
+                          <span
+                            :data-testid="`upload-complete-${song.id}-${instrument.id}`"
+                            class="badge rounded-pill text-bg-success"
+                          >
+                            Disponible
+                          </span>
+                        </div>
                         <div
                           v-if="getSongInstrumentStatusMessage(song.id, instrument)"
                           class="alert mb-0 mt-2 py-2"

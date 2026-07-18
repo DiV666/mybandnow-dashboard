@@ -183,7 +183,7 @@ describe("AxiosSongRepository", () => {
 		});
 	});
 
-	it("should upload an MP4 file as multipart form data for the selected song instrument with a 60 second timeout", async () => {
+	it("should upload an MP4 file as multipart form data for the selected song instrument with a 2 minute timeout", async () => {
 		const postSpy = vi
 			.spyOn(httpClient, "post")
 			.mockResolvedValue({ data: undefined } as never);
@@ -207,7 +207,7 @@ describe("AxiosSongRepository", () => {
 		expect(postSpy).toHaveBeenCalledWith(
 			"/v1/songs/song-123/instruments/instrument-456/upload",
 			formData,
-			{ timeout: 60000 },
+			{ timeout: 120000 },
 		);
 		expect(postSpy.mock.calls[0]).toHaveLength(3);
 	});
