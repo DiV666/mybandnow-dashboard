@@ -341,10 +341,18 @@ function mapUploadErrorMessage(
 	}
 
 	if (
+		code.includes("econnaborted") ||
+		message.includes("timeout") ||
+		message.includes("exceeded")
+	) {
+		return "La subida tardó demasiado. Inténtalo de nuevo.";
+	}
+
+	if (
 		details.name === "AbortError" ||
 		combined.includes("upload aborted by client") ||
-		combined.includes("aborted") ||
-		combined.includes("canceled")
+		code.includes("err_canceled") ||
+		message.includes("canceled")
 	) {
 		return "La subida se canceló antes de terminar.";
 	}

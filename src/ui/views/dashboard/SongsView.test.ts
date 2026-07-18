@@ -1562,6 +1562,112 @@ describe("SongsView", () => {
 		view.unmount();
 	});
 
+	it("shows a timeout-specific message when the upload request exceeds the endpoint timeout", async () => {
+		repositoryGetByBandIdMock.mockResolvedValueOnce([
+			{
+				id: "song-1",
+				bandId: "band-1",
+				title: "Paint It Black",
+				originalVideoclipUrl: "https://www.youtube.com/watch?v=O4irXQhgMqg",
+			},
+		]);
+		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
+			{
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentType: "electric-guitar",
+				songId: "song-1",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+			},
+		]);
+		repositoryUploadInstrumentVideoMock.mockRejectedValueOnce({
+			code: "ECONNABORTED",
+			message: "timeout of 60000ms exceeded",
+		});
+		const view = renderSongsView(() => {
+			const store = useBandStore();
+			store.setBands([createBand("band-1", "The Stones")]);
+		});
+
+		await flushView();
+		await flushView();
+
+		const fileInput = findInput(
+			view.root,
+			"songInstrumentVideo-song-1-instrument-1",
+		);
+		setFileInputValue(fileInput, [
+			new File(["video-bytes"], "riff.mp4", { type: "video/mp4" }),
+		]);
+		await flushView();
+
+		await submitForm(findSongInstrumentForm(view.root, "song-1-instrument-1"));
+		await flushView();
+
+		expect(
+			findByText(view.root, "La subida tardó demasiado. Inténtalo de nuevo."),
+		).not.toBeNull();
+		expect(
+			findByText(view.root, "La subida se canceló antes de terminar."),
+		).toBeNull();
+
+		view.unmount();
+	});
+
+	it("shows the cancellation message only for real user-side cancellations", async () => {
+		repositoryGetByBandIdMock.mockResolvedValueOnce([
+			{
+				id: "song-1",
+				bandId: "band-1",
+				title: "Paint It Black",
+				originalVideoclipUrl: "https://www.youtube.com/watch?v=O4irXQhgMqg",
+			},
+		]);
+		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
+			{
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentType: "electric-guitar",
+				songId: "song-1",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+			},
+		]);
+		repositoryUploadInstrumentVideoMock.mockRejectedValueOnce({
+			code: "ERR_CANCELED",
+			message: "canceled",
+		});
+		const view = renderSongsView(() => {
+			const store = useBandStore();
+			store.setBands([createBand("band-1", "The Stones")]);
+		});
+
+		await flushView();
+		await flushView();
+
+		const fileInput = findInput(
+			view.root,
+			"songInstrumentVideo-song-1-instrument-1",
+		);
+		setFileInputValue(fileInput, [
+			new File(["video-bytes"], "riff.mp4", { type: "video/mp4" }),
+		]);
+		await flushView();
+
+		await submitForm(findSongInstrumentForm(view.root, "song-1-instrument-1"));
+		await flushView();
+
+		expect(
+			findByText(view.root, "La subida se canceló antes de terminar."),
+		).not.toBeNull();
+		expect(
+			findByText(view.root, "La subida tardó demasiado. Inténtalo de nuevo."),
+		).toBeNull();
+
+		view.unmount();
+	});
+
 	it("resets loading and shows an error message when song creation fails", async () => {
 		const pendingCreation: {
 			reject: ((reason?: unknown) => void) | undefined;
