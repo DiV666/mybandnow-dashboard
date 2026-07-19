@@ -4,7 +4,7 @@
     <p class="lead text-muted mb-5">
       Mybandnow te permite crear videoclips musicales a distancia. Mezcla pistas de diferentes músicos y genera un producto final profesional.
     </p>
-    <router-link :to="{ name: 'Login' }" class="btn btn-primary btn-lg px-5">Empezar ahora</router-link>
+    <router-link :to="{ name: 'Login' }" class="btn btn-primary px-5">Empezar ahora</router-link>
   </div>
 </template>
 

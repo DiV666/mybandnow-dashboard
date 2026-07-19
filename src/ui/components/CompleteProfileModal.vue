@@ -96,7 +96,7 @@ const handleSubmit = async () => {
             </div>
             
             <div class="d-grid gap-2 mt-4">
-              <button type="submit" class="btn btn-primary btn-lg" :disabled="musicianStore.isLoading">
+              <button type="submit" class="btn btn-primary" :disabled="musicianStore.isLoading">
                 <span v-if="musicianStore.isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                 Guardar y continuar
               </button>

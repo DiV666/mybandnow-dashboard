@@ -68,7 +68,7 @@ async function handleLogin() {
                   <label for="email" class="form-label fw-semibold">Correo electrónico</label>
                   <input
                     type="email"
-                    class="form-control form-control-lg login-input"
+                    class="form-control login-input"
                     id="email"
                     v-model="email"
                     placeholder="user@example.com"
@@ -84,7 +84,7 @@ async function handleLogin() {
                   </div>
                   <input
                     type="password"
-                    class="form-control form-control-lg login-input"
+                    class="form-control login-input"
                     id="password"
                     v-model="password"
                     placeholder="••••••••"
@@ -95,7 +95,7 @@ async function handleLogin() {
 
                 <button
                   type="submit"
-                  class="btn btn-primary btn-lg w-100 login-submit"
+                  class="btn btn-primary w-100 login-submit"
                   :disabled="isLoading"
                 >
                   <span v-if="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>

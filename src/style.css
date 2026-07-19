@@ -554,6 +554,10 @@ h6,
 	border-color: rgba(var(--bs-primary-rgb), 0.08);
 }
 
+.modal-header .modal-title {
+	color: inherit;
+}
+
 .modal-footer {
 	background: color-mix(
 		in srgb,

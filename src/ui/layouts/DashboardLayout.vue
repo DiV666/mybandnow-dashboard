@@ -16,7 +16,10 @@ const bandRepository = new AxiosBandRepository();
 const getMyBandsUseCase = new GetMyBandsUseCase(bandRepository);
 
 const isLoading = ref(true);
+const isUserMenuOpen = ref(false);
+const isBandMenuOpen = ref(false);
 const shouldShowBandShell = computed(() => bandStore.hasBands || Boolean(bandStore.selectedBandId));
+const selectedBandName = computed(() => bandStore.selectedBand?.name.value ?? 'Seleccionar banda');
 
 onMounted(async () => {
   try {
@@ -38,7 +41,21 @@ const goToCreateFirstBand = () => {
   router.push({ name: 'CreateFirstBand' });
 };
 
+const toggleUserMenu = () => {
+  isUserMenuOpen.value = !isUserMenuOpen.value;
+};
+
+const toggleBandMenu = () => {
+  isBandMenuOpen.value = !isBandMenuOpen.value;
+};
+
+const selectBand = (bandId: string) => {
+  bandStore.selectBand(bandId);
+  isBandMenuOpen.value = false;
+};
+
 const logout = () => {
+  isUserMenuOpen.value = false;
   authStore.logout();
   bandStore.clear();
   musicianStore.clear();
@@ -55,23 +72,46 @@ const logout = () => {
 
   <div v-else class="dashboard-layout container-fluid d-flex flex-column p-0">
     <!-- Navbar superior -->
-    <header class="navbar dashboard-topbar flex-md-nowrap px-3 py-2 shadow-sm gap-3">
+    <header class="navbar dashboard-topbar px-3 py-2 shadow-sm gap-3">
       <a class="navbar-brand dashboard-brand me-0 px-0" href="#">Mybandnow Admin</a>
-      
+
       <!-- Selector de Banda (AWS Region style) -->
-      <div v-if="bandStore.hasBands" class="w-100 d-flex align-items-center gap-2 flex-wrap">
-        <label for="band-selector" class="dashboard-label text-nowrap mb-0">Banda Activa:</label>
-        <select 
-          id="band-selector"
-          class="form-select form-select-sm w-auto dashboard-band-select"
-          v-model="bandStore.selectedBandId"
-        >
-          <option v-for="band in bandStore.bands" :key="band.id.value" :value="band.id.value">
-            {{ band.name.value }}
-          </option>
-        </select>
+      <div v-if="bandStore.hasBands" class="dashboard-topbar__center">
+        <div class="dashboard-band-switcher d-flex align-items-center justify-content-center gap-2 flex-wrap">
+          <span class="dashboard-label text-nowrap mb-0">Banda Activa:</span>
+              <div class="dashboard-band-dropdown position-relative">
+                <button
+                  type="button"
+                  class="btn dashboard-header-dropdown-toggle d-inline-flex align-items-center justify-content-between gap-2"
+                  data-testid="band-switcher-toggle"
+                  :aria-expanded="isBandMenuOpen"
+                  aria-haspopup="true"
+                  @click="toggleBandMenu"
+                >
+
+              <span class="dashboard-band-toggle__label text-truncate">{{ selectedBandName }}</span>
+              <span aria-hidden="true" class="dashboard-band-toggle__icon">▾</span>
+            </button>
+
+                <div v-if="isBandMenuOpen" class="dropdown-menu show dashboard-header-dropdown-menu dashboard-header-dropdown-panel">
+                  <button
+                    v-for="band in bandStore.bands"
+                    :key="band.id.value"
+                    type="button"
+                    class="dropdown-item dashboard-band-option"
+                    data-band-option="true"
+                    :class="{ 'dashboard-band-option--active': band.id.value === bandStore.selectedBandId }"
+                    @click="selectBand(band.id.value)"
+                  >
+
+                <span class="text-truncate">{{ band.name.value }}</span>
+                <span v-if="band.id.value === bandStore.selectedBandId" aria-hidden="true">✓</span>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
-      <div v-else-if="!shouldShowBandShell" class="w-100 d-flex align-items-center">
+      <div v-else-if="!shouldShowBandShell" class="dashboard-topbar__center dashboard-topbar__center--fallback">
         <button
           type="button"
           class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2"
@@ -97,12 +137,25 @@ const logout = () => {
         <span class="navbar-toggler-icon"></span>
       </button>
 
-      <div class="navbar-nav dashboard-user-nav d-flex flex-row align-items-center ms-auto">
-        <div class="nav-item text-nowrap px-3" v-if="musicianStore.profile">
-          Bienvenido, <strong>{{ musicianStore.profile.name || musicianStore.profile.username }}</strong>
-        </div>
-        <div class="nav-item text-nowrap">
-          <a class="nav-link px-3" href="#" @click.prevent="logout">Cerrar Sesión</a>
+        <div class="navbar-nav dashboard-user-nav dashboard-topbar__end d-flex flex-row align-items-center">
+          <div class="nav-item text-nowrap position-relative dashboard-user-dropdown">
+
+          <button
+            type="button"
+            class="btn nav-link px-3 d-inline-flex align-items-center gap-2 text-decoration-none dashboard-header-dropdown-toggle dashboard-user-toggle"
+            :aria-expanded="isUserMenuOpen"
+            aria-haspopup="true"
+            @click="toggleUserMenu"
+          >
+            <span v-if="musicianStore.profile">
+              <strong>Bienvenido, </strong>{{ musicianStore.profile.name || musicianStore.profile.username }}
+            </span>
+            <span v-else>Mi cuenta</span>
+            <span aria-hidden="true">▾</span>
+          </button>
+          <div v-if="isUserMenuOpen" class="dropdown-menu dropdown-menu-end show dashboard-header-dropdown-menu dashboard-header-dropdown-panel dashboard-user-menu">
+            <button type="button" class="dropdown-item" @click="logout">Cerrar sesión</button>
+          </div>
         </div>
       </div>
     </header>
@@ -151,9 +204,30 @@ const logout = () => {
 }
 
 .dashboard-topbar {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  align-items: center;
   background: color-mix(in srgb, var(--bs-body-bg) 74%, var(--rock-surface-container));
   border-bottom: 1px solid rgba(var(--bs-primary-rgb), 0.08);
   backdrop-filter: blur(16px);
+}
+
+.dashboard-topbar__center {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+.dashboard-topbar__center--fallback {
+  justify-content: center;
+}
+
+.dashboard-topbar__end {
+  justify-self: end;
+}
+
+.dashboard-band-switcher {
+  width: min(100%, 26rem);
 }
 
 .dashboard-brand {
@@ -172,8 +246,85 @@ const logout = () => {
   flex-wrap: wrap;
 }
 
-.dashboard-band-select {
-  min-width: min(100%, 15rem);
+.dashboard-band-dropdown {
+  width: min(100%, 16rem);
+}
+
+.dashboard-header-dropdown-toggle {
+  min-height: 2.5rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--bs-body-color);
+  transform: none;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    color 0.2s ease;
+  will-change: auto;
+}
+
+.dashboard-header-dropdown-toggle:hover,
+.dashboard-header-dropdown-toggle:focus,
+.dashboard-header-dropdown-toggle:focus-visible,
+.dashboard-header-dropdown-toggle:active {
+  background: rgba(var(--bs-primary-rgb), 0.06);
+  color: var(--bs-body-color);
+  transform: none;
+}
+
+.dashboard-band-dropdown .dashboard-header-dropdown-toggle {
+  width: 100%;
+  padding: 0.5rem 0.875rem;
+}
+
+.dashboard-band-toggle__label {
+  min-width: 0;
+}
+
+.dashboard-band-toggle__icon {
+  font-size: 0.75rem;
+}
+
+.dashboard-header-dropdown-menu {
+  border-color: rgba(var(--bs-primary-rgb), 0.12);
+  border-radius: 1rem;
+  background-color: var(--bs-body-bg);
+  box-shadow: 0 0.75rem 1.5rem rgba(15, 23, 42, 0.1);
+  overflow: hidden;
+}
+
+.dashboard-header-dropdown-panel {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  left: 0;
+  z-index: 20;
+  width: 100%;
+  padding: 0.4rem;
+}
+
+.dashboard-band-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: 0;
+  border-radius: 0.75rem;
+  color: var(--bs-body-color);
+  text-align: left;
+}
+
+.dashboard-band-option:hover,
+.dashboard-band-option:focus {
+  background: rgba(var(--bs-primary-rgb), 0.08);
+}
+
+.dashboard-band-option--active {
+  background: rgba(var(--bs-primary-rgb), 0.12);
+  color: var(--bs-emphasis-color);
 }
 
 .sidebar {
@@ -207,10 +358,53 @@ const logout = () => {
   color: var(--bs-body-color);
 }
 
+.dashboard-user-toggle {
+  background: transparent;
+}
+
+.dashboard-user-dropdown .dashboard-header-dropdown-panel {
+  left: auto;
+  right: 0;
+  min-width: 12rem;
+  width: max-content;
+}
+
+.dashboard-user-menu {
+  inset: calc(100% + 0.25rem) 0 auto auto;
+}
+
+.dashboard-user-menu .dropdown-item {
+  color: var(--bs-body-color);
+  cursor: pointer;
+}
+
+.dashboard-user-menu .dropdown-item:hover,
+.dashboard-user-menu .dropdown-item:focus {
+  background-color: rgba(var(--bs-primary-rgb), 0.08);
+}
+
+.dashboard-user-menu .dropdown-item:active {
+  background-color: rgba(var(--bs-primary-rgb), 0.12);
+  color: var(--bs-body-color);
+}
+
 @media (max-width: 767.98px) {
   .dashboard-topbar {
+    display: flex;
+    flex-wrap: wrap;
     align-items: flex-start;
     padding-block: 1rem;
+  }
+
+  .dashboard-topbar__center,
+  .dashboard-topbar__end {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .dashboard-band-switcher,
+  .dashboard-band-dropdown {
+    width: 100%;
   }
 
   .dashboard-user-nav {

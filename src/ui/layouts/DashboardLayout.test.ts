@@ -31,7 +31,7 @@ vi.mock("../../infrastructure/band/AxiosBandRepository.js", () => ({
 
 vi.mock("../../application/band/GetMyBandsUseCase.js", () => ({
 	GetMyBandsUseCase: class {
-		async run(): Promise<Band[]> {
+		run(): Promise<Band[]> {
 			return getMyBandsRunMock();
 		}
 	},
@@ -44,7 +44,13 @@ vi.mock("vue-router", () => ({
 }));
 
 import DashboardLayout from "./DashboardLayout.vue";
+import { useAuthStore } from "../stores/useAuthStore.js";
+import { useBandStore } from "../stores/useBandStore.js";
 import { useMusicianStore } from "../stores/useMusicianStore.js";
+
+function classNames(node: TestElementNode): string {
+	return String(node.props.class ?? "");
+}
 
 type TestTextNode = {
 	type: "text" | "comment" | "static";
@@ -65,6 +71,11 @@ type TestElementNode = {
 	text: string;
 	parent: TestElementNode | null;
 	listeners: Record<string, Array<(event: TestEvent) => void>>;
+	options?: TestElementNode[];
+	multiple?: boolean;
+	value?: unknown;
+	selectedIndex?: number;
+	[key: string]: unknown;
 	addEventListener: (
 		type: string,
 		listener: (event: TestEvent) => void,
@@ -104,10 +115,12 @@ const renderer = createRenderer<TestNode, TestElementNode>({
 	patchProp(element, key, _previousValue, nextValue) {
 		if (nextValue === null || nextValue === undefined) {
 			delete element.props[key];
+			delete element[key];
 			return;
 		}
 
 		element.props[key] = nextValue;
+		element[key] = nextValue;
 	},
 	insert(child, parent, anchor) {
 		child.parent = parent;
@@ -115,19 +128,36 @@ const renderer = createRenderer<TestNode, TestElementNode>({
 
 		if (anchorIndex >= 0) {
 			parent.children.splice(anchorIndex, 0, child);
-			return;
+		} else {
+			parent.children.push(child);
 		}
 
-		parent.children.push(child);
+		if (
+			parent.type === "select" &&
+			isElementNode(child) &&
+			child.type === "option"
+		) {
+			(parent.options ??= []).push(child);
+		}
 	},
 	remove(child) {
 		if (!child.parent) {
 			return;
 		}
 
-		const index = child.parent.children.indexOf(child);
+		const parent = child.parent;
+		const index = parent.children.indexOf(child);
 		if (index >= 0) {
-			child.parent.children.splice(index, 1);
+			parent.children.splice(index, 1);
+		}
+		if (
+			parent.type === "select" &&
+			isElementNode(child) &&
+			child.type === "option"
+		) {
+			parent.options = (parent.options ?? []).filter(
+				(candidate) => candidate !== child,
+			);
 		}
 		child.parent = null;
 	},
@@ -139,6 +169,9 @@ const renderer = createRenderer<TestNode, TestElementNode>({
 			text: "",
 			parent: null,
 			listeners: {},
+			options: type === "select" ? [] : undefined,
+			multiple: type === "select" ? false : undefined,
+			selectedIndex: type === "select" ? -1 : undefined,
 			addEventListener(eventType, listener) {
 				this.listeners[eventType] ??= [];
 				this.listeners[eventType].push(listener);
@@ -294,6 +327,21 @@ function renderDashboardLayout(setup?: () => void) {
 	};
 }
 
+function clickElement(element: TestElementNode) {
+	const onClick = element.props.onClick;
+
+	if (typeof onClick === "function") {
+		onClick({
+			type: "click",
+			target: element,
+			preventDefault() {},
+		});
+		return;
+	}
+
+	throw new Error(`Expected clickable element but found ${element.type}`);
+}
+
 async function flushView() {
 	for (let index = 0; index < 4; index += 1) {
 		await Promise.resolve();
@@ -320,6 +368,418 @@ describe("DashboardLayout", () => {
 		sessionStorage.getSkippedBandOnboarding.mockReturnValue(false);
 		getMyBandsRunMock.mockResolvedValue([]);
 		vi.restoreAllMocks();
+	});
+
+	it("renders user actions inside a dropdown and preserves logout behavior", async () => {
+		sessionStorage.getSelectedBandId.mockReturnValue("band-1");
+		getMyBandsRunMock.mockRejectedValueOnce(new Error("bands request failed"));
+		const consoleErrorSpy = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => undefined);
+		const view = renderDashboardLayout(() => {
+			const authStore = useAuthStore();
+			const bandStore = useBandStore();
+			const musicianStore = useMusicianStore();
+			authStore.token = "token";
+			bandStore.selectedBandId = "band-1";
+			musicianStore.profile = {
+				id: "musician-1",
+				userId: "user-1",
+				username: "keith",
+				name: "Keith Richards",
+			};
+			musicianStore.fetchProfile = vi.fn().mockResolvedValue(undefined);
+		});
+
+		await flushView();
+		await flushView();
+
+		const dropdownToggle = findElement(
+			view.root,
+			(node) =>
+				node.type === "button" &&
+				String(node.props["aria-expanded"] ?? "") === "false" &&
+				textContent(node).includes("Keith Richards"),
+		);
+
+		expect(dropdownToggle).not.toBeNull();
+		expect(findByText(view.root, "Cerrar sesión")).toBeNull();
+		expect(
+			findElement(
+				view.root,
+				(node) =>
+					node.type === "strong" && textContent(node) === "Bienvenido, ",
+			),
+		).not.toBeNull();
+		expect(
+			findElement(
+				view.root,
+				(node) =>
+					node.type === "strong" &&
+					textContent(node).includes("Keith Richards"),
+			),
+		).toBeNull();
+
+		if (!dropdownToggle) {
+			throw new Error("Expected user dropdown toggle to exist");
+		}
+
+		clickElement(dropdownToggle);
+		await flushView();
+
+		const logoutAction = findElement(
+			view.root,
+			(node) =>
+				node.type === "button" && textContent(node).includes("Cerrar sesión"),
+		);
+
+		expect(logoutAction).not.toBeNull();
+
+		if (!logoutAction) {
+			throw new Error("Expected logout action to exist inside user dropdown");
+		}
+
+		clickElement(logoutAction);
+
+		const authStore = useAuthStore();
+		const bandStore = useBandStore();
+		const musicianStore = useMusicianStore();
+
+		expect(sessionStorage.clearAuthToken).toHaveBeenCalledOnce();
+		expect(authStore.token).toBeNull();
+		expect(bandStore.selectedBandId).toBeNull();
+		expect(musicianStore.profile).toBeNull();
+		expect(routerPushMock).toHaveBeenCalledWith({ name: "Landing" });
+		expect(consoleErrorSpy).toHaveBeenCalledOnce();
+
+		view.unmount();
+	});
+
+	it("applies the same dominant toggle treatment to the band and user header dropdowns", async () => {
+		getMyBandsRunMock.mockResolvedValueOnce([
+			{
+				id: { value: "band-1" },
+				name: { value: "The Stones" },
+			} as Band,
+		]);
+		const view = renderDashboardLayout(() => {
+			const bandStore = useBandStore();
+			const musicianStore = useMusicianStore();
+			bandStore.selectedBandId = "band-1";
+			musicianStore.profile = {
+				id: "musician-1",
+				userId: "user-1",
+				username: "keith",
+				name: "Keith Richards",
+			};
+			musicianStore.fetchProfile = vi.fn().mockResolvedValue(undefined);
+		});
+
+		await flushView();
+		await flushView();
+
+		const bandSwitcherToggle = findElement(
+			view.root,
+			(node) =>
+				node.type === "button" &&
+				String(node.props["data-testid"] ?? "") === "band-switcher-toggle",
+		);
+		const userMenuToggle = findElement(
+			view.root,
+			(node) =>
+				node.type === "button" &&
+				String(node.props["aria-haspopup"] ?? "") === "true" &&
+				textContent(node).includes("Keith Richards"),
+		);
+
+		expect(bandSwitcherToggle).not.toBeNull();
+		expect(userMenuToggle).not.toBeNull();
+		expect(classNames(bandSwitcherToggle as TestElementNode)).toContain(
+			"dashboard-header-dropdown-toggle",
+		);
+		expect(classNames(userMenuToggle as TestElementNode)).toContain(
+			"dashboard-header-dropdown-toggle",
+		);
+		expect(classNames(bandSwitcherToggle as TestElementNode)).not.toContain(
+			"dashboard-band-toggle",
+		);
+
+		view.unmount();
+	});
+
+	it("keeps the stable user dropdown treatment even when the band switcher is not rendered", async () => {
+		getMyBandsRunMock.mockResolvedValueOnce([]);
+		const view = renderDashboardLayout(() => {
+			const musicianStore = useMusicianStore();
+			musicianStore.profile = {
+				id: "musician-1",
+				userId: "user-1",
+				username: "keith",
+				name: "Keith Richards",
+			};
+			musicianStore.fetchProfile = vi.fn().mockResolvedValue(undefined);
+		});
+
+		await flushView();
+		await flushView();
+
+		const bandSwitcherToggle = findElement(
+			view.root,
+			(node) =>
+				node.type === "button" &&
+				String(node.props["data-testid"] ?? "") === "band-switcher-toggle",
+		);
+		const userMenuToggle = findElement(
+			view.root,
+			(node) =>
+				node.type === "button" &&
+				String(node.props["aria-haspopup"] ?? "") === "true" &&
+				textContent(node).includes("Keith Richards"),
+		);
+
+		expect(bandSwitcherToggle).toBeNull();
+		expect(userMenuToggle).not.toBeNull();
+		expect(classNames(userMenuToggle as TestElementNode)).toContain(
+			"dashboard-header-dropdown-toggle",
+		);
+
+		view.unmount();
+	});
+
+	it("renders the band menu with the same dropdown family treatment as the user menu while keeping the active band marker", async () => {
+		getMyBandsRunMock.mockResolvedValueOnce([
+			{
+				id: { value: "band-1" },
+				name: { value: "The Stones" },
+			} as Band,
+			{
+				id: { value: "band-2" },
+				name: { value: "The Beatles" },
+			} as Band,
+		]);
+		const view = renderDashboardLayout(() => {
+			const bandStore = useBandStore();
+			const musicianStore = useMusicianStore();
+			bandStore.selectedBandId = "band-1";
+			musicianStore.profile = {
+				id: "musician-1",
+				userId: "user-1",
+				username: "keith",
+				name: "Keith Richards",
+			};
+			musicianStore.fetchProfile = vi.fn().mockResolvedValue(undefined);
+		});
+
+		await flushView();
+		await flushView();
+
+		const bandSwitcherToggle = findElement(
+			view.root,
+			(node) =>
+				node.type === "button" &&
+				String(node.props["data-testid"] ?? "") === "band-switcher-toggle",
+		);
+
+		if (!bandSwitcherToggle) {
+			throw new Error("Expected custom band switcher toggle to exist");
+		}
+
+		clickElement(bandSwitcherToggle);
+		await flushView();
+
+		const bandMenu = findElement(
+			view.root,
+			(node) =>
+				node.type === "div" &&
+				classNames(node).includes("dashboard-header-dropdown-panel") &&
+				!classNames(node).includes("dropdown-menu-end"),
+		);
+		const activeBandOption = findElement(
+			view.root,
+			(node) =>
+				node.type === "button" &&
+				String(node.props["data-band-option"] ?? "") === "true" &&
+				classNames(node).includes("dashboard-band-option--active") &&
+				textContent(node).includes("The Stones"),
+		);
+
+		expect(bandMenu).not.toBeNull();
+		expect(classNames(bandMenu as TestElementNode)).toContain(
+			"dashboard-header-dropdown-menu",
+		);
+		expect(classNames(bandMenu as TestElementNode)).not.toContain(
+			"dashboard-band-menu",
+		);
+		expect(classNames(activeBandOption as TestElementNode)).toContain(
+			"dropdown-item",
+		);
+		expect(activeBandOption).not.toBeNull();
+		expect(textContent(activeBandOption as TestElementNode)).toContain("✓");
+
+		view.unmount();
+	});
+
+	it("centers the band switcher in the topbar and lets the user change the active band from a custom dropdown", async () => {
+		getMyBandsRunMock.mockResolvedValueOnce([
+			{
+				id: { value: "band-1" },
+				name: { value: "The Stones" },
+			} as Band,
+			{
+				id: { value: "band-2" },
+				name: { value: "The Beatles" },
+			} as Band,
+		]);
+		const view = renderDashboardLayout(() => {
+			const bandStore = useBandStore();
+			const musicianStore = useMusicianStore();
+			bandStore.selectedBandId = "band-1";
+			musicianStore.profile = {
+				id: "musician-1",
+				userId: "user-1",
+				username: "keith",
+				name: "Keith Richards",
+			};
+			musicianStore.fetchProfile = vi.fn().mockResolvedValue(undefined);
+		});
+
+		await flushView();
+		await flushView();
+
+		const centeredSection = findElement(
+			view.root,
+			(node) =>
+				node.type === "div" &&
+				classNames(node).includes("dashboard-topbar__center"),
+		);
+		const bandSwitcherToggle = findElement(
+			view.root,
+			(node) =>
+				node.type === "button" &&
+				String(node.props["data-testid"] ?? "") === "band-switcher-toggle",
+		);
+		const nativeBandSelect = findElement(
+			view.root,
+			(node) =>
+				node.type === "select" &&
+				String(node.props.id ?? "") === "band-selector",
+		);
+		const userNav = findElement(
+			view.root,
+			(node) =>
+				node.type === "div" &&
+				classNames(node).includes("dashboard-topbar__end"),
+		);
+
+		expect(centeredSection).not.toBeNull();
+		expect(bandSwitcherToggle).not.toBeNull();
+		expect(nativeBandSelect).toBeNull();
+		expect(userNav).not.toBeNull();
+		expect(textContent(bandSwitcherToggle as TestElementNode)).toContain(
+			"The Stones",
+		);
+		expect(
+			centeredSection
+				? findElement(centeredSection, (node) => node === bandSwitcherToggle)
+				: null,
+		).toBe(bandSwitcherToggle);
+		expect(findByText(view.root, "The Beatles")).toBeNull();
+
+		if (!bandSwitcherToggle) {
+			throw new Error("Expected custom band switcher toggle to exist");
+		}
+
+		clickElement(bandSwitcherToggle);
+		await flushView();
+
+		const nextBandOption = findElement(
+			view.root,
+			(node) =>
+				node.type === "button" && textContent(node).includes("The Beatles"),
+		);
+
+		expect(nextBandOption).not.toBeNull();
+
+		if (!nextBandOption) {
+			throw new Error("Expected custom band option to exist");
+		}
+
+		clickElement(nextBandOption);
+		await flushView();
+
+		const bandStore = useBandStore();
+		expect(bandStore.selectedBandId).toBe("band-2");
+		expect(findByText(view.root, "The Beatles")).not.toBeNull();
+		expect(
+			findElement(
+				view.root,
+				(node) =>
+					node.type === "button" &&
+					textContent(node).includes("The Beatles") &&
+					String(node.props["data-band-option"] ?? "") === "true",
+			),
+		).toBeNull();
+
+		view.unmount();
+	});
+
+	it("toggles the custom band dropdown open and closed from the header control", async () => {
+		getMyBandsRunMock.mockResolvedValueOnce([
+			{
+				id: { value: "band-1" },
+				name: { value: "The Stones" },
+			} as Band,
+			{
+				id: { value: "band-2" },
+				name: { value: "The Beatles" },
+			} as Band,
+		]);
+		const view = renderDashboardLayout(() => {
+			const bandStore = useBandStore();
+			const musicianStore = useMusicianStore();
+			bandStore.selectedBandId = "band-1";
+			musicianStore.profile = {
+				id: "musician-1",
+				userId: "user-1",
+				username: "keith",
+				name: "Keith Richards",
+			};
+			musicianStore.fetchProfile = vi.fn().mockResolvedValue(undefined);
+		});
+
+		await flushView();
+		await flushView();
+
+		const bandSwitcherToggle = findElement(
+			view.root,
+			(node) =>
+				node.type === "button" &&
+				String(node.props["data-testid"] ?? "") === "band-switcher-toggle",
+		);
+
+		expect(findByText(view.root, "The Beatles")).toBeNull();
+
+		if (!bandSwitcherToggle) {
+			throw new Error("Expected custom band switcher toggle to exist");
+		}
+
+		clickElement(bandSwitcherToggle);
+		await flushView();
+		expect(findByText(view.root, "The Beatles")).not.toBeNull();
+
+		clickElement(bandSwitcherToggle);
+		await flushView();
+		expect(
+			findElement(
+				view.root,
+				(node) =>
+					node.type === "button" &&
+					textContent(node).includes("The Beatles") &&
+					String(node.props["data-band-option"] ?? "") === "true",
+			),
+		).toBeNull();
+
+		view.unmount();
 	});
 
 	it("keeps the dashboard sidebar available after refresh when a selected band was restored but band loading fails", async () => {

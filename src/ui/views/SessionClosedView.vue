@@ -16,7 +16,7 @@ const goLogin = () => {
       <p class="text-muted mb-4 fs-5">
         Hemos cerrado tu sesión automáticamente debido a inactividad para proteger tus datos y los de tus músicos.
       </p>
-      <button class="btn btn-primary btn-lg w-100" @click="goLogin">
+      <button class="btn btn-primary w-100" @click="goLogin">
         Volver a Iniciar Sesión
       </button>
     </div>

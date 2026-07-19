@@ -79,7 +79,7 @@ function handleShowCreateBandForm() {
             <button
               v-if="!showCreateBandForm"
               type="button"
-              class="btn btn-primary btn-lg"
+              class="btn btn-primary"
               @click="handleShowCreateBandForm"
             >
               Crear una banda
@@ -94,7 +94,7 @@ function handleShowCreateBandForm() {
                 <label for="bandName" class="form-label fw-bold">Nombre de la Banda</label>
                 <input 
                   type="text" 
-                  class="form-control form-control-lg" 
+                  class="form-control" 
                   id="bandName" 
                   v-model="bandName"
                   placeholder="Ej. The Rolling Stones"
@@ -104,7 +104,7 @@ function handleShowCreateBandForm() {
               
               <button 
                 type="submit" 
-                class="btn btn-primary btn-lg w-100" 
+                class="btn btn-primary w-100" 
                 :disabled="isLoading"
               >
                 <span v-if="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
