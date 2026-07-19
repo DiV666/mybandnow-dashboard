@@ -314,6 +314,21 @@ function findElement(
 	return null;
 }
 
+function findElements(
+	node: TestNode,
+	predicate: (candidate: TestElementNode) => boolean,
+): TestElementNode[] {
+	if (!isElementNode(node)) {
+		return [];
+	}
+
+	const matches = predicate(node) ? [node] : [];
+	for (const child of node.children) {
+		matches.push(...findElements(child, predicate));
+	}
+	return matches;
+}
+
 function textContent(node: TestNode): string {
 	if (!isElementNode(node)) {
 		return node.type === "comment" ? "" : node.text;
@@ -402,14 +417,21 @@ function findSongCreationForm(root: TestElementNode): TestElementNode {
 	return form;
 }
 
+function querySongInstrumentForm(
+	root: TestElementNode,
+	songId: string,
+): TestElementNode | null {
+	return findElement(
+		root,
+		(node) => node.type === "form" && node.props["data-song-id"] === songId,
+	);
+}
+
 function findSongInstrumentForm(
 	root: TestElementNode,
 	songId: string,
 ): TestElementNode {
-	const form = findElement(
-		root,
-		(node) => node.type === "form" && node.props["data-song-id"] === songId,
-	);
+	const form = querySongInstrumentForm(root, songId);
 
 	if (!form) {
 		throw new Error(`Instrument form for song '${songId}' was not found.`);
@@ -453,6 +475,47 @@ function findByTestId(root: TestElementNode, testId: string): TestElementNode {
 	}
 
 	return element;
+}
+
+function findSongArticle(
+	root: TestElementNode,
+	songTitle: string,
+): TestElementNode {
+	const article = findElement(
+		root,
+		(node) => node.type === "article" && textContent(node).includes(songTitle),
+	);
+
+	if (!article) {
+		throw new Error(`Song article for '${songTitle}' was not found.`);
+	}
+
+	return article;
+}
+
+function querySongInstrumentModal(
+	root: TestElementNode,
+	songId: string,
+): TestElementNode | null {
+	return findElement(
+		root,
+		(node) =>
+			node.type === "div" &&
+			node.props.role === "dialog" &&
+			node.props["aria-labelledby"] ===
+				`createSongInstrumentModalTitle-${songId}`,
+	);
+}
+
+function hasAncestorOfType(node: TestElementNode, type: string): boolean {
+	let current = node.parent;
+	while (current) {
+		if (current.type === type) {
+			return true;
+		}
+		current = current.parent;
+	}
+	return false;
 }
 
 function clickButton(button: TestElementNode) {
@@ -510,6 +573,13 @@ function createBand(id: string, name: string) {
 	return Band.fromPrimitives({ id, name });
 }
 
+function getBodyOverflow(): string {
+	const documentRef = globalThis.document as
+		| { body?: { style?: { overflow?: string } } }
+		| undefined;
+	return documentRef?.body?.style?.overflow ?? "";
+}
+
 describe("SongsView", () => {
 	beforeEach(() => {
 		sessionStorage.getSelectedBandId.mockReset();
@@ -533,12 +603,29 @@ describe("SongsView", () => {
 			class Document {} as typeof Document;
 		(globalThis as { ShadowRoot?: typeof ShadowRoot }).ShadowRoot ??=
 			class ShadowRoot {} as typeof ShadowRoot;
+		(
+			globalThis as {
+				document?: {
+					body: {
+						style: {
+							overflow: string;
+						};
+					};
+				};
+			}
+		).document = {
+			body: {
+				style: {
+					overflow: "",
+				},
+			},
+		};
 		vi.spyOn(globalThis.crypto, "randomUUID").mockReturnValue(
 			"123e4567-e89b-12d3-a456-426614174000",
 		);
 	});
 
-	it("loads and renders the songs for the selected band", async () => {
+	it("loads and renders the songs in a single-column list with a YouTube action link", async () => {
 		repositoryGetByBandIdMock.mockResolvedValueOnce([
 			{
 				id: "song-1",
@@ -564,9 +651,18 @@ describe("SongsView", () => {
 		expect(repositoryGetByBandIdMock).toHaveBeenCalledWith("band-1");
 		expect(findByText(view.root, "Paint It Black")).not.toBeNull();
 		expect(findByText(view.root, "Gimme Shelter")).not.toBeNull();
+		expect(queryByTestId(view.root, "songs-list")).not.toBeNull();
+		expect(findElement(view.root, (node) => node.type === "table")).toBeNull();
 		expect(
 			findByText(view.root, "https://www.youtube.com/watch?v=O4irXQhgMqg"),
-		).not.toBeNull();
+		).toBeNull();
+
+		const youtubeLink = findLinkByText(view.root, "Ver en YouTube");
+		expect(youtubeLink.props.href).toBe(
+			"https://www.youtube.com/watch?v=O4irXQhgMqg",
+		);
+		expect(youtubeLink.props.target).toBe("_blank");
+		expect(youtubeLink.props.rel).toBe("noreferrer noopener");
 
 		view.unmount();
 	});
@@ -752,15 +848,39 @@ describe("SongsView", () => {
 		view.unmount();
 	});
 
-	it("disables and guards song creation when no band is selected", async () => {
-		const view = renderSongsView();
+	it("does not render the selected-band summary card", async () => {
+		const view = renderSongsView(() => {
+			const store = useBandStore();
+			store.setBands([createBand("band-1", "The Stones")]);
+		});
+
+		await flushView();
+
+		expect(findByText(view.root, "Banda seleccionada:")).toBeNull();
 		expect(
 			findByText(
 				view.root,
 				"Debes seleccionar una banda para crear canciones.",
 			),
-		).not.toBeNull();
-		expect(findByText(view.root, "No hay banda seleccionada.")).not.toBeNull();
+		).toBeNull();
+		expect(findButtonByText(view.root, "Crear canción").props.disabled).toBe(
+			false,
+		);
+
+		view.unmount();
+	});
+
+	it("keeps song creation disabled without rendering the selected-band summary card", async () => {
+		const view = renderSongsView();
+
+		expect(findByText(view.root, "Banda seleccionada:")).toBeNull();
+		expect(findByText(view.root, "No hay banda seleccionada.")).toBeNull();
+		expect(
+			findByText(
+				view.root,
+				"Debes seleccionar una banda para crear canciones.",
+			),
+		).toBeNull();
 		expect(findButtonByText(view.root, "Crear canción").props.disabled).toBe(
 			true,
 		);
@@ -975,7 +1095,193 @@ describe("SongsView", () => {
 		view.unmount();
 	});
 
-	it("allows adding an instrument inline with the logged-in musician profile id", async () => {
+	it("locks body scroll while the create-song modal is open and restores it after closing", async () => {
+		const view = renderSongsView(() => {
+			const store = useBandStore();
+			store.setBands([createBand("band-1", "The Stones")]);
+		});
+
+		await flushView();
+		expect(getBodyOverflow()).toBe("");
+
+		clickButton(findButtonByText(view.root, "Crear canción"));
+		await flushView();
+		expect(getBodyOverflow()).toBe("hidden");
+
+		clickButton(findButtonByText(view.root, "Cancelar"));
+		await flushView();
+		expect(getBodyOverflow()).toBe("");
+
+		view.unmount();
+	});
+
+	it("locks body scroll while the instrument modal is open and restores it after closing", async () => {
+		repositoryGetByBandIdMock.mockResolvedValueOnce([
+			{
+				id: "song-1",
+				bandId: "band-1",
+				title: "Paint It Black",
+				originalVideoclipUrl: "https://www.youtube.com/watch?v=O4irXQhgMqg",
+			},
+		]);
+		const view = renderSongsView(() => {
+			const store = useBandStore();
+			store.setBands([createBand("band-1", "The Stones")]);
+		});
+
+		await flushView();
+		await flushView();
+		expect(getBodyOverflow()).toBe("");
+
+		clickButton(findButtonByText(view.root, "Añadir instrumento"));
+		await flushView();
+		expect(getBodyOverflow()).toBe("hidden");
+
+		clickButton(findButtonByText(view.root, "Cancelar"));
+		await flushView();
+		expect(getBodyOverflow()).toBe("");
+
+		view.unmount();
+	});
+
+	it("keeps body scroll locked until the last open modal closes", async () => {
+		repositoryGetByBandIdMock.mockResolvedValueOnce([
+			{
+				id: "song-1",
+				bandId: "band-1",
+				title: "Paint It Black",
+				originalVideoclipUrl: "https://www.youtube.com/watch?v=O4irXQhgMqg",
+			},
+		]);
+		const view = renderSongsView(() => {
+			const store = useBandStore();
+			store.setBands([createBand("band-1", "The Stones")]);
+		});
+
+		await flushView();
+		await flushView();
+
+		clickButton(findButtonByText(view.root, "Crear canción"));
+		await flushView();
+		clickButton(findButtonByText(view.root, "Añadir instrumento"));
+		await flushView();
+		expect(getBodyOverflow()).toBe("hidden");
+
+		const cancelButtons = findElements(
+			view.root,
+			(node) =>
+				node.type === "button" && textContent(node).includes("Cancelar"),
+		);
+		clickButton(cancelButtons[0]);
+		await flushView();
+		expect(getBodyOverflow()).toBe("hidden");
+
+		clickButton(cancelButtons[1]);
+		await flushView();
+		expect(getBodyOverflow()).toBe("");
+
+		view.unmount();
+	});
+
+	it("renders the instrument creation modal as a top-level overlay instead of nesting it inside the song article", async () => {
+		repositoryGetByBandIdMock.mockResolvedValueOnce([
+			{
+				id: "song-1",
+				bandId: "band-1",
+				title: "Paint It Black",
+				originalVideoclipUrl: "https://www.youtube.com/watch?v=O4irXQhgMqg",
+			},
+		]);
+		const view = renderSongsView(() => {
+			const store = useBandStore();
+			store.setBands([createBand("band-1", "The Stones")]);
+		});
+
+		await flushView();
+		await flushView();
+
+		clickButton(findButtonByText(view.root, "Añadir instrumento"));
+		await flushView();
+
+		const songArticle = findSongArticle(view.root, "Paint It Black");
+		const modal = querySongInstrumentModal(view.root, "song-1");
+		const backdrops = findElements(
+			view.root,
+			(node) =>
+				node.type === "div" &&
+				String(node.props.class).includes("modal-backdrop"),
+		);
+
+		expect(modal).not.toBeNull();
+		expect(hasAncestorOfType(modal as TestElementNode, "article")).toBe(false);
+		expect(findElement(songArticle, (node) => node === modal)).toBeNull();
+		expect(backdrops).toHaveLength(1);
+		expect(hasAncestorOfType(backdrops[0], "article")).toBe(false);
+
+		view.unmount();
+	});
+
+	it("keeps a single top-level instrument modal while switching the selected song context", async () => {
+		repositoryGetByBandIdMock.mockResolvedValueOnce([
+			{
+				id: "song-1",
+				bandId: "band-1",
+				title: "Paint It Black",
+				originalVideoclipUrl: "https://www.youtube.com/watch?v=O4irXQhgMqg",
+			},
+			{
+				id: "song-2",
+				bandId: "band-1",
+				title: "Gimme Shelter",
+				originalVideoclipUrl: "https://www.youtube.com/watch?v=RbmS3tQJ7Os",
+			},
+		]);
+		const view = renderSongsView(() => {
+			const store = useBandStore();
+			store.setBands([createBand("band-1", "The Stones")]);
+		});
+
+		await flushView();
+		await flushView();
+
+		const addInstrumentButtons = findElements(
+			view.root,
+			(node) =>
+				node.type === "button" &&
+				textContent(node).includes("Añadir instrumento"),
+		);
+		clickButton(addInstrumentButtons[0]);
+		await flushView();
+		expect(
+			findByText(view.root, "Añadir instrumento a Paint It Black"),
+		).not.toBeNull();
+
+		clickButton(addInstrumentButtons[1]);
+		await flushView();
+
+		const modals = findElements(
+			view.root,
+			(node) => node.type === "div" && node.props.role === "dialog",
+		);
+		const backdrops = findElements(
+			view.root,
+			(node) =>
+				node.type === "div" &&
+				String(node.props.class).includes("modal-backdrop"),
+		);
+
+		expect(modals).toHaveLength(1);
+		expect(backdrops).toHaveLength(1);
+		expect(
+			findByText(view.root, "Añadir instrumento a Gimme Shelter"),
+		).not.toBeNull();
+		expect(queryInput(view.root, "songInstrumentName-song-1")).toBeNull();
+		expect(queryInput(view.root, "songInstrumentName-song-2")).not.toBeNull();
+
+		view.unmount();
+	});
+
+	it("opens the instrument form in a modal and keeps the creation flow with the logged-in musician profile id", async () => {
 		repositoryGetByBandIdMock.mockResolvedValueOnce([
 			{
 				id: "song-1",
@@ -1012,9 +1318,26 @@ describe("SongsView", () => {
 		await flushView();
 		await flushView();
 
-		clickButton(findButtonByText(view.root, "Añadir instrumento"));
+		expect(queryInput(view.root, "songInstrumentName-song-1")).toBeNull();
+		const instrumentsHeader = findByTestId(
+			view.root,
+			"song-instruments-header-song-1",
+		);
+		expect(String(instrumentsHeader.props.class)).toContain(
+			"justify-content-between",
+		);
+		const addInstrumentButton = findButtonByText(
+			view.root,
+			"Añadir instrumento",
+		);
+		expect(String(addInstrumentButton.props.class)).toContain("small");
+
+		clickButton(addInstrumentButton);
 		await flushView();
 
+		expect(
+			findByText(view.root, "Añadir instrumento a Paint It Black"),
+		).not.toBeNull();
 		setInputValue(
 			findInput(view.root, "songInstrumentName-song-1"),
 			"Guitarra principal",
@@ -1048,6 +1371,7 @@ describe("SongsView", () => {
 			"song-1",
 		);
 		expect(findByText(view.root, "Guitarra principal")).not.toBeNull();
+		expect(queryInput(view.root, "songInstrumentName-song-1")).toBeNull();
 
 		view.unmount();
 	});
@@ -1887,7 +2211,7 @@ describe("SongsView", () => {
 		view.unmount();
 	});
 
-	it("shows an inline error when the musician profile is unavailable", async () => {
+	it("shows the instrument validation error inside the modal when the musician profile is unavailable", async () => {
 		repositoryGetByBandIdMock.mockResolvedValueOnce([
 			{
 				id: "song-1",

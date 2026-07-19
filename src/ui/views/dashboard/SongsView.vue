@@ -112,6 +112,12 @@ const selectedBand = computed(() => bandStore.selectedBand);
 const canSubmit = computed(
 	() => !isLoading.value && selectedBand.value !== null,
 );
+const activeSongInstrumentFormSong = computed(() =>
+	songs.value.find((song) => songInstrumentForms.value[song.id]?.isVisible) ?? null,
+);
+const isAnyModalOpen = computed(
+	() => isCreateSongModalOpen.value || activeSongInstrumentFormSong.value !== null,
+);
 
 const songInstrumentPollTimeouts = new Map<
 	string,
@@ -124,6 +130,7 @@ const songInstrumentProgressTimeouts = new Map<
 const songInstrumentPollVersions = new Map<string, number>();
 let isViewMounted = true;
 let lastSongsRequestId = 0;
+let previousBodyOverflow: string | null = null;
 
 function isHttpErrorLike(error: unknown): error is HttpErrorLike {
 	return typeof error === "object" && error !== null;
@@ -961,9 +968,44 @@ watch(
 	{ immediate: true },
 );
 
+watch(
+	isAnyModalOpen,
+	(isOpen) => {
+		if (typeof document === "undefined") {
+			return;
+		}
+
+		const bodyStyle = document.body?.style;
+		if (!bodyStyle) {
+			return;
+		}
+
+		if (isOpen) {
+			if (previousBodyOverflow === null) {
+				previousBodyOverflow = bodyStyle.overflow;
+			}
+			bodyStyle.overflow = "hidden";
+			return;
+		}
+
+		if (previousBodyOverflow !== null) {
+			bodyStyle.overflow = previousBodyOverflow;
+			previousBodyOverflow = null;
+		}
+	},
+	{ immediate: true },
+);
+
 onBeforeUnmount(() => {
 	isViewMounted = false;
 	cancelAllSongInstrumentPolls();
+	if (typeof document !== "undefined" && previousBodyOverflow !== null) {
+		const bodyStyle = document.body?.style;
+		if (bodyStyle) {
+			bodyStyle.overflow = previousBodyOverflow;
+		}
+		previousBodyOverflow = null;
+	}
 });
 
 function resetCreateSongForm(): void {
@@ -1026,10 +1068,29 @@ async function handleCreateSong() {
 	}
 }
 
-function toggleSongInstrumentForm(songId: string): void {
-	const current = getSongInstrumentForm(songId);
+function openSongInstrumentForm(songId: string): void {
+	songInstrumentForms.value = Object.fromEntries(
+		Object.entries(songInstrumentForms.value).map(([currentSongId, formState]) => [
+			currentSongId,
+			{
+				...formState,
+				isVisible: currentSongId === songId,
+				errorMsg: currentSongId === songId ? "" : formState.errorMsg,
+			},
+		]),
+	) as SongInstrumentFormMap;
+
+	if (!songInstrumentForms.value[songId]) {
+		setSongInstrumentForm(songId, {
+			isVisible: true,
+			errorMsg: "",
+		});
+	}
+}
+
+function closeSongInstrumentForm(songId: string): void {
 	setSongInstrumentForm(songId, {
-		isVisible: !current.isVisible,
+		isVisible: false,
 		errorMsg: "",
 	});
 }
@@ -1210,26 +1271,12 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
       </div>
     </div>
 
-    <div class="card mb-4">
+    <div class="card">
       <div class="card-body">
-        <p class="mb-3">
-          <strong>Banda seleccionada:</strong>
-          <span v-if="selectedBand">{{ selectedBand.name.value }}</span>
-          <span v-else>No hay banda seleccionada.</span>
-        </p>
-
-        <div v-if="!selectedBand" class="alert alert-warning" role="alert">
-          Debes seleccionar una banda para crear canciones.
-        </div>
-
         <div v-if="successMsg" class="alert alert-success" role="alert">
           {{ successMsg }}
         </div>
-      </div>
-    </div>
 
-    <div class="card">
-      <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-3 gap-3 flex-wrap">
           <div>
             <h2 class="h5 mb-0">Canciones de la banda</h2>
@@ -1264,188 +1311,237 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
           Esta banda todavía no tiene canciones.
         </p>
 
-        <div v-else class="table-responsive">
-          <table class="table table-sm align-middle mb-0">
-            <thead>
-              <tr>
-                <th scope="col">Título</th>
-                <th scope="col">Videoclip original</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="song in songs" :key="song.id">
-                <td>
-                  <div class="fw-semibold">{{ song.title }}</div>
-                  <div class="mt-2">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" @click="toggleSongInstrumentForm(song.id)">
-                      Añadir instrumento
-                    </button>
-                  </div>
-                  <form
-                    v-if="songInstrumentForms[song.id]?.isVisible"
-                    :data-song-id="song.id"
-                    class="row g-2 mt-2"
-                    @submit.prevent="handleCreateSongInstrument(song.id)"
+        <div v-else data-testid="songs-list" class="d-grid gap-3">
+          <article
+            v-for="song in songs"
+            :key="song.id"
+            class="border rounded-3 p-3 bg-body-tertiary"
+          >
+            <div class="d-flex flex-column gap-3">
+              <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-2">
+                <div>
+                  <h3 class="h5 mb-1">{{ song.title }}</h3>
+                  <p class="text-muted small mb-0">Videoclip original</p>
+                </div>
+                <a
+                  :href="song.originalVideoclipUrl"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  class="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-2"
+                >
+                  <span aria-hidden="true">▶</span>
+                  <span>Ver en YouTube</span>
+                </a>
+              </div>
+
+              <section class="border-top pt-3">
+                <div
+                  :data-testid="`song-instruments-header-${song.id}`"
+                  class="d-flex justify-content-between align-items-center gap-2 mb-3"
+                >
+                  <h4 class="h6 mb-0">Instrumentos</h4>
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary btn-sm py-1 px-2 small"
+                    @click="openSongInstrumentForm(song.id)"
                   >
-                    <div class="col-12 col-md-6">
-                      <label :for="`songInstrumentName-${song.id}`" class="form-label mb-1">Nombre del instrumento</label>
-                      <input
-                        :id="`songInstrumentName-${song.id}`"
-                        v-model="songInstrumentForms[song.id].name"
-                        type="text"
-                        class="form-control form-control-sm"
-                        :disabled="songInstrumentForms[song.id].isSubmitting"
-                        required
-                      >
+                    Añadir instrumento
+                  </button>
+                </div>
+                <p v-if="(songInstruments[song.id] ?? []).length === 0" class="text-muted mb-0 small">
+                  Esta canción todavía no tiene instrumentos.
+                </p>
+                <ul v-else class="list-unstyled mb-0 small d-grid gap-3">
+                  <li v-for="instrument in songInstruments[song.id]" :key="instrument.id" class="border rounded-3 p-3 bg-white">
+                    <div class="fw-semibold">
+                      {{ instrument.name }} · {{ instrument.instrumentType }}
                     </div>
-                    <div class="col-12 col-md-6">
-                      <label :for="`songInstrumentType-${song.id}`" class="form-label mb-1">Tipo de instrumento</label>
-                      <input
-                        :id="`songInstrumentType-${song.id}`"
-                        v-model="songInstrumentForms[song.id].instrumentType"
-                        type="text"
-                        class="form-control form-control-sm"
-                        :disabled="songInstrumentForms[song.id].isSubmitting"
-                        required
-                      >
-                    </div>
-                    <div v-if="songInstrumentForms[song.id].errorMsg" class="col-12">
-                      <div class="alert alert-danger mb-0 py-2" role="alert">
-                        {{ songInstrumentForms[song.id].errorMsg }}
+                    <form
+                      v-if="shouldShowSongInstrumentUploadForm(song.id, instrument.id)"
+                      :data-song-id="`${song.id}-${instrument.id}`"
+                      class="row g-2 mt-1"
+                      @submit.prevent="handleUploadSongInstrumentVideo(song.id, instrument.id)"
+                    >
+                      <div class="col-12 col-md-8">
+                        <label :for="`songInstrumentVideo-${song.id}-${instrument.id}`" class="form-label mb-1">
+                          Video MP4
+                        </label>
+                        <input
+                          :id="`songInstrumentVideo-${song.id}-${instrument.id}`"
+                          type="file"
+                          accept="video/mp4"
+                          class="form-control form-control-sm"
+                          :disabled="isSongInstrumentUploadDisabled(song.id, instrument)"
+                          @change="handleSongInstrumentVideoSelection(song.id, instrument.id, $event)"
+                        >
                       </div>
-                    </div>
-                    <div class="col-12">
-                      <button
-                        type="submit"
-                        class="btn btn-sm btn-primary"
-                        :disabled="songInstrumentForms[song.id].isSubmitting"
-                      >
-                        <span
-                          v-if="songInstrumentForms[song.id].isSubmitting"
-                          class="spinner-border spinner-border-sm me-2"
-                          aria-hidden="true"
-                        ></span>
-                        {{ songInstrumentForms[song.id].isSubmitting ? 'Añadiendo...' : 'Guardar instrumento' }}
-                      </button>
-                    </div>
-                  </form>
-                  <div class="mt-3">
-                    <h3 class="h6">Instrumentos</h3>
-                    <p v-if="(songInstruments[song.id] ?? []).length === 0" class="text-muted mb-0 small">
-                      Esta canción todavía no tiene instrumentos.
-                    </p>
-                    <ul v-else class="list-unstyled mb-0 small">
-                      <li v-for="instrument in songInstruments[song.id]" :key="instrument.id" class="mb-3">
-                        <div class="fw-semibold">
-                          {{ instrument.name }} · {{ instrument.instrumentType }}
-                        </div>
-                        <form
-                          v-if="shouldShowSongInstrumentUploadForm(song.id, instrument.id)"
-                          :data-song-id="`${song.id}-${instrument.id}`"
-                          class="row g-2 mt-1"
-                          @submit.prevent="handleUploadSongInstrumentVideo(song.id, instrument.id)"
-                        >
-                          <div class="col-12 col-md-8">
-                            <label :for="`songInstrumentVideo-${song.id}-${instrument.id}`" class="form-label mb-1">
-                              Video MP4
-                            </label>
-                            <input
-                              :id="`songInstrumentVideo-${song.id}-${instrument.id}`"
-                              type="file"
-                              accept="video/mp4"
-                              class="form-control form-control-sm"
-                              :disabled="isSongInstrumentUploadDisabled(song.id, instrument)"
-                              @change="handleSongInstrumentVideoSelection(song.id, instrument.id, $event)"
-                            >
-                          </div>
-                          <div class="col-12 col-md-4 d-flex align-items-end">
-                            <button
-                              type="submit"
-                              class="btn btn-sm btn-outline-primary"
-                              :disabled="isSongInstrumentUploadSubmitDisabled(song.id, instrument)"
-                            >
-                              <span
-                                v-if="getSongInstrumentUploadState(song.id, instrument.id).isSubmitting"
-                                class="spinner-border spinner-border-sm me-2"
-                                aria-hidden="true"
-                              ></span>
-                              {{ getSongInstrumentSubmitLabel(song.id, instrument) }}
-                            </button>
-                          </div>
-                        </form>
-                        <div
-                          v-if="shouldShowSongInstrumentProgress(song.id, instrument.id)"
-                          class="mt-2"
-                        >
-                          <div
-                            :data-testid="`upload-progress-${song.id}-${instrument.id}`"
-                            class="progress"
-                            role="progressbar"
-                            aria-label="Upload progress"
-                            :aria-valuenow="getSongInstrumentUploadState(song.id, instrument.id).progress"
-                            aria-valuemin="0"
-                            aria-valuemax="100"
-                          >
-                            <div
-                              class="progress-bar progress-bar-striped progress-bar-animated"
-                              :class="getEffectiveVideo(song.id, instrument.id) ? 'bg-success' : 'bg-primary'"
-                              :style="{ width: `${getSongInstrumentUploadState(song.id, instrument.id).progress}%` }"
-                            >
-                              {{ getSongInstrumentUploadState(song.id, instrument.id).progress }}%
-                            </div>
-                          </div>
-                        </div>
-                        <div
-                          v-if="shouldShowSongInstrumentCompleteBadge(song.id, instrument.id)"
-                          class="mt-2"
+                      <div class="col-12 col-md-4 d-flex align-items-end">
+                        <button
+                          type="submit"
+                          class="btn btn-sm btn-outline-primary"
+                          :disabled="isSongInstrumentUploadSubmitDisabled(song.id, instrument)"
                         >
                           <span
-                            :data-testid="`upload-complete-${song.id}-${instrument.id}`"
-                            class="badge rounded-pill text-bg-success"
-                          >
-                            Disponible
-                          </span>
-                        </div>
+                            v-if="getSongInstrumentUploadState(song.id, instrument.id).isSubmitting"
+                            class="spinner-border spinner-border-sm me-2"
+                            aria-hidden="true"
+                          ></span>
+                          {{ getSongInstrumentSubmitLabel(song.id, instrument) }}
+                        </button>
+                      </div>
+                    </form>
+                    <div
+                      v-if="shouldShowSongInstrumentProgress(song.id, instrument.id)"
+                      class="mt-2"
+                    >
+                      <div
+                        :data-testid="`upload-progress-${song.id}-${instrument.id}`"
+                        class="progress"
+                        role="progressbar"
+                        aria-label="Upload progress"
+                        :aria-valuenow="getSongInstrumentUploadState(song.id, instrument.id).progress"
+                        aria-valuemin="0"
+                        aria-valuemax="100"
+                      >
                         <div
-                          v-if="getSongInstrumentStatusMessage(song.id, instrument)"
-                          class="alert mb-0 mt-2 py-2"
-                          :class="getEffectiveVideo(song.id, instrument.id) ? 'alert-success' : 'alert-info'"
-                          role="alert"
+                          class="progress-bar progress-bar-striped progress-bar-animated"
+                          :class="getEffectiveVideo(song.id, instrument.id) ? 'bg-success' : 'bg-primary'"
+                          :style="{ width: `${getSongInstrumentUploadState(song.id, instrument.id).progress}%` }"
                         >
-                          {{ getSongInstrumentStatusMessage(song.id, instrument) }}
+                          {{ getSongInstrumentUploadState(song.id, instrument.id).progress }}%
                         </div>
-                        <div v-if="getEffectiveVideo(song.id, instrument.id)" class="mt-2">
-                          <a
-                            :href="getEffectiveVideo(song.id, instrument.id)?.url"
-                            target="_blank"
-                            rel="noreferrer noopener"
-                            class="btn btn-sm btn-outline-success"
-                          >
-                            Ver video
-                          </a>
-                        </div>
-                        <div
-                          v-if="getSongInstrumentUploadErrorMessage(song.id, instrument)"
-                          class="alert alert-danger mb-0 mt-2 py-2"
-                          role="alert"
-                        >
-                          {{ getSongInstrumentUploadErrorMessage(song.id, instrument) }}
-                        </div>
-                      </li>
-                    </ul>
-                  </div>
-                </td>
-                <td>
-                  <a :href="song.originalVideoclipUrl" target="_blank" rel="noreferrer noopener">
-                    {{ song.originalVideoclipUrl }}
-                  </a>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                      </div>
+                    </div>
+                    <div
+                      v-if="shouldShowSongInstrumentCompleteBadge(song.id, instrument.id)"
+                      class="mt-2"
+                    >
+                      <span
+                        :data-testid="`upload-complete-${song.id}-${instrument.id}`"
+                        class="badge rounded-pill text-bg-success"
+                      >
+                        Disponible
+                      </span>
+                    </div>
+                    <div
+                      v-if="getSongInstrumentStatusMessage(song.id, instrument)"
+                      class="alert mb-0 mt-2 py-2"
+                      :class="getEffectiveVideo(song.id, instrument.id) ? 'alert-success' : 'alert-info'"
+                      role="alert"
+                    >
+                      {{ getSongInstrumentStatusMessage(song.id, instrument) }}
+                    </div>
+                    <div v-if="getEffectiveVideo(song.id, instrument.id)" class="mt-2">
+                      <a
+                        :href="getEffectiveVideo(song.id, instrument.id)?.url"
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        class="btn btn-sm btn-outline-success"
+                      >
+                        Ver video
+                      </a>
+                    </div>
+                    <div
+                      v-if="getSongInstrumentUploadErrorMessage(song.id, instrument)"
+                      class="alert alert-danger mb-0 mt-2 py-2"
+                      role="alert"
+                    >
+                      {{ getSongInstrumentUploadErrorMessage(song.id, instrument) }}
+                    </div>
+                  </li>
+                </ul>
+              </section>
+            </div>
+
+          </article>
         </div>
       </div>
     </div>
+
+    <div
+      v-if="activeSongInstrumentFormSong"
+      class="modal d-block"
+      tabindex="-1"
+      role="dialog"
+      aria-modal="true"
+      :aria-labelledby="`createSongInstrumentModalTitle-${activeSongInstrumentFormSong.id}`"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 :id="`createSongInstrumentModalTitle-${activeSongInstrumentFormSong.id}`" class="modal-title h5">
+              Añadir instrumento a {{ activeSongInstrumentFormSong.title }}
+            </h4>
+            <button
+              type="button"
+              class="btn-close"
+              aria-label="Cerrar"
+              :disabled="songInstrumentForms[activeSongInstrumentFormSong.id].isSubmitting"
+              @click="closeSongInstrumentForm(activeSongInstrumentFormSong.id)"
+            ></button>
+          </div>
+          <form
+            :data-song-id="activeSongInstrumentFormSong.id"
+            @submit.prevent="handleCreateSongInstrument(activeSongInstrumentFormSong.id)"
+          >
+            <div class="modal-body">
+              <div class="row g-2">
+                <div class="col-12">
+                  <label :for="`songInstrumentName-${activeSongInstrumentFormSong.id}`" class="form-label mb-1">Nombre del instrumento</label>
+                  <input
+                    :id="`songInstrumentName-${activeSongInstrumentFormSong.id}`"
+                    v-model="songInstrumentForms[activeSongInstrumentFormSong.id].name"
+                    type="text"
+                    class="form-control form-control-sm"
+                    :disabled="songInstrumentForms[activeSongInstrumentFormSong.id].isSubmitting"
+                    required
+                  >
+                </div>
+                <div class="col-12">
+                  <label :for="`songInstrumentType-${activeSongInstrumentFormSong.id}`" class="form-label mb-1">Tipo de instrumento</label>
+                  <input
+                    :id="`songInstrumentType-${activeSongInstrumentFormSong.id}`"
+                    v-model="songInstrumentForms[activeSongInstrumentFormSong.id].instrumentType"
+                    type="text"
+                    class="form-control form-control-sm"
+                    :disabled="songInstrumentForms[activeSongInstrumentFormSong.id].isSubmitting"
+                    required
+                  >
+                </div>
+                <div v-if="songInstrumentForms[activeSongInstrumentFormSong.id].errorMsg" class="col-12">
+                  <div class="alert alert-danger mb-0 py-2" role="alert">
+                    {{ songInstrumentForms[activeSongInstrumentFormSong.id].errorMsg }}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                :disabled="songInstrumentForms[activeSongInstrumentFormSong.id].isSubmitting"
+                @click="closeSongInstrumentForm(activeSongInstrumentFormSong.id)"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                class="btn btn-sm btn-primary"
+                :disabled="songInstrumentForms[activeSongInstrumentFormSong.id].isSubmitting"
+              >
+                <span
+                  v-if="songInstrumentForms[activeSongInstrumentFormSong.id].isSubmitting"
+                  class="spinner-border spinner-border-sm me-2"
+                  aria-hidden="true"
+                ></span>
+                {{ songInstrumentForms[activeSongInstrumentFormSong.id].isSubmitting ? 'Añadiendo...' : 'Guardar instrumento' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    <div v-if="activeSongInstrumentFormSong" class="modal-backdrop show"></div>
 
     <div
       v-if="isCreateSongModalOpen"
