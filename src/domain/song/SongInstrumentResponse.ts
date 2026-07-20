@@ -36,20 +36,24 @@ export interface SongInstrumentVideoResponse {
 	createdAt: string;
 }
 
-export type SongInstrumentListItemResponse = {
+interface SongInstrumentCatalogReference {
+	instrumentId?: string;
+	instrumentType?: string;
+}
+
+export type SongInstrumentListItemResponse = SongInstrumentCatalogReference & {
 	id: string;
 	name: string;
-	instrumentType: string;
 	songId: string;
 	musicianId: string;
 	createdAt: string;
 	upload: SongInstrumentUploadResponse | null;
 };
 
-export interface SongInstrumentDetailResponse {
+export interface SongInstrumentDetailResponse
+	extends SongInstrumentCatalogReference {
 	id: string;
 	name: string;
-	instrumentType: string;
 	songId: string;
 	musicianId: string;
 	createdAt: string;

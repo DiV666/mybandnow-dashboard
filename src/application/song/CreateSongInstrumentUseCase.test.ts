@@ -2,10 +2,10 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { mock, mockReset } from "vitest-mock-extended";
 import { CreateSongInstrumentUseCase } from "./CreateSongInstrumentUseCase.js";
 import type { SongRepository } from "../../domain/song/repository/SongRepository.js";
+import { InstrumentId } from "../../domain/instrument/value-object/InstrumentId.js";
 import { MusicianId } from "../../domain/musician/value-object/MusicianId.js";
 import { SongInstrumentId } from "../../domain/song/value-object/SongInstrumentId.js";
 import { SongInstrumentName } from "../../domain/song/value-object/SongInstrumentName.js";
-import { SongInstrumentType } from "../../domain/song/value-object/SongInstrumentType.js";
 
 describe("CreateSongInstrumentUseCase", () => {
 	const repositoryMock = mock<SongRepository>();
@@ -21,7 +21,7 @@ describe("CreateSongInstrumentUseCase", () => {
 			"song-123",
 			"11111111-1111-4111-8111-111111111111",
 			"Guitarra principal",
-			"electric-guitar",
+			"catalog-1",
 			"22222222-2222-4222-8222-222222222222",
 		);
 
@@ -35,8 +35,8 @@ describe("CreateSongInstrumentUseCase", () => {
 		expect(savedInstrument.name.value).toBe(
 			new SongInstrumentName("Guitarra principal").value,
 		);
-		expect(savedInstrument.instrumentType.value).toBe(
-			new SongInstrumentType("electric-guitar").value,
+		expect(savedInstrument.instrumentId.value).toBe(
+			new InstrumentId("catalog-1").value,
 		);
 		expect(savedInstrument.musicianId.value).toBe(
 			new MusicianId("22222222-2222-4222-8222-222222222222").value,
@@ -49,14 +49,14 @@ describe("CreateSongInstrumentUseCase", () => {
 				"song-123",
 				"11111111-1111-4111-8111-111111111111",
 				"",
-				"electric-guitar",
+				"catalog-1",
 				"22222222-2222-4222-8222-222222222222",
 			),
 		).rejects.toThrow("SongInstrumentName cannot be empty");
 		expect(repositoryMock.saveInstrument).not.toHaveBeenCalled();
 	});
 
-	it("should fail before reaching the repository when the instrument type is invalid", async () => {
+	it("should fail before reaching the repository when the instrument id is invalid", async () => {
 		await expect(
 			useCase.run(
 				"song-123",
@@ -65,7 +65,7 @@ describe("CreateSongInstrumentUseCase", () => {
 				"",
 				"22222222-2222-4222-8222-222222222222",
 			),
-		).rejects.toThrow("SongInstrumentType cannot be empty");
+		).rejects.toThrow("InstrumentId cannot be empty");
 		expect(repositoryMock.saveInstrument).not.toHaveBeenCalled();
 	});
 });

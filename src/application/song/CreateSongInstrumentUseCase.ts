@@ -1,9 +1,9 @@
+import { InstrumentId } from "../../domain/instrument/value-object/InstrumentId.js";
 import { SongInstrument } from "../../domain/song/SongInstrument.js";
 import type { SongRepository } from "../../domain/song/repository/SongRepository.js";
 import { MusicianId } from "../../domain/musician/value-object/MusicianId.js";
 import { SongInstrumentId } from "../../domain/song/value-object/SongInstrumentId.js";
 import { SongInstrumentName } from "../../domain/song/value-object/SongInstrumentName.js";
-import { SongInstrumentType } from "../../domain/song/value-object/SongInstrumentType.js";
 
 export class CreateSongInstrumentUseCase {
 	private readonly repository: SongRepository;
@@ -16,13 +16,13 @@ export class CreateSongInstrumentUseCase {
 		songId: string,
 		id: string,
 		name: string,
-		instrumentType: string,
+		instrumentId: string,
 		musicianId: string,
 	): Promise<void> {
 		const instrument = SongInstrument.create(
 			new SongInstrumentId(id),
 			new SongInstrumentName(name),
-			new SongInstrumentType(instrumentType),
+			new InstrumentId(instrumentId),
 			new MusicianId(musicianId),
 		);
 

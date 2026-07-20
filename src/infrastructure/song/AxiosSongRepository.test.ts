@@ -1,13 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AxiosSongRepository } from "./AxiosSongRepository.js";
 import { httpClient } from "../http/httpClient.js";
+import { InstrumentId } from "../../domain/instrument/value-object/InstrumentId.js";
 import { MusicianId } from "../../domain/musician/value-object/MusicianId.js";
 import { Song } from "../../domain/song/Song.js";
 import { SongInstrument } from "../../domain/song/SongInstrument.js";
 import { SongId } from "../../domain/song/value-object/SongId.js";
 import { SongInstrumentId } from "../../domain/song/value-object/SongInstrumentId.js";
 import { SongInstrumentName } from "../../domain/song/value-object/SongInstrumentName.js";
-import { SongInstrumentType } from "../../domain/song/value-object/SongInstrumentType.js";
 import { SongOriginalVideoclipUrl } from "../../domain/song/value-object/SongOriginalVideoclipUrl.js";
 import { SongTitle } from "../../domain/song/value-object/SongTitle.js";
 
@@ -80,7 +80,7 @@ describe("AxiosSongRepository", () => {
 			SongInstrument.create(
 				new SongInstrumentId("11111111-1111-4111-8111-111111111111"),
 				new SongInstrumentName("Guitarra principal"),
-				new SongInstrumentType("electric-guitar"),
+				new InstrumentId("catalog-1"),
 				new MusicianId("22222222-2222-4222-8222-222222222222"),
 			),
 		);
@@ -88,7 +88,7 @@ describe("AxiosSongRepository", () => {
 		expect(postSpy).toHaveBeenCalledWith("/v1/songs/song-123/instruments", {
 			id: "11111111-1111-4111-8111-111111111111",
 			name: "Guitarra principal",
-			instrumentType: "electric-guitar",
+			instrumentId: "catalog-1",
 			musicianId: "22222222-2222-4222-8222-222222222222",
 		});
 	});
@@ -100,7 +100,7 @@ describe("AxiosSongRepository", () => {
 					{
 						id: "instrument-1",
 						name: "Guitarra principal",
-						instrumentType: "electric-guitar",
+						instrumentId: "catalog-1",
 						songId: "song-123",
 						musicianId: "musician-123",
 						createdAt: "2026-07-15T10:00:00.000Z",
@@ -120,7 +120,7 @@ describe("AxiosSongRepository", () => {
 			{
 				id: "instrument-1",
 				name: "Guitarra principal",
-				instrumentType: "electric-guitar",
+				instrumentId: "catalog-1",
 				songId: "song-123",
 				musicianId: "musician-123",
 				createdAt: "2026-07-15T10:00:00.000Z",
@@ -136,7 +136,7 @@ describe("AxiosSongRepository", () => {
 			data: {
 				id: "instrument-1",
 				name: "Guitarra principal",
-				instrumentType: "electric-guitar",
+				instrumentId: "catalog-1",
 				songId: "song-123",
 				musicianId: "musician-123",
 				createdAt: "2026-07-15T10:00:00.000Z",
@@ -165,7 +165,7 @@ describe("AxiosSongRepository", () => {
 		expect(instrument).toEqual({
 			id: "instrument-1",
 			name: "Guitarra principal",
-			instrumentType: "electric-guitar",
+			instrumentId: "catalog-1",
 			songId: "song-123",
 			musicianId: "musician-123",
 			createdAt: "2026-07-15T10:00:00.000Z",

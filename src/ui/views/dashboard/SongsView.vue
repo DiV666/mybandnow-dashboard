@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { GetInstrumentByIdUseCase } from "../../../application/instrument/GetInstrumentByIdUseCase.js";
+import { GetInstrumentsUseCase } from "../../../application/instrument/GetInstrumentsUseCase.js";
 import { CreateSongInstrumentUseCase } from "../../../application/song/CreateSongInstrumentUseCase.js";
 import { CreateSongUseCase } from "../../../application/song/CreateSongUseCase.js";
 import { GetBandSongsUseCase } from "../../../application/song/GetBandSongsUseCase.js";
 import { GetSongInstrumentDetailUseCase } from "../../../application/song/GetSongInstrumentDetailUseCase.js";
 import { GetSongInstrumentsUseCase } from "../../../application/song/GetSongInstrumentsUseCase.js";
 import { UploadSongInstrumentVideoUseCase } from "../../../application/song/UploadSongInstrumentVideoUseCase.js";
+import type { InstrumentResponse } from "../../../domain/instrument/InstrumentResponse.js";
 import {
 	songInstrumentUploadStatuses,
 	type SongInstrumentDetailResponse,
@@ -14,6 +17,7 @@ import {
 	type SongInstrumentVideoResponse,
 } from "../../../domain/song/SongInstrumentResponse.js";
 import type { SongResponse } from "../../../domain/song/SongResponse.js";
+import { AxiosInstrumentRepository } from "../../../infrastructure/instrument/AxiosInstrumentRepository.js";
 import { AxiosSongRepository } from "../../../infrastructure/song/AxiosSongRepository.js";
 import { useBandStore } from "../../stores/useBandStore.js";
 import { useMusicianStore } from "../../stores/useMusicianStore.js";
@@ -39,7 +43,7 @@ interface HttpErrorLike {
 interface SongInstrumentFormState {
 	isVisible: boolean;
 	name: string;
-	instrumentType: string;
+	instrumentId: string;
 	isSubmitting: boolean;
 	errorMsg: string;
 }
@@ -63,6 +67,17 @@ interface SongInstrumentUploadState {
 	progressStage: SongInstrumentUploadProgressStage;
 }
 
+interface ActiveSongInstrumentUploadModalState {
+	songId: string;
+	instrumentId: string;
+}
+
+interface AssignMusicianModalState {
+	songId: string;
+	instrumentId: string;
+	email: string;
+}
+
 interface FileInputLike {
 	files?: FileList | File[] | null;
 }
@@ -78,6 +93,7 @@ type SongInstrumentMap = Record<string, SongInstrumentListItemResponse[]>;
 type SongInstrumentFormMap = Record<string, SongInstrumentFormState>;
 type SongInstrumentUploadMap = Record<string, SongInstrumentUploadState>;
 type SongInstrumentDetailMap = Record<string, SongInstrumentDetailResponse>;
+type InstrumentNameMap = Record<string, string>;
 
 const SONG_INSTRUMENT_POLL_INTERVAL_MS = 5000;
 const SONG_INSTRUMENT_PROGRESS_TICK_MS = 400;
@@ -90,6 +106,9 @@ const errorMsg = ref("");
 const songsErrorMsg = ref("");
 const successMsg = ref("");
 const isCreateSongModalOpen = ref(false);
+const activeSongInstrumentUploadModal =
+	ref<ActiveSongInstrumentUploadModalState | null>(null);
+const activeAssignMusicianModal = ref<AssignMusicianModalState | null>(null);
 const isLoading = ref(false);
 const isLoadingSongs = ref(false);
 const songs = ref<SongResponse[]>([]);
@@ -97,8 +116,11 @@ const songInstruments = ref<SongInstrumentMap>({});
 const songInstrumentForms = ref<SongInstrumentFormMap>({});
 const songInstrumentUploads = ref<SongInstrumentUploadMap>({});
 const songInstrumentDetails = ref<SongInstrumentDetailMap>({});
+const availableInstruments = ref<InstrumentResponse[]>([]);
+const catalogInstrumentNames = ref<InstrumentNameMap>({});
 
 const songRepository = new AxiosSongRepository();
+const instrumentRepository = new AxiosInstrumentRepository();
 const createSongUseCase = new CreateSongUseCase(songRepository);
 const getBandSongsUseCase = new GetBandSongsUseCase(songRepository);
 const createSongInstrumentUseCase = new CreateSongInstrumentUseCase(songRepository);
@@ -106,6 +128,8 @@ const getSongInstrumentsUseCase = new GetSongInstrumentsUseCase(songRepository);
 const getSongInstrumentDetailUseCase = new GetSongInstrumentDetailUseCase(
 	songRepository,
 );
+const getInstrumentsUseCase = new GetInstrumentsUseCase(instrumentRepository);
+const getInstrumentByIdUseCase = new GetInstrumentByIdUseCase(instrumentRepository);
 const uploadSongInstrumentVideoUseCase = new UploadSongInstrumentVideoUseCase(songRepository);
 
 const selectedBand = computed(() => bandStore.selectedBand);
@@ -115,8 +139,62 @@ const canSubmit = computed(
 const activeSongInstrumentFormSong = computed(() =>
 	songs.value.find((song) => songInstrumentForms.value[song.id]?.isVisible) ?? null,
 );
+const activeSongInstrumentUploadModalContext = computed(() => {
+	if (!activeSongInstrumentUploadModal.value) {
+		return null;
+	}
+
+	const song = songs.value.find(
+		(candidate) => candidate.id === activeSongInstrumentUploadModal.value?.songId,
+	);
+	if (!song) {
+		return null;
+	}
+
+	const instrument = getSongInstrument(
+		activeSongInstrumentUploadModal.value.songId,
+		activeSongInstrumentUploadModal.value.instrumentId,
+	);
+	if (!instrument) {
+		return null;
+	}
+
+	return {
+		song,
+		instrument,
+	};
+});
+const activeAssignMusicianModalContext = computed(() => {
+	if (!activeAssignMusicianModal.value) {
+		return null;
+	}
+
+	const song = songs.value.find(
+		(candidate) => candidate.id === activeAssignMusicianModal.value?.songId,
+	);
+	if (!song) {
+		return null;
+	}
+
+	const instrument = getSongInstrument(
+		activeAssignMusicianModal.value.songId,
+		activeAssignMusicianModal.value.instrumentId,
+	);
+	if (!instrument) {
+		return null;
+	}
+
+	return {
+		song,
+		instrument,
+	};
+});
 const isAnyModalOpen = computed(
-	() => isCreateSongModalOpen.value || activeSongInstrumentFormSong.value !== null,
+	() =>
+		isCreateSongModalOpen.value ||
+		activeSongInstrumentFormSong.value !== null ||
+		activeSongInstrumentUploadModalContext.value !== null ||
+		activeAssignMusicianModalContext.value !== null,
 );
 
 const songInstrumentPollTimeouts = new Map<
@@ -128,12 +206,107 @@ const songInstrumentProgressTimeouts = new Map<
 	ReturnType<typeof setTimeout>
 >();
 const songInstrumentPollVersions = new Map<string, number>();
+const instrumentDetailRequests = new Map<string, Promise<void>>();
+let availableInstrumentsRequest: Promise<void> | null = null;
 let isViewMounted = true;
 let lastSongsRequestId = 0;
 let previousBodyOverflow: string | null = null;
 
 function isHttpErrorLike(error: unknown): error is HttpErrorLike {
 	return typeof error === "object" && error !== null;
+}
+
+function getSongInstrumentCatalogId(
+	instrument: SongInstrumentListItemResponse | SongInstrumentDetailResponse,
+): string {
+	return instrument.instrumentId ?? instrument.instrumentType ?? "";
+}
+
+function setCatalogInstrumentName(instrumentId: string, name: string): void {
+	catalogInstrumentNames.value = {
+		...catalogInstrumentNames.value,
+		[instrumentId]: name,
+	};
+}
+
+function getCatalogInstrumentName(instrumentId: string): string {
+	return (
+		catalogInstrumentNames.value[instrumentId] ??
+		availableInstruments.value.find((instrument) => instrument.id === instrumentId)?.name ??
+		instrumentId
+	);
+}
+
+async function ensureAvailableInstrumentsLoaded(): Promise<void> {
+	if (availableInstruments.value.length > 0) {
+		return;
+	}
+
+	if (availableInstrumentsRequest) {
+		return availableInstrumentsRequest;
+	}
+
+	availableInstrumentsRequest = (async () => {
+		try {
+			const instruments = await getInstrumentsUseCase.run();
+			if (!isViewMounted) {
+				return;
+			}
+
+			availableInstruments.value = instruments;
+		} catch {
+			if (isViewMounted) {
+				availableInstruments.value = [];
+			}
+		} finally {
+			availableInstrumentsRequest = null;
+		}
+	})();
+
+	return availableInstrumentsRequest;
+}
+
+async function ensureCatalogInstrumentNameLoaded(instrumentId: string): Promise<void> {
+	if (!instrumentId || catalogInstrumentNames.value[instrumentId]) {
+		return;
+	}
+
+	const currentRequest = instrumentDetailRequests.get(instrumentId);
+	if (currentRequest) {
+		return currentRequest;
+	}
+
+	const request = (async () => {
+		const instrument = await getInstrumentByIdUseCase.run(instrumentId);
+		if (!isViewMounted) {
+			return;
+		}
+
+		setCatalogInstrumentName(instrument.id, instrument.name);
+	})().finally(() => {
+		instrumentDetailRequests.delete(instrumentId);
+	});
+
+	instrumentDetailRequests.set(instrumentId, request);
+	return request;
+}
+
+async function preloadCatalogInstrumentNames(
+	instruments: SongInstrumentListItemResponse[],
+): Promise<void> {
+	const uniqueInstrumentIds = [...new Set(instruments.map(getSongInstrumentCatalogId))].filter(
+		(instrumentId) => instrumentId.length > 0,
+	);
+
+	await Promise.all(
+		uniqueInstrumentIds.map(async (instrumentId) => {
+			try {
+				await ensureCatalogInstrumentNameLoaded(instrumentId);
+			} catch {
+				// Keep the fallback name when the catalog detail cannot be resolved.
+			}
+		}),
+	);
 }
 
 function getSongInstrumentForm(songId: string): SongInstrumentFormState {
@@ -145,7 +318,7 @@ function getSongInstrumentForm(songId: string): SongInstrumentFormState {
 	const nextState: SongInstrumentFormState = {
 		isVisible: false,
 		name: "",
-		instrumentType: "",
+		instrumentId: "",
 		isSubmitting: false,
 		errorMsg: "",
 	};
@@ -289,6 +462,23 @@ function getSongInstrument(
 			(instrument) => instrument.id === instrumentId,
 		) ?? null
 	);
+}
+
+function getSongInstrumentDisplayName(
+	instrument: SongInstrumentListItemResponse,
+): string {
+	return getCatalogInstrumentName(getSongInstrumentCatalogId(instrument));
+}
+
+function getSongInstrumentMusicianDisplayName(
+	instrument: SongInstrumentListItemResponse,
+): string {
+	const currentProfile = musicianStore.profile;
+	if (currentProfile?.id === instrument.musicianId) {
+		return currentProfile.name || currentProfile.username || instrument.musicianId;
+	}
+
+	return instrument.musicianId || "Sin asignar";
 }
 
 function isSongInstrumentInProgress(
@@ -738,8 +928,16 @@ async function refreshSongInstrumentDetail(
 	instrumentId: string,
 ): Promise<SongInstrumentDetailResponse> {
 	const detail = await getSongInstrumentDetailUseCase.run(songId, instrumentId);
+	const catalogInstrumentId = getSongInstrumentCatalogId(detail);
 	if (isViewMounted && isSongStillVisible(songId)) {
 		setSongInstrumentDetail(detail);
+	}
+	if (catalogInstrumentId) {
+		try {
+			await ensureCatalogInstrumentNameLoaded(catalogInstrumentId);
+		} catch {
+			// Catalog name resolution must not break the song instrument flow.
+		}
 	}
 	return detail;
 }
@@ -890,6 +1088,7 @@ async function loadSongInstruments(
 	songList: SongResponse[],
 	requestId: number,
 ): Promise<void> {
+	void ensureAvailableInstrumentsLoaded();
 	const entries = await Promise.all(
 		songList.map(async (song) => {
 			const instruments = await getSongInstrumentsUseCase.run(song.id);
@@ -902,6 +1101,9 @@ async function loadSongInstruments(
 	}
 
 	songInstruments.value = Object.fromEntries(entries);
+	await Promise.all(
+		entries.map(([, instruments]) => preloadCatalogInstrumentNames(instruments)),
+	);
 	await Promise.all(
 		entries.flatMap(([songId, instruments]) =>
 			instruments.map((instrument) => syncSongInstrumentAsyncState(songId, instrument)),
@@ -1069,6 +1271,7 @@ async function handleCreateSong() {
 }
 
 function openSongInstrumentForm(songId: string): void {
+	void ensureAvailableInstrumentsLoaded();
 	songInstrumentForms.value = Object.fromEntries(
 		Object.entries(songInstrumentForms.value).map(([currentSongId, formState]) => [
 			currentSongId,
@@ -1093,6 +1296,48 @@ function closeSongInstrumentForm(songId: string): void {
 		isVisible: false,
 		errorMsg: "",
 	});
+}
+
+function openSongInstrumentUploadModal(songId: string, instrumentId: string): void {
+	activeSongInstrumentUploadModal.value = {
+		songId,
+		instrumentId,
+	};
+}
+
+function closeSongInstrumentUploadModal(): void {
+	activeSongInstrumentUploadModal.value = null;
+}
+
+function openAssignMusicianModal(songId: string, instrumentId: string): void {
+	activeAssignMusicianModal.value = {
+		songId,
+		instrumentId,
+		email: "",
+	};
+}
+
+function closeAssignMusicianModal(): void {
+	activeAssignMusicianModal.value = null;
+}
+
+function handleAssignMusicianEmailInput(event: Event): void {
+	const target = event.target;
+	if (
+		!activeAssignMusicianModal.value ||
+		!(target instanceof HTMLInputElement)
+	) {
+		return;
+	}
+
+	activeAssignMusicianModal.value = {
+		...activeAssignMusicianModal.value,
+		email: target.value,
+	};
+}
+
+function handleAssignMusicianSubmit(): void {
+	closeAssignMusicianModal();
 }
 
 function handleSongInstrumentVideoSelection(
@@ -1207,7 +1452,7 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
 			songId,
 			crypto.randomUUID(),
 			form.name,
-			form.instrumentType,
+			form.instrumentId,
 			musicianProfileId,
 		);
 		const instruments = await getSongInstrumentsUseCase.run(songId);
@@ -1215,13 +1460,14 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
 			...songInstruments.value,
 			[songId]: instruments,
 		};
+		await preloadCatalogInstrumentNames(instruments);
 		await Promise.all(
 			instruments.map((instrument) => syncSongInstrumentAsyncState(songId, instrument)),
 		);
 		setSongInstrumentForm(songId, {
 			isVisible: false,
 			name: "",
-			instrumentType: "",
+			instrumentId: "",
 			isSubmitting: false,
 		});
 	} catch (error: unknown) {
@@ -1351,105 +1597,75 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                 <p v-if="(songInstruments[song.id] ?? []).length === 0" class="text-muted mb-0 small">
                   Esta canción todavía no tiene instrumentos.
                 </p>
-                <ul v-else class="list-unstyled mb-0 small d-grid gap-3">
-                  <li v-for="instrument in songInstruments[song.id]" :key="instrument.id" class="border rounded-3 p-3 bg-white">
-                    <div class="fw-semibold">
-                      {{ instrument.name }} · {{ instrument.instrumentType }}
-                    </div>
-                    <form
-                      v-if="shouldShowSongInstrumentUploadForm(song.id, instrument.id)"
-                      :data-song-id="`${song.id}-${instrument.id}`"
-                      class="row g-2 mt-1"
-                      @submit.prevent="handleUploadSongInstrumentVideo(song.id, instrument.id)"
-                    >
-                      <div class="col-12 col-md-8">
-                        <label :for="`songInstrumentVideo-${song.id}-${instrument.id}`" class="form-label mb-1">
-                          Video MP4
-                        </label>
-                        <input
-                          :id="`songInstrumentVideo-${song.id}-${instrument.id}`"
-                          type="file"
-                          accept="video/mp4"
-                          class="form-control form-control-sm"
-                          :disabled="isSongInstrumentUploadDisabled(song.id, instrument)"
-                          @change="handleSongInstrumentVideoSelection(song.id, instrument.id, $event)"
-                        >
-                      </div>
-                      <div class="col-12 col-md-4 d-flex align-items-end">
-                        <button
-                          type="submit"
-                          class="btn btn-sm btn-outline-primary"
-                          :disabled="isSongInstrumentUploadSubmitDisabled(song.id, instrument)"
-                        >
-                          <span
-                            v-if="getSongInstrumentUploadState(song.id, instrument.id).isSubmitting"
-                            class="spinner-border spinner-border-sm me-2"
-                            aria-hidden="true"
-                          ></span>
-                          {{ getSongInstrumentSubmitLabel(song.id, instrument) }}
-                        </button>
-                      </div>
-                    </form>
-                    <div
-                      v-if="shouldShowSongInstrumentProgress(song.id, instrument.id)"
-                      class="mt-2"
-                    >
-                      <div
-                        :data-testid="`upload-progress-${song.id}-${instrument.id}`"
-                        class="progress"
-                        role="progressbar"
-                        aria-label="Upload progress"
-                        :aria-valuenow="getSongInstrumentUploadState(song.id, instrument.id).progress"
-                        aria-valuemin="0"
-                        aria-valuemax="100"
-                      >
-                        <div
-                          class="progress-bar progress-bar-striped progress-bar-animated"
-                          :class="getEffectiveVideo(song.id, instrument.id) ? 'bg-success' : 'bg-primary'"
-                          :style="{ width: `${getSongInstrumentUploadState(song.id, instrument.id).progress}%` }"
-                        >
-                          {{ getSongInstrumentUploadState(song.id, instrument.id).progress }}%
-                        </div>
-                      </div>
-                    </div>
-                    <div
-                      v-if="shouldShowSongInstrumentCompleteBadge(song.id, instrument.id)"
-                      class="mt-2"
-                    >
-                      <span
-                        :data-testid="`upload-complete-${song.id}-${instrument.id}`"
-                        class="badge rounded-pill text-bg-success"
-                      >
-                        Disponible
-                      </span>
-                    </div>
-                    <div
-                      v-if="getSongInstrumentStatusMessage(song.id, instrument)"
-                      class="alert mb-0 mt-2 py-2"
-                      :class="getEffectiveVideo(song.id, instrument.id) ? 'alert-success' : 'alert-info'"
-                      role="alert"
-                    >
-                      {{ getSongInstrumentStatusMessage(song.id, instrument) }}
-                    </div>
-                    <div v-if="getEffectiveVideo(song.id, instrument.id)" class="mt-2">
-                      <a
-                        :href="getEffectiveVideo(song.id, instrument.id)?.url"
-                        target="_blank"
-                        rel="noreferrer noopener"
-                        class="btn btn-sm btn-outline-success"
-                      >
-                        Ver video
-                      </a>
-                    </div>
-                    <div
-                      v-if="getSongInstrumentUploadErrorMessage(song.id, instrument)"
-                      class="alert alert-danger mb-0 mt-2 py-2"
-                      role="alert"
-                    >
-                      {{ getSongInstrumentUploadErrorMessage(song.id, instrument) }}
-                    </div>
-                  </li>
-                </ul>
+                <div v-else class="table-responsive">
+                  <table class="table table-sm align-middle mb-0">
+                    <thead>
+                      <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Título de la pista</th>
+                        <th scope="col">Instrumento</th>
+                        <th scope="col">Músico</th>
+                        <th scope="col">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(instrument, index) in songInstruments[song.id]" :key="instrument.id">
+                        <td>#{{ index + 1 }}</td>
+                        <td>{{ instrument.name }}</td>
+                        <td>{{ getSongInstrumentDisplayName(instrument) }}</td>
+                        <td>{{ getSongInstrumentMusicianDisplayName(instrument) }}</td>
+                        <td>
+                          <div class="d-flex flex-wrap gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" disabled>
+                              Editar
+                            </button>
+                            <button
+                              type="button"
+                              class="btn btn-sm btn-outline-primary"
+                              @click="openSongInstrumentUploadModal(song.id, instrument.id)"
+                            >
+                              Subir vídeo
+                            </button>
+                            <button
+                              type="button"
+                              class="btn btn-sm btn-outline-dark"
+                              @click="openAssignMusicianModal(song.id, instrument.id)"
+                            >
+                              Asignar músico
+                            </button>
+                            <a
+                              v-if="getEffectiveVideo(song.id, instrument.id)"
+                              :href="getEffectiveVideo(song.id, instrument.id)?.url"
+                              target="_blank"
+                              rel="noreferrer noopener"
+                              class="btn btn-sm btn-outline-success"
+                            >
+                              Ver video
+                            </a>
+                          </div>
+                          <div
+                            v-if="shouldShowSongInstrumentCompleteBadge(song.id, instrument.id)"
+                            class="mt-2"
+                          >
+                            <span
+                              :data-testid="`upload-complete-${song.id}-${instrument.id}`"
+                              class="badge rounded-pill text-bg-success"
+                            >
+                              Disponible
+                            </span>
+                          </div>
+                          <div
+                            v-if="getSongInstrumentUploadErrorMessage(song.id, instrument)"
+                            class="alert alert-danger mb-0 mt-2 py-2"
+                            role="alert"
+                          >
+                            {{ getSongInstrumentUploadErrorMessage(song.id, instrument) }}
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </section>
             </div>
 
@@ -1487,7 +1703,7 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
             <div class="modal-body">
               <div class="row g-2">
                 <div class="col-12">
-                  <label :for="`songInstrumentName-${activeSongInstrumentFormSong.id}`" class="form-label mb-1">Nombre del instrumento</label>
+                  <label :for="`songInstrumentName-${activeSongInstrumentFormSong.id}`" class="form-label mb-1">Nombre de la pista</label>
                   <input
                     :id="`songInstrumentName-${activeSongInstrumentFormSong.id}`"
                     v-model="songInstrumentForms[activeSongInstrumentFormSong.id].name"
@@ -1498,15 +1714,25 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                   >
                 </div>
                 <div class="col-12">
-                  <label :for="`songInstrumentType-${activeSongInstrumentFormSong.id}`" class="form-label mb-1">Tipo de instrumento</label>
-                  <input
-                    :id="`songInstrumentType-${activeSongInstrumentFormSong.id}`"
-                    v-model="songInstrumentForms[activeSongInstrumentFormSong.id].instrumentType"
-                    type="text"
-                    class="form-control form-control-sm"
+                  <label :for="`songInstrumentId-${activeSongInstrumentFormSong.id}`" class="form-label mb-1">Instrumento</label>
+                  <select
+                    :id="`songInstrumentId-${activeSongInstrumentFormSong.id}`"
+                    v-model="songInstrumentForms[activeSongInstrumentFormSong.id].instrumentId"
+                    class="form-select form-select-sm"
                     :disabled="songInstrumentForms[activeSongInstrumentFormSong.id].isSubmitting"
                     required
                   >
+                    <option value="" disabled>
+                      Selecciona un instrumento
+                    </option>
+                    <option
+                      v-for="instrument in availableInstruments"
+                      :key="instrument.id"
+                      :value="instrument.id"
+                    >
+                      {{ instrument.name }}
+                    </option>
+                  </select>
                 </div>
                 <div v-if="songInstrumentForms[activeSongInstrumentFormSong.id].errorMsg" class="col-12">
                   <div class="alert alert-danger mb-0 py-2" role="alert">
@@ -1541,7 +1767,165 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
         </div>
       </div>
     </div>
-    <div v-if="activeSongInstrumentFormSong" class="modal-backdrop show"></div>
+
+    <div
+      v-if="activeSongInstrumentUploadModalContext"
+      class="modal d-block"
+      tabindex="-1"
+      role="dialog"
+      aria-modal="true"
+      :aria-labelledby="`uploadSongInstrumentModalTitle-${activeSongInstrumentUploadModalContext.instrument.id}`"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 :id="`uploadSongInstrumentModalTitle-${activeSongInstrumentUploadModalContext.instrument.id}`" class="modal-title h5">
+              Subir vídeo · {{ activeSongInstrumentUploadModalContext.instrument.name }}
+            </h4>
+            <button
+              type="button"
+              class="btn-close"
+              aria-label="Cerrar"
+              @click="closeSongInstrumentUploadModal"
+            ></button>
+          </div>
+          <form
+            :data-song-id="`${activeSongInstrumentUploadModalContext.song.id}-${activeSongInstrumentUploadModalContext.instrument.id}`"
+            @submit.prevent="handleUploadSongInstrumentVideo(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument.id)"
+          >
+            <div class="modal-body d-grid gap-3">
+              <div>
+                <div class="fw-semibold">{{ activeSongInstrumentUploadModalContext.song.title }}</div>
+                <div class="text-muted small">{{ getSongInstrumentDisplayName(activeSongInstrumentUploadModalContext.instrument) }}</div>
+              </div>
+              <div v-if="shouldShowSongInstrumentUploadForm(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument.id)">
+                <label :for="`songInstrumentVideo-${activeSongInstrumentUploadModalContext.song.id}-${activeSongInstrumentUploadModalContext.instrument.id}`" class="form-label">Video MP4</label>
+                <input
+                  :id="`songInstrumentVideo-${activeSongInstrumentUploadModalContext.song.id}-${activeSongInstrumentUploadModalContext.instrument.id}`"
+                  type="file"
+                  accept="video/mp4"
+                  class="form-control"
+                  :disabled="isSongInstrumentUploadDisabled(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument)"
+                  @change="handleSongInstrumentVideoSelection(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument.id, $event)"
+                >
+              </div>
+              <div
+                v-if="shouldShowSongInstrumentProgress(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument.id)"
+              >
+                <div
+                  :data-testid="`upload-progress-${activeSongInstrumentUploadModalContext.song.id}-${activeSongInstrumentUploadModalContext.instrument.id}`"
+                  class="progress"
+                  role="progressbar"
+                  aria-label="Upload progress"
+                  :aria-valuenow="getSongInstrumentUploadState(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument.id).progress"
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                >
+                  <div
+                    class="progress-bar progress-bar-striped progress-bar-animated"
+                    :class="getEffectiveVideo(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument.id) ? 'bg-success' : 'bg-primary'"
+                    :style="{ width: `${getSongInstrumentUploadState(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument.id).progress}%` }"
+                  >
+                    {{ getSongInstrumentUploadState(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument.id).progress }}%
+                  </div>
+                </div>
+              </div>
+              <div
+                v-if="getSongInstrumentStatusMessage(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument)"
+                class="alert mb-0 py-2"
+                :class="getEffectiveVideo(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument.id) ? 'alert-success' : 'alert-info'"
+                role="alert"
+              >
+                {{ getSongInstrumentStatusMessage(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument) }}
+              </div>
+              <div
+                v-if="getSongInstrumentUploadErrorMessage(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument)"
+                class="alert alert-danger mb-0 py-2"
+                role="alert"
+              >
+                {{ getSongInstrumentUploadErrorMessage(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument) }}
+              </div>
+              <div v-if="getEffectiveVideo(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument.id)">
+                <a
+                  :href="getEffectiveVideo(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument.id)?.url"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  class="btn btn-sm btn-outline-success"
+                >
+                  Ver video
+                </a>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" @click="closeSongInstrumentUploadModal">
+                Cerrar
+              </button>
+              <button
+                v-if="shouldShowSongInstrumentUploadForm(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument.id)"
+                type="submit"
+                class="btn btn-primary"
+                :disabled="isSongInstrumentUploadSubmitDisabled(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument)"
+              >
+                <span
+                  v-if="getSongInstrumentUploadState(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument.id).isSubmitting"
+                  class="spinner-border spinner-border-sm me-2"
+                  aria-hidden="true"
+                ></span>
+                {{ getSongInstrumentSubmitLabel(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument) }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div
+      v-if="activeAssignMusicianModalContext && activeAssignMusicianModal"
+      class="modal d-block"
+      tabindex="-1"
+      role="dialog"
+      aria-modal="true"
+      :aria-labelledby="`assignMusicianModalTitle-${activeAssignMusicianModalContext.instrument.id}`"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 :id="`assignMusicianModalTitle-${activeAssignMusicianModalContext.instrument.id}`" class="modal-title h5">
+              Asignar músico · {{ activeAssignMusicianModalContext.instrument.name }}
+            </h4>
+            <button
+              type="button"
+              class="btn-close"
+              aria-label="Cerrar"
+              @click="closeAssignMusicianModal"
+            ></button>
+          </div>
+          <form @submit.prevent="handleAssignMusicianSubmit">
+            <div class="modal-body">
+              <label :for="`assignMusicianEmail-${activeAssignMusicianModalContext.instrument.id}`" class="form-label">Email del músico</label>
+              <input
+                :id="`assignMusicianEmail-${activeAssignMusicianModalContext.instrument.id}`"
+                :value="activeAssignMusicianModal.email"
+                type="email"
+                class="form-control"
+                placeholder="musico@ejemplo.com"
+                @input="handleAssignMusicianEmailInput"
+              >
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" @click="closeAssignMusicianModal">
+                Cancelar
+              </button>
+              <button type="submit" class="btn btn-primary">
+                Confirmar
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="isAnyModalOpen" class="modal-backdrop show"></div>
 
     <div
       v-if="isCreateSongModalOpen"
