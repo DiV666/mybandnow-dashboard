@@ -2,6 +2,8 @@
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { GetInstrumentByIdUseCase } from "../../../application/instrument/GetInstrumentByIdUseCase.js";
 import { GetInstrumentsUseCase } from "../../../application/instrument/GetInstrumentsUseCase.js";
+import { GetMusicianByIdUseCase } from "../../../application/musician/GetMusicianByIdUseCase.js";
+import { AssignSongInstrumentMusicianUseCase } from "../../../application/song/AssignSongInstrumentMusicianUseCase.js";
 import { CreateSongInstrumentUseCase } from "../../../application/song/CreateSongInstrumentUseCase.js";
 import { CreateSongUseCase } from "../../../application/song/CreateSongUseCase.js";
 import { GetBandSongsUseCase } from "../../../application/song/GetBandSongsUseCase.js";
@@ -18,6 +20,7 @@ import {
 } from "../../../domain/song/SongInstrumentResponse.js";
 import type { SongResponse } from "../../../domain/song/SongResponse.js";
 import { AxiosInstrumentRepository } from "../../../infrastructure/instrument/AxiosInstrumentRepository.js";
+import { AxiosMusicianRepository } from "../../../infrastructure/musician/AxiosMusicianRepository.js";
 import { AxiosSongRepository } from "../../../infrastructure/song/AxiosSongRepository.js";
 import { useBandStore } from "../../stores/useBandStore.js";
 import { useMusicianStore } from "../../stores/useMusicianStore.js";
@@ -76,10 +79,16 @@ interface AssignMusicianModalState {
 	songId: string;
 	instrumentId: string;
 	email: string;
+	isSubmitting: boolean;
+	errorMsg: string;
 }
 
 interface FileInputLike {
 	files?: FileList | File[] | null;
+}
+
+interface TextInputLike {
+	value?: string;
 }
 
 interface UploadErrorDetails {
@@ -94,6 +103,7 @@ type SongInstrumentFormMap = Record<string, SongInstrumentFormState>;
 type SongInstrumentUploadMap = Record<string, SongInstrumentUploadState>;
 type SongInstrumentDetailMap = Record<string, SongInstrumentDetailResponse>;
 type InstrumentNameMap = Record<string, string>;
+type MusicianDisplayNameMap = Record<string, string>;
 
 const SONG_INSTRUMENT_POLL_INTERVAL_MS = 5000;
 const SONG_INSTRUMENT_PROGRESS_TICK_MS = 400;
@@ -118,9 +128,11 @@ const songInstrumentUploads = ref<SongInstrumentUploadMap>({});
 const songInstrumentDetails = ref<SongInstrumentDetailMap>({});
 const availableInstruments = ref<InstrumentResponse[]>([]);
 const catalogInstrumentNames = ref<InstrumentNameMap>({});
+const musicianDisplayNames = ref<MusicianDisplayNameMap>({});
 
 const songRepository = new AxiosSongRepository();
 const instrumentRepository = new AxiosInstrumentRepository();
+const musicianRepository = new AxiosMusicianRepository();
 const createSongUseCase = new CreateSongUseCase(songRepository);
 const getBandSongsUseCase = new GetBandSongsUseCase(songRepository);
 const createSongInstrumentUseCase = new CreateSongInstrumentUseCase(songRepository);
@@ -130,6 +142,10 @@ const getSongInstrumentDetailUseCase = new GetSongInstrumentDetailUseCase(
 );
 const getInstrumentsUseCase = new GetInstrumentsUseCase(instrumentRepository);
 const getInstrumentByIdUseCase = new GetInstrumentByIdUseCase(instrumentRepository);
+const getMusicianByIdUseCase = new GetMusicianByIdUseCase(musicianRepository);
+const assignSongInstrumentMusicianUseCase = new AssignSongInstrumentMusicianUseCase(
+	songRepository,
+);
 const uploadSongInstrumentVideoUseCase = new UploadSongInstrumentVideoUseCase(songRepository);
 
 const selectedBand = computed(() => bandStore.selectedBand);
@@ -207,6 +223,7 @@ const songInstrumentProgressTimeouts = new Map<
 >();
 const songInstrumentPollVersions = new Map<string, number>();
 const instrumentDetailRequests = new Map<string, Promise<void>>();
+const musicianDetailRequests = new Map<string, Promise<void>>();
 let availableInstrumentsRequest: Promise<void> | null = null;
 let isViewMounted = true;
 let lastSongsRequestId = 0;
@@ -235,6 +252,27 @@ function getCatalogInstrumentName(instrumentId: string): string {
 		availableInstruments.value.find((instrument) => instrument.id === instrumentId)?.name ??
 		instrumentId
 	);
+}
+
+function setMusicianDisplayName(musicianId: string, displayName: string): void {
+	musicianDisplayNames.value = {
+		...musicianDisplayNames.value,
+		[musicianId]: displayName,
+	};
+}
+
+function resolveMusicianDisplayName(name: string, username: string): string {
+	const trimmedName = name.trim();
+	if (trimmedName.length > 0) {
+		return trimmedName;
+	}
+
+	const trimmedUsername = username.trim();
+	if (trimmedUsername.length > 0) {
+		return `@${trimmedUsername}`;
+	}
+
+	return "";
 }
 
 async function ensureAvailableInstrumentsLoaded(): Promise<void> {
@@ -304,6 +342,56 @@ async function preloadCatalogInstrumentNames(
 				await ensureCatalogInstrumentNameLoaded(instrumentId);
 			} catch {
 				// Keep the fallback name when the catalog detail cannot be resolved.
+			}
+		}),
+	);
+}
+
+async function ensureMusicianDisplayNameLoaded(musicianId: string): Promise<void> {
+	if (!musicianId || musicianDisplayNames.value[musicianId]) {
+		return;
+	}
+
+	const currentRequest = musicianDetailRequests.get(musicianId);
+	if (currentRequest) {
+		return currentRequest;
+	}
+
+	const request = (async () => {
+		const musician = await getMusicianByIdUseCase.run(musicianId);
+		if (!isViewMounted || !musician) {
+			return;
+		}
+
+		const displayName = resolveMusicianDisplayName(
+			musician.name,
+			musician.username,
+		);
+		if (!displayName) {
+			return;
+		}
+
+		setMusicianDisplayName(musician.id, displayName);
+	})().finally(() => {
+		musicianDetailRequests.delete(musicianId);
+	});
+
+	musicianDetailRequests.set(musicianId, request);
+	return request;
+}
+
+async function preloadMusicianDisplayNames(
+	instruments: SongInstrumentListItemResponse[],
+): Promise<void> {
+	const uniqueMusicianIds = [...new Set(instruments.map((instrument) => instrument.musicianId))]
+		.filter((musicianId) => musicianId.length > 0);
+
+	await Promise.all(
+		uniqueMusicianIds.map(async (musicianId) => {
+			try {
+				await ensureMusicianDisplayNameLoaded(musicianId);
+			} catch {
+				// Keep the raw musician id visible when the profile lookup fails.
 			}
 		}),
 	);
@@ -413,6 +501,8 @@ function setSongInstrumentDetail(detail: SongInstrumentDetailResponse): void {
 			instrument.id === detail.id
 				? {
 					...instrument,
+					name: detail.name,
+					musicianId: detail.musicianId,
 					upload: detail.upload,
 				}
 				: instrument,
@@ -475,10 +565,18 @@ function getSongInstrumentMusicianDisplayName(
 ): string {
 	const currentProfile = musicianStore.profile;
 	if (currentProfile?.id === instrument.musicianId) {
-		return currentProfile.name || currentProfile.username || instrument.musicianId;
+		return (
+			resolveMusicianDisplayName(currentProfile.name, currentProfile.username) ||
+			instrument.musicianId ||
+			"Sin asignar"
+		);
 	}
 
-	return instrument.musicianId || "Sin asignar";
+	return (
+		musicianDisplayNames.value[instrument.musicianId] ??
+		instrument.musicianId ??
+		"Sin asignar"
+	);
 }
 
 function isSongInstrumentInProgress(
@@ -617,6 +715,37 @@ function mapUploadErrorMessage(
 	}
 
 	return fallbackMessage;
+}
+
+function mapAssignMusicianErrorMessage(details: UploadErrorDetails): string {
+	const message = details.message?.toLowerCase() ?? "";
+	const code = details.code?.toLowerCase() ?? "";
+	const combined = `${code} ${message}`;
+
+	if (
+		combined.includes("invalid email") ||
+		combined.includes("musicianemail must be a valid email")
+	) {
+		return "Escribí un email válido para asignar el músico.";
+	}
+
+	if (combined.includes("no musician profile") || combined.includes("profile required")) {
+		return "El email no pertenece a un músico con perfil activo.";
+	}
+
+	if (details.status === 401 || details.status === 403) {
+		return "No tienes permisos para asignar músicos a este instrumento.";
+	}
+
+	if (details.status === 404 || combined.includes("songinstrument_not_exists")) {
+		return "No se encontró el instrumento que intentabas actualizar.";
+	}
+
+	if (details.status === 400) {
+		return "No pudimos asignar el músico con ese email.";
+	}
+
+	return "Ocurrió un error al asignar el músico. Inténtalo de nuevo.";
 }
 
 function getSongInstrumentUploadErrorMessage(
@@ -939,6 +1068,13 @@ async function refreshSongInstrumentDetail(
 			// Catalog name resolution must not break the song instrument flow.
 		}
 	}
+	if (detail.musicianId) {
+		try {
+			await ensureMusicianDisplayNameLoaded(detail.musicianId);
+		} catch {
+			// Keep the raw musician id visible when the profile lookup fails.
+		}
+	}
 	return detail;
 }
 
@@ -1102,7 +1238,10 @@ async function loadSongInstruments(
 
 	songInstruments.value = Object.fromEntries(entries);
 	await Promise.all(
-		entries.map(([, instruments]) => preloadCatalogInstrumentNames(instruments)),
+		entries.flatMap(([, instruments]) => [
+			preloadCatalogInstrumentNames(instruments),
+			preloadMusicianDisplayNames(instruments),
+		]),
 	);
 	await Promise.all(
 		entries.flatMap(([songId, instruments]) =>
@@ -1121,6 +1260,7 @@ async function loadSongs(bandId: string | null) {
 		songInstrumentForms.value = {};
 		songInstrumentUploads.value = {};
 		songInstrumentDetails.value = {};
+		musicianDisplayNames.value = {};
 		songsErrorMsg.value = "";
 		isLoadingSongs.value = false;
 		return;
@@ -1129,6 +1269,7 @@ async function loadSongs(bandId: string | null) {
 	isLoadingSongs.value = true;
 	songsErrorMsg.value = "";
 	songInstrumentDetails.value = {};
+	musicianDisplayNames.value = {};
 
 	try {
 		const nextSongs = await getBandSongsUseCase.run(bandId);
@@ -1151,6 +1292,7 @@ async function loadSongs(bandId: string | null) {
 		songInstrumentForms.value = {};
 		songInstrumentUploads.value = {};
 		songInstrumentDetails.value = {};
+		musicianDisplayNames.value = {};
 		songsErrorMsg.value =
 			error instanceof Error
 				? error.message
@@ -1314,6 +1456,8 @@ function openAssignMusicianModal(songId: string, instrumentId: string): void {
 		songId,
 		instrumentId,
 		email: "",
+		isSubmitting: false,
+		errorMsg: "",
 	};
 }
 
@@ -1323,21 +1467,72 @@ function closeAssignMusicianModal(): void {
 
 function handleAssignMusicianEmailInput(event: Event): void {
 	const target = event.target;
-	if (
-		!activeAssignMusicianModal.value ||
-		!(target instanceof HTMLInputElement)
-	) {
+	const nextEmail =
+		target && typeof target === "object" && "value" in target
+			? ((target as TextInputLike).value ?? "")
+			: "";
+	if (!activeAssignMusicianModal.value) {
 		return;
 	}
 
 	activeAssignMusicianModal.value = {
 		...activeAssignMusicianModal.value,
-		email: target.value,
+		email: nextEmail,
+		errorMsg: "",
 	};
 }
 
-function handleAssignMusicianSubmit(): void {
-	closeAssignMusicianModal();
+async function handleAssignMusicianSubmit(): Promise<void> {
+	if (!activeAssignMusicianModal.value) {
+		return;
+	}
+
+	const modalState = activeAssignMusicianModal.value;
+	const musicianEmail = modalState.email.trim();
+	if (!musicianEmail) {
+		activeAssignMusicianModal.value = {
+			...modalState,
+			errorMsg: "Escribí el email del músico antes de confirmar.",
+		};
+		return;
+	}
+
+	activeAssignMusicianModal.value = {
+		...modalState,
+		email: musicianEmail,
+		isSubmitting: true,
+		errorMsg: "",
+	};
+
+	try {
+		await assignSongInstrumentMusicianUseCase.run(
+			modalState.songId,
+			modalState.instrumentId,
+			musicianEmail,
+		);
+		await refreshSongInstrumentDetail(modalState.songId, modalState.instrumentId);
+		if (
+			activeAssignMusicianModal.value?.songId === modalState.songId &&
+			activeAssignMusicianModal.value?.instrumentId === modalState.instrumentId
+		) {
+			closeAssignMusicianModal();
+		}
+	} catch (error: unknown) {
+		if (
+			activeAssignMusicianModal.value?.songId !== modalState.songId ||
+			activeAssignMusicianModal.value?.instrumentId !== modalState.instrumentId
+		) {
+			return;
+		}
+
+		activeAssignMusicianModal.value = {
+			...activeAssignMusicianModal.value,
+			isSubmitting: false,
+			errorMsg: mapAssignMusicianErrorMessage(
+				extractUploadErrorDetails(error),
+			),
+		};
+	}
 }
 
 function handleSongInstrumentVideoSelection(
@@ -1897,11 +2092,15 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
               type="button"
               class="btn-close"
               aria-label="Cerrar"
+              :disabled="activeAssignMusicianModal.isSubmitting"
               @click="closeAssignMusicianModal"
             ></button>
           </div>
           <form @submit.prevent="handleAssignMusicianSubmit">
             <div class="modal-body">
+              <div v-if="activeAssignMusicianModal.errorMsg" class="alert alert-danger" role="alert">
+                {{ activeAssignMusicianModal.errorMsg }}
+              </div>
               <label :for="`assignMusicianEmail-${activeAssignMusicianModalContext.instrument.id}`" class="form-label">Email del músico</label>
               <input
                 :id="`assignMusicianEmail-${activeAssignMusicianModalContext.instrument.id}`"
@@ -1909,14 +2108,20 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                 type="email"
                 class="form-control"
                 placeholder="musico@ejemplo.com"
+                :disabled="activeAssignMusicianModal.isSubmitting"
                 @input="handleAssignMusicianEmailInput"
               >
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-outline-secondary" @click="closeAssignMusicianModal">
+              <button type="button" class="btn btn-outline-secondary" :disabled="activeAssignMusicianModal.isSubmitting" @click="closeAssignMusicianModal">
                 Cancelar
               </button>
-              <button type="submit" class="btn btn-primary">
+              <button type="submit" class="btn btn-primary" :disabled="activeAssignMusicianModal.isSubmitting">
+                <span
+                  v-if="activeAssignMusicianModal.isSubmitting"
+                  class="spinner-border spinner-border-sm me-2"
+                  aria-hidden="true"
+                ></span>
                 Confirmar
               </button>
             </div>

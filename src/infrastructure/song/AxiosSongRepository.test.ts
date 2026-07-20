@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { AxiosSongRepository } from "./AxiosSongRepository.js";
 import { httpClient } from "../http/httpClient.js";
 import { InstrumentId } from "../../domain/instrument/value-object/InstrumentId.js";
+import { MusicianEmail } from "../../domain/musician/value-object/MusicianEmail.js";
 import { MusicianId } from "../../domain/musician/value-object/MusicianId.js";
 import { Song } from "../../domain/song/Song.js";
 import { SongInstrument } from "../../domain/song/SongInstrument.js";
@@ -181,6 +182,25 @@ describe("AxiosSongRepository", () => {
 				status: "COMPLETED",
 			},
 		});
+	});
+
+	it("should patch the selected song instrument with the musician email", async () => {
+		const patchSpy = vi
+			.spyOn(httpClient, "patch")
+			.mockResolvedValue({ data: undefined } as never);
+
+		await repository.assignMusician(
+			"song-123",
+			"instrument-456",
+			new MusicianEmail("artist@example.com"),
+		);
+
+		expect(patchSpy).toHaveBeenCalledWith(
+			"/v1/songs/song-123/instruments/instrument-456",
+			{
+				musicianEmail: "artist@example.com",
+			},
+		);
 	});
 
 	it("should upload an MP4 file as multipart form data for the selected song instrument with a 2 minute timeout", async () => {

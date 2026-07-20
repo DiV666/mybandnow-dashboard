@@ -3,6 +3,7 @@ import {
 	Musician,
 	type MusicianPrimitives,
 } from "../../domain/musician/Musician.js";
+import type { MusicianSummaryResponse } from "../../domain/musician/MusicianSummaryResponse.js";
 import type { MusicianRepository } from "../../domain/musician/repository/MusicianRepository.js";
 import type { MusicianId } from "../../domain/musician/value-object/MusicianId.js";
 import type { MusicianName } from "../../domain/musician/value-object/MusicianName.js";
@@ -33,6 +34,20 @@ export class AxiosMusicianRepository implements MusicianRepository {
 		try {
 			const response = await httpClient.get<MusicianPrimitives>("/v1/profile");
 			return Musician.fromPrimitives(response.data);
+		} catch (error: unknown) {
+			if (hasResponseStatus(error, 404)) {
+				return null;
+			}
+			throw error;
+		}
+	}
+
+	async getById(id: string): Promise<MusicianSummaryResponse | null> {
+		try {
+			const response = await httpClient.get<MusicianSummaryResponse>(
+				`/v1/musicians/${id}`,
+			);
+			return response.data;
 		} catch (error: unknown) {
 			if (hasResponseStatus(error, 404)) {
 				return null;

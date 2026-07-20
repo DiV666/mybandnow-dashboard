@@ -30,6 +30,35 @@ describe("AxiosMusicianRepository", () => {
 		});
 	});
 
+	it("should return the musician public data by id", async () => {
+		vi.spyOn(httpClient, "get").mockResolvedValue({
+			data: {
+				id: "musician-1",
+				name: "Jimi Hendrix",
+				username: "jimi_hendrix",
+			},
+		});
+
+		const musician = await repository.getById("musician-1");
+
+		expect(httpClient.get).toHaveBeenCalledWith("/v1/musicians/musician-1");
+		expect(musician).toEqual({
+			id: "musician-1",
+			name: "Jimi Hendrix",
+			username: "jimi_hendrix",
+		});
+	});
+
+	it("should return null when the musician public data is not found", async () => {
+		vi.spyOn(httpClient, "get").mockRejectedValue({
+			response: { status: 404 },
+		});
+
+		const musician = await repository.getById("missing-musician");
+
+		expect(musician).toBeNull();
+	});
+
 	it("should return null when the private profile is not found", async () => {
 		vi.spyOn(httpClient, "get").mockRejectedValue({
 			response: { status: 404 },

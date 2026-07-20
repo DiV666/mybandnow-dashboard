@@ -1,5 +1,6 @@
 import type { Song } from "../Song.js";
 import type { SongInstrument } from "../SongInstrument.js";
+import type { MusicianEmail } from "../../musician/value-object/MusicianEmail.js";
 import type {
 	SongInstrumentDetailResponse,
 	SongInstrumentListItemResponse,
@@ -17,6 +18,11 @@ export interface SongRepository {
 		songId: string,
 		instrumentId: string,
 	): Promise<SongInstrumentDetailResponse>;
+	assignMusician(
+		songId: string,
+		instrumentId: string,
+		musicianEmail: MusicianEmail,
+	): Promise<void>;
 	uploadInstrumentVideo(
 		songId: string,
 		instrumentId: string,

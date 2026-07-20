@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import { createRenderer, nextTick } from "vue";
 import { Band } from "../../../domain/band/Band.js";
+import { MusicianEmail } from "../../../domain/musician/value-object/MusicianEmail.js";
 import type { Song } from "../../../domain/song/Song.js";
 import type { SongInstrument } from "../../../domain/song/SongInstrument.js";
 
@@ -12,11 +13,14 @@ const {
 	repositorySaveInstrumentMock,
 	repositoryGetInstrumentsBySongIdMock,
 	repositoryGetInstrumentByIdMock,
+	repositoryAssignMusicianMock,
 	repositoryUploadInstrumentVideoMock,
 	instrumentRepositoryGetAllMock,
 	instrumentRepositoryGetByIdMock,
+	musicianRepositoryGetByIdMock,
 	repositoryCtor,
 	instrumentRepositoryCtor,
+	musicianRepositoryCtor,
 } = vi.hoisted(() => ({
 	sessionStorage: {
 		getSelectedBandId: vi.fn<() => string | null>(),
@@ -34,6 +38,14 @@ const {
 		vi.fn<(songId: string) => Promise<unknown[]>>(),
 	repositoryGetInstrumentByIdMock:
 		vi.fn<(songId: string, instrumentId: string) => Promise<unknown>>(),
+	repositoryAssignMusicianMock:
+		vi.fn<
+			(
+				songId: string,
+				instrumentId: string,
+				musicianEmail: string,
+			) => Promise<void>
+		>(),
 	repositoryUploadInstrumentVideoMock:
 		vi.fn<
 			(songId: string, instrumentId: string, videoFile: File) => Promise<void>
@@ -41,8 +53,11 @@ const {
 	instrumentRepositoryGetAllMock: vi.fn<() => Promise<unknown[]>>(),
 	instrumentRepositoryGetByIdMock:
 		vi.fn<(instrumentId: string) => Promise<unknown>>(),
+	musicianRepositoryGetByIdMock:
+		vi.fn<(musicianId: string) => Promise<unknown>>(),
 	repositoryCtor: vi.fn(),
 	instrumentRepositoryCtor: vi.fn(),
+	musicianRepositoryCtor: vi.fn(),
 }));
 
 vi.mock("../../../infrastructure/storage/browserSessionStorage.js", () => ({
@@ -78,6 +93,14 @@ vi.mock("../../../infrastructure/song/AxiosSongRepository.js", () => ({
 			return repositoryGetInstrumentByIdMock(songId, instrumentId);
 		}
 
+		async assignMusician(
+			songId: string,
+			instrumentId: string,
+			musicianEmail: string,
+		): Promise<void> {
+			return repositoryAssignMusicianMock(songId, instrumentId, musicianEmail);
+		}
+
 		async uploadInstrumentVideo(
 			songId: string,
 			instrumentId: string,
@@ -110,6 +133,26 @@ vi.mock(
 		},
 	}),
 );
+
+vi.mock("../../../infrastructure/musician/AxiosMusicianRepository.js", () => ({
+	AxiosMusicianRepository: class {
+		constructor() {
+			musicianRepositoryCtor();
+		}
+
+		async getById(musicianId: string): Promise<unknown> {
+			return musicianRepositoryGetByIdMock(musicianId);
+		}
+
+		async getProfile(): Promise<null> {
+			return null;
+		}
+
+		async createProfile(): Promise<void> {
+			return;
+		}
+	},
+}));
 
 import SongsView from "./SongsView.vue";
 import { useBandStore } from "../../stores/useBandStore.js";
@@ -591,6 +634,11 @@ async function openUploadModal(root: TestElementNode) {
 
 function setInputValue(input: TestElementNode, value: string) {
 	input.value = value;
+	const onInput = input.props.onInput;
+	if (typeof onInput === "function") {
+		onInput({ target: input });
+		return;
+	}
 	input.dispatchEvent({ type: "input", target: input });
 }
 
@@ -671,12 +719,15 @@ describe("SongsView", () => {
 		repositoryGetInstrumentsBySongIdMock.mockReset();
 		repositoryGetInstrumentsBySongIdMock.mockResolvedValue([]);
 		repositoryGetInstrumentByIdMock.mockReset();
+		repositoryAssignMusicianMock.mockReset();
 		repositoryUploadInstrumentVideoMock.mockReset();
 		instrumentRepositoryGetAllMock.mockReset();
 		instrumentRepositoryGetAllMock.mockResolvedValue([]);
 		instrumentRepositoryGetByIdMock.mockReset();
+		musicianRepositoryGetByIdMock.mockReset();
 		repositoryCtor.mockReset();
 		instrumentRepositoryCtor.mockReset();
+		musicianRepositoryCtor.mockReset();
 		(globalThis as { Document?: typeof Document }).Document ??=
 			class Document {} as typeof Document;
 		(globalThis as { ShadowRoot?: typeof ShadowRoot }).ShadowRoot ??=
@@ -729,6 +780,11 @@ describe("SongsView", () => {
 			description: "Amplified guitar",
 			createdAt: "2026-07-15T09:55:00.000Z",
 		});
+		musicianRepositoryGetByIdMock.mockResolvedValueOnce({
+			id: "musician-1",
+			name: "Keith Richards",
+			username: "keith",
+		});
 		const view = renderSongsView(() => {
 			const store = useBandStore();
 			store.setBands([createBand("band-1", "The Stones")]);
@@ -738,6 +794,7 @@ describe("SongsView", () => {
 		await flushView();
 
 		expect(repositoryGetByBandIdMock).toHaveBeenCalledWith("band-1");
+		expect(musicianRepositoryGetByIdMock).toHaveBeenCalledWith("musician-1");
 		expect(findByText(view.root, "Paint It Black")).not.toBeNull();
 		const table = findElement(view.root, (node) => node.type === "table");
 		expect(table).not.toBeNull();
@@ -752,11 +809,67 @@ describe("SongsView", () => {
 			"Guitarra principal",
 		);
 		expect(textContent(table as TestElementNode)).toContain("Electric Guitar");
-		expect(textContent(table as TestElementNode)).toContain("musician-1");
+		expect(textContent(table as TestElementNode)).toContain("Keith Richards");
+		expect(textContent(table as TestElementNode)).not.toContain("musician-1");
 		expect(textContent(table as TestElementNode)).toContain("Editar");
 		expect(textContent(table as TestElementNode)).toContain("Subir vídeo");
 		expect(textContent(table as TestElementNode)).toContain("Asignar músico");
 		expect(findByText(view.root, "Ver en YouTube")).not.toBeNull();
+
+		view.unmount();
+	});
+
+	it("falls back to the musician username and caches lookups for repeated musician ids", async () => {
+		repositoryGetByBandIdMock.mockResolvedValueOnce([
+			{
+				id: "song-1",
+				bandId: "band-1",
+				title: "Paint It Black",
+				originalVideoclipUrl: "https://www.youtube.com/watch?v=O4irXQhgMqg",
+			},
+		]);
+		instrumentRepositoryGetAllMock.mockResolvedValueOnce([]);
+		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
+			{
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentId: "catalog-1",
+				songId: "song-1",
+				musicianId: "musician-2",
+				createdAt: "2026-07-15T10:00:00.000Z",
+			},
+			{
+				id: "instrument-2",
+				name: "Guitarra rítmica",
+				instrumentId: "catalog-1",
+				songId: "song-1",
+				musicianId: "musician-2",
+				createdAt: "2026-07-15T10:01:00.000Z",
+			},
+		]);
+		instrumentRepositoryGetByIdMock.mockResolvedValueOnce({
+			id: "catalog-1",
+			name: "Electric Guitar",
+			description: "Amplified guitar",
+			createdAt: "2026-07-15T09:55:00.000Z",
+		});
+		musicianRepositoryGetByIdMock.mockResolvedValueOnce({
+			id: "musician-2",
+			name: "",
+			username: "ronnie",
+		});
+		const view = renderSongsView(() => {
+			const store = useBandStore();
+			store.setBands([createBand("band-1", "The Stones")]);
+		});
+
+		await flushView();
+		await flushView();
+
+		expect(musicianRepositoryGetByIdMock).toHaveBeenCalledTimes(1);
+		expect(musicianRepositoryGetByIdMock).toHaveBeenCalledWith("musician-2");
+		expect(findByText(view.root, "@ronnie")).not.toBeNull();
+		expect(textContent(view.root)).not.toContain("musician-2");
 
 		view.unmount();
 	});
@@ -1581,7 +1694,7 @@ describe("SongsView", () => {
 		view.unmount();
 	});
 
-	it("opens the assign musician modal and closes it on confirm or cancel without calling the backend", async () => {
+	it("assigns a musician by email, closes the modal, and refreshes the row on success", async () => {
 		repositoryGetByBandIdMock.mockResolvedValueOnce([
 			{
 				id: "song-1",
@@ -1614,6 +1727,18 @@ describe("SongsView", () => {
 		await flushView();
 		await flushView();
 
+		repositoryAssignMusicianMock.mockResolvedValueOnce(undefined);
+		repositoryGetInstrumentByIdMock.mockResolvedValueOnce({
+			id: "instrument-1",
+			name: "Guitarra principal",
+			instrumentId: "catalog-1",
+			songId: "song-1",
+			musicianId: "musician-2",
+			createdAt: "2026-07-15T10:00:00.000Z",
+			video: null,
+			upload: null,
+		});
+
 		clickButton(findButtonByText(view.root, "Asignar músico"));
 		await flushView();
 
@@ -1633,19 +1758,94 @@ describe("SongsView", () => {
 			) as TestElementNode,
 		);
 		await flushView();
+		await flushView();
+
+		expect(repositoryAssignMusicianMock).toHaveBeenCalledWith(
+			"song-1",
+			"instrument-1",
+			new MusicianEmail("player@example.com"),
+		);
+		expect(repositoryGetInstrumentByIdMock).toHaveBeenNthCalledWith(
+			1,
+			"song-1",
+			"instrument-1",
+		);
 		expect(
 			queryInput(view.root, "assignMusicianEmail-instrument-1"),
 		).toBeNull();
+		expect(findByText(view.root, "musician-2")).not.toBeNull();
 		expect(repositorySaveInstrumentMock).not.toHaveBeenCalled();
 		expect(repositoryUploadInstrumentVideoMock).not.toHaveBeenCalled();
 
+		view.unmount();
+	});
+
+	it("keeps the assign musician modal open and shows the backend error when assignment fails", async () => {
+		repositoryGetByBandIdMock.mockResolvedValueOnce([
+			{
+				id: "song-1",
+				bandId: "band-1",
+				title: "Paint It Black",
+				originalVideoclipUrl: "https://www.youtube.com/watch?v=O4irXQhgMqg",
+			},
+		]);
+		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
+			{
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentId: "catalog-1",
+				songId: "song-1",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+			},
+		]);
+		instrumentRepositoryGetByIdMock.mockResolvedValueOnce({
+			id: "catalog-1",
+			name: "Electric Guitar",
+			description: "Amplified guitar",
+			createdAt: "2026-07-15T09:55:00.000Z",
+		});
+		repositoryAssignMusicianMock.mockRejectedValueOnce({
+			response: {
+				status: 400,
+				data: {
+					message: "Invalid email",
+				},
+			},
+		});
+		const view = renderSongsView(() => {
+			const store = useBandStore();
+			store.setBands([createBand("band-1", "The Stones")]);
+		});
+
+		await flushView();
+		await flushView();
+
 		clickButton(findButtonByText(view.root, "Asignar músico"));
 		await flushView();
-		clickButton(findButtonByText(view.root, "Cancelar"));
+		setInputValue(
+			findInput(view.root, "assignMusicianEmail-instrument-1"),
+			"invalid-email",
+		);
 		await flushView();
+		await submitForm(
+			findElement(
+				view.root,
+				(node) =>
+					node.type === "form" && textContent(node).includes("Confirmar"),
+			) as TestElementNode,
+		);
+		await flushView();
+		await flushView();
+
+		expect(repositoryAssignMusicianMock).not.toHaveBeenCalled();
 		expect(
-			queryInput(view.root, "assignMusicianEmail-instrument-1"),
-		).toBeNull();
+			findInput(view.root, "assignMusicianEmail-instrument-1"),
+		).not.toBeNull();
+		expect(
+			findByText(view.root, "Escribí un email válido para asignar el músico."),
+		).not.toBeNull();
+		expect(repositoryGetInstrumentByIdMock).not.toHaveBeenCalled();
 
 		view.unmount();
 	});

@@ -2,6 +2,7 @@ import { httpClient } from "../http/httpClient.js";
 import type { SongRepository } from "../../domain/song/repository/SongRepository.js";
 import type { Song } from "../../domain/song/Song.js";
 import type { SongInstrument } from "../../domain/song/SongInstrument.js";
+import type { MusicianEmail } from "../../domain/musician/value-object/MusicianEmail.js";
 import type {
 	SongInstrumentCollectionResponse,
 	SongInstrumentDetailResponse,
@@ -54,6 +55,16 @@ export class AxiosSongRepository implements SongRepository {
 		);
 
 		return response.data;
+	}
+
+	async assignMusician(
+		songId: string,
+		instrumentId: string,
+		musicianEmail: MusicianEmail,
+	): Promise<void> {
+		await httpClient.patch(`/v1/songs/${songId}/instruments/${instrumentId}`, {
+			musicianEmail: musicianEmail.value,
+		});
 	}
 
 	async uploadInstrumentVideo(

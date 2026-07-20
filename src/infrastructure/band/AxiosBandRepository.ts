@@ -1,5 +1,10 @@
 import type { BandRepository } from "../../domain/band/repository/BandRepository.js";
 import { Band, type BandPrimitives } from "../../domain/band/Band.js";
+import type {
+	BandMemberCollectionResponse,
+	BandMemberResponse,
+} from "../../domain/band/BandMemberResponse.js";
+import type { MusicianEmail } from "../../domain/musician/value-object/MusicianEmail.js";
 import { httpClient } from "../http/httpClient.js";
 
 function hasResponseStatus(
@@ -41,8 +46,21 @@ export class AxiosBandRepository implements BandRepository {
 		}
 	}
 
+	async getMembers(bandId: string): Promise<BandMemberResponse[]> {
+		const response = await httpClient.get<BandMemberCollectionResponse>(
+			`/v1/bands/${bandId}/members`,
+		);
+		return response.data.items;
+	}
+
 	async save(band: Band): Promise<void> {
 		const primitives = band.toPrimitives();
 		await httpClient.post("/v1/bands", primitives);
+	}
+
+	async addMember(bandId: string, musicianEmail: MusicianEmail): Promise<void> {
+		await httpClient.post(`/v1/bands/${bandId}/members`, {
+			musicianEmail: musicianEmail.value,
+		});
 	}
 }
