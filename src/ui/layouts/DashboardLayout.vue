@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { GetMyBandsUseCase } from '../../application/band/GetMyBandsUseCase.js';
+import { AxiosBandRepository } from '../../infrastructure/band/AxiosBandRepository.js';
 import { useAuthStore } from '../stores/useAuthStore.js';
 import { useBandStore } from '../stores/useBandStore.js';
 import { useMusicianStore } from '../stores/useMusicianStore.js';
-import { GetMyBandsUseCase } from '../../application/band/GetMyBandsUseCase.js';
-import { AxiosBandRepository } from '../../infrastructure/band/AxiosBandRepository.js';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -18,35 +18,89 @@ const getMyBandsUseCase = new GetMyBandsUseCase(bandRepository);
 const isLoading = ref(true);
 const isUserMenuOpen = ref(false);
 const isBandMenuOpen = ref(false);
-const shouldShowBandShell = computed(() => bandStore.hasBands || Boolean(bandStore.selectedBandId));
-const selectedBandName = computed(() => bandStore.selectedBand?.name.value ?? 'Seleccionar banda');
+const userMenuContainer = ref<HTMLElement | null>(null);
+const bandMenuContainer = ref<HTMLElement | null>(null);
 
-onMounted(async () => {
-  try {
-    await musicianStore.fetchProfile();
-    const bands = await getMyBandsUseCase.run();
-    bandStore.setBands(bands);
+const shouldShowBandShell = computed(
+  () => bandStore.hasBands || Boolean(bandStore.selectedBandId),
+);
+const selectedBandName = computed(
+  () => bandStore.selectedBand?.name.value ?? 'Seleccionar banda',
+);
 
-    if (bandStore.shouldRedirectToCreateFirstBand) {
-      router.push({ name: 'CreateFirstBand' });
-    }
-  } catch (error) {
-    console.error('Error fetching bands', error);
-  } finally {
-    isLoading.value = false;
+type MaybeContainedTarget = EventTarget & {
+  parentNode?: MaybeContainedTarget | null;
+};
+
+const closeAllMenus = () => {
+  isUserMenuOpen.value = false;
+  isBandMenuOpen.value = false;
+};
+
+const isNodeWithinContainer = (
+  target: EventTarget | null,
+  container: HTMLElement | null,
+): boolean => {
+  if (!target || !container) {
+    return false;
   }
-});
+
+  if (typeof container.contains === 'function' && container.contains(target as Node)) {
+    return true;
+  }
+
+  let currentTarget: MaybeContainedTarget | null = target as MaybeContainedTarget;
+
+  while (currentTarget) {
+    if (currentTarget === container) {
+      return true;
+    }
+
+    currentTarget = currentTarget.parentNode ?? null;
+  }
+
+  return false;
+};
+
+const handleDocumentClick = (event: MouseEvent) => {
+  const clickedUserMenu = isNodeWithinContainer(event.target, userMenuContainer.value);
+  const clickedBandMenu = isNodeWithinContainer(event.target, bandMenuContainer.value);
+
+  if (!clickedUserMenu) {
+    isUserMenuOpen.value = false;
+  }
+
+  if (!clickedBandMenu) {
+    isBandMenuOpen.value = false;
+  }
+};
+
+const handleDocumentKeydown = (event: KeyboardEvent) => {
+  if (event.key === 'Escape') {
+    closeAllMenus();
+  }
+};
 
 const goToCreateFirstBand = () => {
   router.push({ name: 'CreateFirstBand' });
 };
 
 const toggleUserMenu = () => {
-  isUserMenuOpen.value = !isUserMenuOpen.value;
+  const nextIsOpen = !isUserMenuOpen.value;
+  isUserMenuOpen.value = nextIsOpen;
+
+  if (nextIsOpen) {
+    isBandMenuOpen.value = false;
+  }
 };
 
 const toggleBandMenu = () => {
-  isBandMenuOpen.value = !isBandMenuOpen.value;
+  const nextIsOpen = !isBandMenuOpen.value;
+  isBandMenuOpen.value = nextIsOpen;
+
+  if (nextIsOpen) {
+    isUserMenuOpen.value = false;
+  }
 };
 
 const goToProfile = () => {
@@ -66,6 +120,30 @@ const logout = () => {
   musicianStore.clear();
   router.push({ name: 'Landing' });
 };
+
+onMounted(async () => {
+  document.addEventListener('click', handleDocumentClick);
+  document.addEventListener('keydown', handleDocumentKeydown);
+
+  try {
+    await musicianStore.fetchProfile();
+    const bands = await getMyBandsUseCase.run();
+    bandStore.setBands(bands);
+
+    if (bandStore.shouldRedirectToCreateFirstBand) {
+      router.push({ name: 'CreateFirstBand' });
+    }
+  } catch (error) {
+    console.error('Error fetching bands', error);
+  } finally {
+    isLoading.value = false;
+  }
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleDocumentClick);
+  document.removeEventListener('keydown', handleDocumentKeydown);
+});
 </script>
 
 <template>
@@ -76,39 +154,43 @@ const logout = () => {
   </div>
 
   <div v-else class="dashboard-layout container-fluid d-flex flex-column p-0">
-    <!-- Navbar superior -->
     <header class="navbar dashboard-topbar px-3 py-2 shadow-sm gap-3">
       <a class="navbar-brand dashboard-brand me-0 px-0" href="#">Mybandnow Admin</a>
 
-      <!-- Selector de Banda (AWS Region style) -->
-      <div v-if="bandStore.hasBands" class="dashboard-topbar__center">
+      <div
+        v-if="bandStore.hasBands"
+        ref="bandMenuContainer"
+        class="dashboard-topbar__center"
+      >
         <div class="dashboard-band-switcher d-flex align-items-center justify-content-center gap-2 flex-wrap">
           <span class="dashboard-label text-nowrap mb-0">Banda Activa:</span>
-              <div class="dashboard-band-dropdown position-relative">
-                <button
-                  type="button"
-                  class="btn dashboard-header-dropdown-toggle d-inline-flex align-items-center justify-content-between gap-2"
-                  data-testid="band-switcher-toggle"
-                  :aria-expanded="isBandMenuOpen"
-                  aria-haspopup="true"
-                  @click="toggleBandMenu"
-                >
 
+          <div class="dashboard-band-dropdown position-relative">
+            <button
+              type="button"
+              class="btn dashboard-header-dropdown-toggle d-inline-flex align-items-center justify-content-between gap-2"
+              data-testid="band-switcher-toggle"
+              :aria-expanded="isBandMenuOpen"
+              aria-haspopup="true"
+              @click="toggleBandMenu"
+            >
               <span class="dashboard-band-toggle__label text-truncate">{{ selectedBandName }}</span>
               <span aria-hidden="true" class="dashboard-band-toggle__icon">▾</span>
             </button>
 
-                <div v-if="isBandMenuOpen" class="dropdown-menu show dashboard-header-dropdown-menu dashboard-header-dropdown-panel">
-                  <button
-                    v-for="band in bandStore.bands"
-                    :key="band.id.value"
-                    type="button"
-                    class="dropdown-item dashboard-band-option"
-                    data-band-option="true"
-                    :class="{ 'dashboard-band-option--active': band.id.value === bandStore.selectedBandId }"
-                    @click="selectBand(band.id.value)"
-                  >
-
+            <div
+              v-if="isBandMenuOpen"
+              class="dropdown-menu show dashboard-header-dropdown-menu dashboard-header-dropdown-panel"
+            >
+              <button
+                v-for="band in bandStore.bands"
+                :key="band.id.value"
+                type="button"
+                class="dropdown-item dashboard-band-option"
+                data-band-option="true"
+                :class="{ 'dashboard-band-option--active': band.id.value === bandStore.selectedBandId }"
+                @click="selectBand(band.id.value)"
+              >
                 <span class="text-truncate">{{ band.name.value }}</span>
                 <span v-if="band.id.value === bandStore.selectedBandId" aria-hidden="true">✓</span>
               </button>
@@ -116,7 +198,11 @@ const logout = () => {
           </div>
         </div>
       </div>
-      <div v-else-if="!shouldShowBandShell" class="dashboard-topbar__center dashboard-topbar__center--fallback">
+
+      <div
+        v-else-if="!shouldShowBandShell"
+        class="dashboard-topbar__center dashboard-topbar__center--fallback"
+      >
         <button
           type="button"
           class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2"
@@ -138,13 +224,20 @@ const logout = () => {
         </button>
       </div>
 
-      <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu">
+      <button
+        class="navbar-toggler position-absolute d-md-none collapsed"
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#sidebarMenu"
+      >
         <span class="navbar-toggler-icon"></span>
       </button>
 
-        <div class="navbar-nav dashboard-user-nav dashboard-topbar__end d-flex flex-row align-items-center">
-          <div class="nav-item text-nowrap position-relative dashboard-user-dropdown">
-
+      <div
+        ref="userMenuContainer"
+        class="navbar-nav dashboard-user-nav dashboard-topbar__end d-flex flex-row align-items-center"
+      >
+        <div class="nav-item text-nowrap position-relative dashboard-user-dropdown">
           <button
             type="button"
             class="btn nav-link px-3 d-inline-flex align-items-center gap-2 text-decoration-none dashboard-header-dropdown-toggle dashboard-user-toggle"
@@ -158,7 +251,11 @@ const logout = () => {
             <span v-else>Mi cuenta</span>
             <span aria-hidden="true">▾</span>
           </button>
-          <div v-if="isUserMenuOpen" class="dropdown-menu dropdown-menu-end show dashboard-header-dropdown-menu dashboard-header-dropdown-panel dashboard-user-menu">
+
+          <div
+            v-if="isUserMenuOpen"
+            class="dropdown-menu dropdown-menu-end show dashboard-header-dropdown-menu dashboard-header-dropdown-panel dashboard-user-menu"
+          >
             <button type="button" class="dropdown-item" @click="goToProfile">Mi Perfil</button>
             <button type="button" class="dropdown-item" @click="logout">Cerrar sesión</button>
           </div>
@@ -167,22 +264,37 @@ const logout = () => {
     </header>
 
     <div class="row flex-grow-1 m-0">
-      <!-- Sidebar lateral (oculto si no hay banda seleccionada) -->
-      <nav v-if="shouldShowBandShell" id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block dashboard-sidebar sidebar collapse">
+      <nav
+        v-if="shouldShowBandShell"
+        id="sidebarMenu"
+        class="col-md-3 col-lg-2 d-md-block dashboard-sidebar sidebar collapse"
+      >
         <div class="position-sticky pt-3">
           <ul class="nav flex-column gap-1 px-2 pb-3">
             <li class="nav-item">
-              <router-link :to="{ name: 'SongsManager' }" class="nav-link dashboard-nav-link" active-class="active fw-bold text-primary">
+              <router-link
+                :to="{ name: 'SongsManager' }"
+                class="nav-link dashboard-nav-link"
+                active-class="active fw-bold text-primary"
+              >
                 Canciones
               </router-link>
             </li>
             <li class="nav-item">
-              <router-link :to="{ name: 'MembersManager' }" class="nav-link dashboard-nav-link" active-class="active fw-bold text-primary">
+              <router-link
+                :to="{ name: 'MembersManager' }"
+                class="nav-link dashboard-nav-link"
+                active-class="active fw-bold text-primary"
+              >
                 Miembros
               </router-link>
             </li>
             <li class="nav-item">
-              <router-link :to="{ name: 'VideoclipsManager' }" class="nav-link dashboard-nav-link" active-class="active fw-bold text-primary">
+              <router-link
+                :to="{ name: 'VideoclipsManager' }"
+                class="nav-link dashboard-nav-link"
+                active-class="active fw-bold text-primary"
+              >
                 Videoclips
               </router-link>
             </li>
@@ -190,8 +302,12 @@ const logout = () => {
         </div>
       </nav>
 
-      <!-- Área principal dinámica -->
-      <main :class="['dashboard-main py-4', shouldShowBandShell ? 'col-md-9 ms-sm-auto col-lg-10 px-md-4' : 'col-12 px-4 px-lg-5']">
+      <main
+        :class="[
+          'dashboard-main py-4',
+          shouldShowBandShell ? 'col-md-9 ms-sm-auto col-lg-10 px-md-4' : 'col-12 px-4 px-lg-5',
+        ]"
+      >
         <router-view />
       </main>
     </div>
@@ -205,6 +321,9 @@ const logout = () => {
 }
 
 .dashboard-topbar {
+  position: relative;
+  z-index: var(--rock-z-dashboard-topbar);
+  isolation: isolate;
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr) max-content;
   align-items: center;
@@ -300,7 +419,7 @@ const logout = () => {
   position: absolute;
   top: calc(100% + 0.4rem);
   left: 0;
-  z-index: 20;
+  z-index: var(--rock-z-dashboard-dropdown);
   width: 100%;
   padding: 0.4rem;
 }
@@ -364,8 +483,8 @@ const logout = () => {
 }
 
 .dashboard-user-dropdown .dashboard-header-dropdown-panel {
-  left: auto;
   right: 0;
+  left: auto;
   min-width: 12rem;
   width: max-content;
 }

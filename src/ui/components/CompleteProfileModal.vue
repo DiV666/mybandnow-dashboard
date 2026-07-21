@@ -48,14 +48,13 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div v-if="musicianStore.isProfileCompletionPending" class="modal-backdrop fade show" style="z-index: 1060; background-color: rgba(0, 0, 0, 0.7);"></div>
+  <div v-if="musicianStore.isProfileCompletionPending" class="complete-profile-modal-backdrop modal-backdrop fade show"></div>
   
   <div 
     v-if="musicianStore.isProfileCompletionPending"
-    class="modal fade show d-block" 
+    class="complete-profile-modal modal fade show d-block" 
     tabindex="-1" 
     role="dialog"
-    style="z-index: 1070;"
   >
     <div class="modal-dialog modal-dialog-centered" role="document">
       <div class="modal-content shadow-lg border-primary">
@@ -112,3 +111,14 @@ const handleSubmit = async () => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.complete-profile-modal-backdrop {
+  z-index: var(--rock-z-complete-profile-backdrop);
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
+.complete-profile-modal {
+  z-index: var(--rock-z-complete-profile-modal);
+}
+</style>

@@ -4,6 +4,7 @@ import { CreateSongInstrumentUseCase } from "./CreateSongInstrumentUseCase.js";
 import type { SongRepository } from "../../domain/song/repository/SongRepository.js";
 import { InstrumentId } from "../../domain/instrument/value-object/InstrumentId.js";
 import { MusicianId } from "../../domain/musician/value-object/MusicianId.js";
+import { SongId } from "../../domain/song/value-object/SongId.js";
 import { SongInstrumentId } from "../../domain/song/value-object/SongInstrumentId.js";
 import { SongInstrumentName } from "../../domain/song/value-object/SongInstrumentName.js";
 
@@ -26,7 +27,9 @@ describe("CreateSongInstrumentUseCase", () => {
 		);
 
 		expect(repositoryMock.saveInstrument).toHaveBeenCalledTimes(1);
-		expect(repositoryMock.saveInstrument.mock.calls[0][0]).toBe("song-123");
+		expect(repositoryMock.saveInstrument.mock.calls[0][0]).toEqual(
+			new SongId("song-123"),
+		);
 		const savedInstrument = repositoryMock.saveInstrument.mock.calls[0][1];
 
 		expect(savedInstrument.id.value).toBe(

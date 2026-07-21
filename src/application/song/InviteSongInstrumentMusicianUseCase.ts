@@ -1,9 +1,9 @@
+import { MusicianEmail } from "../../domain/musician/value-object/MusicianEmail.js";
 import type { SongRepository } from "../../domain/song/repository/SongRepository.js";
 import { SongId } from "../../domain/song/value-object/SongId.js";
 import { SongInstrumentId } from "../../domain/song/value-object/SongInstrumentId.js";
-import { SongInstrumentVideoFile } from "../../domain/song/value-object/SongInstrumentVideoFile.js";
 
-export class UploadSongInstrumentVideoUseCase {
+export class InviteSongInstrumentMusicianUseCase {
 	private readonly repository: SongRepository;
 
 	constructor(repository: SongRepository) {
@@ -13,14 +13,12 @@ export class UploadSongInstrumentVideoUseCase {
 	async run(
 		songId: string,
 		instrumentId: string,
-		videoFile: File,
+		musicianEmail: string,
 	): Promise<void> {
-		const validatedVideoFile = new SongInstrumentVideoFile(videoFile);
-
-		await this.repository.uploadInstrumentVideo(
+		await this.repository.inviteMusician(
 			new SongId(songId),
 			new SongInstrumentId(instrumentId),
-			validatedVideoFile,
+			new MusicianEmail(musicianEmail),
 		);
 	}
 }

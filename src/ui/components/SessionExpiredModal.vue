@@ -180,10 +180,9 @@ onUnmounted(() => {
   <div 
     v-if="authStore.isSessionExpired" 
     ref="modalRef"
-    class="modal fade show d-block" 
+    class="session-expired-modal modal fade show d-block" 
     tabindex="-1" 
     role="dialog"
-    style="z-index: 1050; background-color: rgba(0, 0, 0, 0.4);"
   >
     <div class="modal-dialog modal-dialog-centered" role="document">
       <div class="modal-content shadow-lg border-danger">
@@ -247,9 +246,13 @@ onUnmounted(() => {
   left: 0;
   width: 100vw;
   height: 100vh;
-  z-index: 1040;
+  z-index: var(--rock-z-session-expired-backdrop);
   backdrop-filter: blur(25px) grayscale(50%);
   -webkit-backdrop-filter: blur(25px) grayscale(50%);
   background-color: rgba(255, 255, 255, 0.3);
+}
+.session-expired-modal {
+  z-index: var(--rock-z-session-expired-modal);
+  background-color: rgba(0, 0, 0, 0.4);
 }
 </style>

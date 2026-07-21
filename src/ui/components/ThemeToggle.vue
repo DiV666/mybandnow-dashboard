@@ -39,7 +39,7 @@ function onToggle(): void {
 	position: fixed;
 	right: 1rem;
 	bottom: 1rem;
-	z-index: 1030;
+	z-index: var(--rock-z-floating-control);
 	width: 2.5rem;
 	height: 2.5rem;
 	padding: 0;

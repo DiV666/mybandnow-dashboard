@@ -3,6 +3,8 @@ import { mock, mockReset } from "vitest-mock-extended";
 import { GetSongInstrumentDetailUseCase } from "./GetSongInstrumentDetailUseCase.js";
 import type { SongRepository } from "../../domain/song/repository/SongRepository.js";
 import type { SongInstrumentDetailResponse } from "../../domain/song/SongInstrumentResponse.js";
+import { SongId } from "../../domain/song/value-object/SongId.js";
+import { SongInstrumentId } from "../../domain/song/value-object/SongInstrumentId.js";
 
 describe("GetSongInstrumentDetailUseCase", () => {
 	const repositoryMock = mock<SongRepository>();
@@ -38,8 +40,8 @@ describe("GetSongInstrumentDetailUseCase", () => {
 		const result = await useCase.run("song-123", "instrument-1");
 
 		expect(repositoryMock.getInstrumentById).toHaveBeenCalledWith(
-			"song-123",
-			"instrument-1",
+			new SongId("song-123"),
+			new SongInstrumentId("instrument-1"),
 		);
 		expect(result).toEqual(instrument);
 	});
@@ -64,8 +66,8 @@ describe("GetSongInstrumentDetailUseCase", () => {
 		const result = await useCase.run("song-123", "instrument-2");
 
 		expect(repositoryMock.getInstrumentById).toHaveBeenCalledWith(
-			"song-123",
-			"instrument-2",
+			new SongId("song-123"),
+			new SongInstrumentId("instrument-2"),
 		);
 		expect(result).toEqual(instrument);
 	});

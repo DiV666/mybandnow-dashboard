@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { mock, mockReset } from "vitest-mock-extended";
 import type { SongRepository } from "../../domain/song/repository/SongRepository.js";
+import { SongId } from "../../domain/song/value-object/SongId.js";
+import { SongInstrumentId } from "../../domain/song/value-object/SongInstrumentId.js";
+import { SongInstrumentVideoFile } from "../../domain/song/value-object/SongInstrumentVideoFile.js";
 import { UploadSongInstrumentVideoUseCase } from "./UploadSongInstrumentVideoUseCase.js";
 
 describe("UploadSongInstrumentVideoUseCase", () => {
@@ -21,9 +24,9 @@ describe("UploadSongInstrumentVideoUseCase", () => {
 
 		expect(repositoryMock.uploadInstrumentVideo).toHaveBeenCalledTimes(1);
 		expect(repositoryMock.uploadInstrumentVideo).toHaveBeenCalledWith(
-			"song-123",
-			"instrument-456",
-			videoFile,
+			new SongId("song-123"),
+			new SongInstrumentId("instrument-456"),
+			new SongInstrumentVideoFile(videoFile),
 		);
 	});
 
@@ -36,9 +39,9 @@ describe("UploadSongInstrumentVideoUseCase", () => {
 
 		expect(repositoryMock.uploadInstrumentVideo).toHaveBeenCalledTimes(1);
 		expect(repositoryMock.uploadInstrumentVideo).toHaveBeenCalledWith(
-			"song-999",
-			"instrument-888",
-			videoFile,
+			new SongId("song-999"),
+			new SongInstrumentId("instrument-888"),
+			new SongInstrumentVideoFile(videoFile),
 		);
 	});
 
@@ -60,9 +63,9 @@ describe("UploadSongInstrumentVideoUseCase", () => {
 
 		expect(repositoryMock.uploadInstrumentVideo).toHaveBeenCalledTimes(1);
 		expect(repositoryMock.uploadInstrumentVideo).toHaveBeenCalledWith(
-			"song-123",
-			"instrument-456",
-			videoFile,
+			new SongId("song-123"),
+			new SongInstrumentId("instrument-456"),
+			new SongInstrumentVideoFile(videoFile),
 		);
 	});
 

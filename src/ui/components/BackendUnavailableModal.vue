@@ -15,18 +15,16 @@ function retryConnection(): void {
 <template>
   <div
     v-if="backendStatusStore.isBackendUnavailable"
-    class="modal-backdrop fade show"
-    style="z-index: 1080; background-color: rgba(0, 0, 0, 0.55);"
+    class="backend-unavailable-modal-backdrop modal-backdrop fade show"
   ></div>
 
   <div
     v-if="backendStatusStore.isBackendUnavailable"
-    class="modal fade show d-block"
+    class="backend-unavailable-modal modal fade show d-block"
     tabindex="-1"
     role="dialog"
     aria-modal="true"
     aria-labelledby="backend-unavailable-title"
-    style="z-index: 1090;"
   >
     <div class="modal-dialog modal-dialog-centered" role="document">
       <div class="modal-content shadow-lg border-warning">
@@ -67,3 +65,14 @@ function retryConnection(): void {
     </div>
   </div>
 </template>
+
+<style scoped>
+.backend-unavailable-modal-backdrop {
+  z-index: var(--rock-z-backend-unavailable-backdrop);
+  background-color: rgba(0, 0, 0, 0.55);
+}
+
+.backend-unavailable-modal {
+  z-index: var(--rock-z-backend-unavailable-modal);
+}
+</style>

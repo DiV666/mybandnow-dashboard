@@ -3,25 +3,31 @@ import { createPinia, setActivePinia } from "pinia";
 import { createRenderer, defineComponent, h, nextTick } from "vue";
 import type { Band } from "../../domain/band/Band.js";
 
-const { sessionStorage, routerPushMock, getMyBandsRunMock, currentRouteState } =
-	vi.hoisted(() => ({
-		sessionStorage: {
-			getAuthToken: vi.fn<() => string | null>(),
-			setAuthToken: vi.fn<(token: string) => void>(),
-			clearAuthToken: vi.fn<() => void>(),
-			getSelectedBandId: vi.fn<() => string | null>(),
-			setSelectedBandId: vi.fn<(bandId: string) => void>(),
-			clearSelectedBandId: vi.fn<() => void>(),
-			getSkippedBandOnboarding: vi.fn<() => boolean>(),
-			setSkippedBandOnboarding: vi.fn<(value: boolean) => void>(),
-			clearSkippedBandOnboarding: vi.fn<() => void>(),
-		},
-		routerPushMock: vi.fn(),
-		getMyBandsRunMock: vi.fn<() => Promise<Band[]>>(),
-		currentRouteState: {
-			path: "/dashboard",
-		},
-	}));
+const {
+	sessionStorage,
+	routerPushMock,
+	getMyBandsRunMock,
+	currentRouteState,
+	documentListeners,
+} = vi.hoisted(() => ({
+	sessionStorage: {
+		getAuthToken: vi.fn<() => string | null>(),
+		setAuthToken: vi.fn<(token: string) => void>(),
+		clearAuthToken: vi.fn<() => void>(),
+		getSelectedBandId: vi.fn<() => string | null>(),
+		setSelectedBandId: vi.fn<(bandId: string) => void>(),
+		clearSelectedBandId: vi.fn<() => void>(),
+		getSkippedBandOnboarding: vi.fn<() => boolean>(),
+		setSkippedBandOnboarding: vi.fn<(value: boolean) => void>(),
+		clearSkippedBandOnboarding: vi.fn<() => void>(),
+	},
+	routerPushMock: vi.fn(),
+	getMyBandsRunMock: vi.fn<() => Promise<Band[]>>(),
+	currentRouteState: {
+		path: "/dashboard",
+	},
+	documentListeners: new Map<string, Set<(event: TestEvent) => void>>(),
+}));
 
 vi.mock("../../infrastructure/storage/browserSessionStorage.js", () => ({
 	browserSessionStorage: sessionStorage,
@@ -63,6 +69,7 @@ type TestTextNode = {
 type TestEvent = {
 	type: string;
 	target?: unknown;
+	key?: string;
 	preventDefault?: () => void;
 };
 
@@ -379,6 +386,12 @@ function findAllElements(
 	return matches;
 }
 
+function dispatchDocumentEvent(event: TestEvent) {
+	for (const listener of documentListeners.get(event.type) ?? []) {
+		listener(event);
+	}
+}
+
 function renderDashboardLayout(setup?: () => void) {
 	const pinia = createPinia();
 	setActivePinia(pinia);
@@ -420,6 +433,23 @@ async function flushView() {
 
 describe("DashboardLayout", () => {
 	beforeEach(() => {
+		documentListeners.clear();
+		Object.defineProperty(globalThis, "document", {
+			configurable: true,
+			value: {
+				addEventListener(type: string, listener: (event: TestEvent) => void) {
+					const listeners = documentListeners.get(type) ?? new Set();
+					listeners.add(listener);
+					documentListeners.set(type, listeners);
+				},
+				removeEventListener(
+					type: string,
+					listener: (event: TestEvent) => void,
+				) {
+					documentListeners.get(type)?.delete(listener);
+				},
+			},
+		});
 		setActivePinia(createPinia());
 		sessionStorage.getAuthToken.mockReset();
 		sessionStorage.setAuthToken.mockReset();
@@ -874,6 +904,137 @@ describe("DashboardLayout", () => {
 			),
 		).toBeNull();
 
+		view.unmount();
+	});
+
+	it("closes the other header dropdown when opening one and closes both on outside click", async () => {
+		getMyBandsRunMock.mockResolvedValueOnce([
+			{
+				id: { value: "band-1" },
+				name: { value: "The Stones" },
+			} as Band,
+			{
+				id: { value: "band-2" },
+				name: { value: "The Beatles" },
+			} as Band,
+		]);
+		const view = renderDashboardLayout(() => {
+			const bandStore = useBandStore();
+			const musicianStore = useMusicianStore();
+			bandStore.selectedBandId = "band-1";
+			musicianStore.profile = {
+				id: "musician-1",
+				userId: "user-1",
+				username: "keith",
+				name: "Keith Richards",
+			};
+			musicianStore.fetchProfile = vi.fn().mockResolvedValue(undefined);
+		});
+
+		await flushView();
+		await flushView();
+
+		const bandSwitcherToggle = findElement(
+			view.root,
+			(node) =>
+				node.type === "button" &&
+				String(node.props["data-testid"] ?? "") === "band-switcher-toggle",
+		);
+		const userMenuToggle = findElement(
+			view.root,
+			(node) =>
+				node.type === "button" &&
+				String(node.props["aria-haspopup"] ?? "") === "true" &&
+				textContent(node).includes("Keith Richards"),
+		);
+
+		if (!bandSwitcherToggle || !userMenuToggle) {
+			throw new Error("Expected both dropdown toggles to exist");
+		}
+
+		clickElement(bandSwitcherToggle);
+		await flushView();
+		expect(findByText(view.root, "The Beatles")).not.toBeNull();
+
+		clickElement(userMenuToggle);
+		await flushView();
+		expect(findByText(view.root, "Mi Perfil")).not.toBeNull();
+		expect(
+			findElement(
+				view.root,
+				(node) =>
+					node.type === "button" &&
+					textContent(node).includes("The Beatles") &&
+					String(node.props["data-band-option"] ?? "") === "true",
+			),
+		).toBeNull();
+
+		dispatchDocumentEvent({
+			type: "click",
+			target: createRootNode(),
+			preventDefault() {},
+		});
+		await flushView();
+
+		expect(findByText(view.root, "Mi Perfil")).toBeNull();
+		view.unmount();
+	});
+
+	it("closes open header dropdowns on Escape", async () => {
+		getMyBandsRunMock.mockResolvedValueOnce([
+			{
+				id: { value: "band-1" },
+				name: { value: "The Stones" },
+			} as Band,
+		]);
+		const view = renderDashboardLayout(() => {
+			const bandStore = useBandStore();
+			const musicianStore = useMusicianStore();
+			bandStore.selectedBandId = "band-1";
+			musicianStore.profile = {
+				id: "musician-1",
+				userId: "user-1",
+				username: "keith",
+				name: "Keith Richards",
+			};
+			musicianStore.fetchProfile = vi.fn().mockResolvedValue(undefined);
+		});
+
+		await flushView();
+		await flushView();
+
+		const bandSwitcherToggle = findElement(
+			view.root,
+			(node) =>
+				node.type === "button" &&
+				String(node.props["data-testid"] ?? "") === "band-switcher-toggle",
+		);
+
+		if (!bandSwitcherToggle) {
+			throw new Error("Expected band dropdown toggle to exist");
+		}
+
+		clickElement(bandSwitcherToggle);
+		await flushView();
+		expect(findByText(view.root, "The Stones")).not.toBeNull();
+
+		dispatchDocumentEvent({
+			type: "keydown",
+			key: "Escape",
+			target: bandSwitcherToggle,
+			preventDefault() {},
+		});
+		await flushView();
+
+		expect(
+			findElement(
+				view.root,
+				(node) =>
+					node.type === "button" &&
+					textContent(node).includes("The Stones") &&
+					String(node.props["data-band-option"] ?? "") === "true",
+			),
+		).toBeNull();
 		view.unmount();
 	});
 

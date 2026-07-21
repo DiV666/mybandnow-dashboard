@@ -9,6 +9,7 @@ import { SongInstrument } from "../../domain/song/SongInstrument.js";
 import { SongId } from "../../domain/song/value-object/SongId.js";
 import { SongInstrumentId } from "../../domain/song/value-object/SongInstrumentId.js";
 import { SongInstrumentName } from "../../domain/song/value-object/SongInstrumentName.js";
+import { SongInstrumentVideoFile } from "../../domain/song/value-object/SongInstrumentVideoFile.js";
 import { SongOriginalVideoclipUrl } from "../../domain/song/value-object/SongOriginalVideoclipUrl.js";
 import { SongTitle } from "../../domain/song/value-object/SongTitle.js";
 
@@ -77,7 +78,7 @@ describe("AxiosSongRepository", () => {
 			.mockResolvedValue({ data: undefined } as never);
 
 		await repository.saveInstrument(
-			"song-123",
+			new SongId("song-123"),
 			SongInstrument.create(
 				new SongInstrumentId("11111111-1111-4111-8111-111111111111"),
 				new SongInstrumentName("Guitarra principal"),
@@ -114,7 +115,9 @@ describe("AxiosSongRepository", () => {
 			},
 		} as never);
 
-		const instruments = await repository.getInstrumentsBySongId("song-123");
+		const instruments = await repository.getInstrumentsBySongId(
+			new SongId("song-123"),
+		);
 
 		expect(getSpy).toHaveBeenCalledWith("/v1/songs/song-123/instruments");
 		expect(instruments).toEqual([
@@ -156,8 +159,8 @@ describe("AxiosSongRepository", () => {
 		} as never);
 
 		const instrument = await repository.getInstrumentById(
-			"song-123",
-			"instrument-1",
+			new SongId("song-123"),
+			new SongInstrumentId("instrument-1"),
 		);
 
 		expect(getSpy).toHaveBeenCalledWith(
@@ -184,21 +187,40 @@ describe("AxiosSongRepository", () => {
 		});
 	});
 
-	it("should patch the selected song instrument with the musician email", async () => {
+	it("should patch the selected song instrument with the musician id", async () => {
 		const patchSpy = vi
 			.spyOn(httpClient, "patch")
 			.mockResolvedValue({ data: undefined } as never);
 
 		await repository.assignMusician(
-			"song-123",
-			"instrument-456",
-			new MusicianEmail("artist@example.com"),
+			new SongId("song-123"),
+			new SongInstrumentId("instrument-456"),
+			new MusicianId("musician-789"),
 		);
 
 		expect(patchSpy).toHaveBeenCalledWith(
 			"/v1/songs/song-123/instruments/instrument-456",
 			{
-				musicianEmail: "artist@example.com",
+				musicianId: "musician-789",
+			},
+		);
+	});
+
+	it("should invite a musician by email for the selected song instrument", async () => {
+		const postSpy = vi
+			.spyOn(httpClient, "post")
+			.mockResolvedValue({ data: undefined } as never);
+
+		await repository.inviteMusician(
+			new SongId("song-123"),
+			new SongInstrumentId("instrument-456"),
+			new MusicianEmail("player@example.com"),
+		);
+
+		expect(postSpy).toHaveBeenCalledWith(
+			"/v1/songs/song-123/instruments/instrument-456/invite",
+			{
+				musicianEmail: "player@example.com",
 			},
 		);
 	});
@@ -212,9 +234,9 @@ describe("AxiosSongRepository", () => {
 		});
 
 		await repository.uploadInstrumentVideo(
-			"song-123",
-			"instrument-456",
-			videoFile,
+			new SongId("song-123"),
+			new SongInstrumentId("instrument-456"),
+			new SongInstrumentVideoFile(videoFile),
 		);
 
 		expect(postSpy).toHaveBeenCalledTimes(1);

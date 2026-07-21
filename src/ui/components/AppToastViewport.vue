@@ -39,7 +39,7 @@ const toastClassByVariant = computed<Record<string, string>>(() => ({
 
 <style scoped>
 .toast-viewport {
-  z-index: 2000;
+  z-index: var(--rock-z-toast);
   width: min(100%, 24rem);
   pointer-events: none;
 }

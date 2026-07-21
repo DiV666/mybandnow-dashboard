@@ -2,6 +2,7 @@ import { InstrumentId } from "../../domain/instrument/value-object/InstrumentId.
 import { SongInstrument } from "../../domain/song/SongInstrument.js";
 import type { SongRepository } from "../../domain/song/repository/SongRepository.js";
 import { MusicianId } from "../../domain/musician/value-object/MusicianId.js";
+import { SongId } from "../../domain/song/value-object/SongId.js";
 import { SongInstrumentId } from "../../domain/song/value-object/SongInstrumentId.js";
 import { SongInstrumentName } from "../../domain/song/value-object/SongInstrumentName.js";
 
@@ -26,6 +27,6 @@ export class CreateSongInstrumentUseCase {
 			new MusicianId(musicianId),
 		);
 
-		await this.repository.saveInstrument(songId, instrument);
+		await this.repository.saveInstrument(new SongId(songId), instrument);
 	}
 }

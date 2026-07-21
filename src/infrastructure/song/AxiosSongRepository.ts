@@ -3,6 +3,7 @@ import type { SongRepository } from "../../domain/song/repository/SongRepository
 import type { Song } from "../../domain/song/Song.js";
 import type { SongInstrument } from "../../domain/song/SongInstrument.js";
 import type { MusicianEmail } from "../../domain/musician/value-object/MusicianEmail.js";
+import type { MusicianId } from "../../domain/musician/value-object/MusicianId.js";
 import type {
 	SongInstrumentCollectionResponse,
 	SongInstrumentDetailResponse,
@@ -12,6 +13,9 @@ import type {
 	SongCollectionResponse,
 	SongResponse,
 } from "../../domain/song/SongResponse.js";
+import type { SongId } from "../../domain/song/value-object/SongId.js";
+import type { SongInstrumentId } from "../../domain/song/value-object/SongInstrumentId.js";
+import type { SongInstrumentVideoFile } from "../../domain/song/value-object/SongInstrumentVideoFile.js";
 
 export class AxiosSongRepository implements SongRepository {
 	async save(bandId: string, song: Song): Promise<void> {
@@ -27,56 +31,72 @@ export class AxiosSongRepository implements SongRepository {
 	}
 
 	async saveInstrument(
-		songId: string,
+		songId: SongId,
 		instrument: SongInstrument,
 	): Promise<void> {
 		await httpClient.post(
-			`/v1/songs/${songId}/instruments`,
+			`/v1/songs/${songId.value}/instruments`,
 			instrument.toPrimitives(),
 		);
 	}
 
 	async getInstrumentsBySongId(
-		songId: string,
+		songId: SongId,
 	): Promise<SongInstrumentListItemResponse[]> {
 		const response = await httpClient.get<SongInstrumentCollectionResponse>(
-			`/v1/songs/${songId}/instruments`,
+			`/v1/songs/${songId.value}/instruments`,
 		);
 
 		return response.data.items;
 	}
 
 	async getInstrumentById(
-		songId: string,
-		instrumentId: string,
+		songId: SongId,
+		instrumentId: SongInstrumentId,
 	): Promise<SongInstrumentDetailResponse> {
 		const response = await httpClient.get<SongInstrumentDetailResponse>(
-			`/v1/songs/${songId}/instruments/${instrumentId}`,
+			`/v1/songs/${songId.value}/instruments/${instrumentId.value}`,
 		);
 
 		return response.data;
 	}
 
 	async assignMusician(
-		songId: string,
-		instrumentId: string,
+		songId: SongId,
+		instrumentId: SongInstrumentId,
+		musicianId: MusicianId,
+	): Promise<void> {
+		await httpClient.patch(
+			`/v1/songs/${songId.value}/instruments/${instrumentId.value}`,
+			{
+				musicianId: musicianId.value,
+			},
+		);
+	}
+
+	async inviteMusician(
+		songId: SongId,
+		instrumentId: SongInstrumentId,
 		musicianEmail: MusicianEmail,
 	): Promise<void> {
-		await httpClient.patch(`/v1/songs/${songId}/instruments/${instrumentId}`, {
-			musicianEmail: musicianEmail.value,
-		});
+		await httpClient.post(
+			`/v1/songs/${songId.value}/instruments/${instrumentId.value}/invite`,
+			{
+				musicianEmail: musicianEmail.value,
+			},
+		);
 	}
 
 	async uploadInstrumentVideo(
-		songId: string,
-		instrumentId: string,
-		videoFile: File,
+		songId: SongId,
+		instrumentId: SongInstrumentId,
+		videoFile: SongInstrumentVideoFile,
 	): Promise<void> {
 		const formData = new FormData();
-		formData.append("video", videoFile);
+		formData.append("video", videoFile.value);
 
 		await httpClient.post(
-			`/v1/songs/${songId}/instruments/${instrumentId}/upload`,
+			`/v1/songs/${songId.value}/instruments/${instrumentId.value}/upload`,
 			formData,
 			{ timeout: 120000 },
 		);

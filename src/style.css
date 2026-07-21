@@ -34,6 +34,16 @@
 	--rock-brand-letter-spacing: 0.08em;
 	--rock-interaction-transition: 180ms ease;
 	--rock-press-depth: translateY(1px) scale(0.99);
+	--rock-z-dashboard-topbar: 100;
+	--rock-z-dashboard-dropdown: 110;
+	--rock-z-floating-control: 120;
+	--rock-z-session-expired-backdrop: 1040;
+	--rock-z-session-expired-modal: 1050;
+	--rock-z-complete-profile-backdrop: 1060;
+	--rock-z-complete-profile-modal: 1070;
+	--rock-z-backend-unavailable-backdrop: 1080;
+	--rock-z-backend-unavailable-modal: 1090;
+	--rock-z-toast: 2000;
 
 	font-synthesis: none;
 	text-rendering: optimizeLegibility;

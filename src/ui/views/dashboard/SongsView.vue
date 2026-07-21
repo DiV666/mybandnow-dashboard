@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { GetBandMembersUseCase } from "../../../application/band/GetBandMembersUseCase.js";
 import { GetInstrumentByIdUseCase } from "../../../application/instrument/GetInstrumentByIdUseCase.js";
 import { GetInstrumentsUseCase } from "../../../application/instrument/GetInstrumentsUseCase.js";
 import { GetMusicianByIdUseCase } from "../../../application/musician/GetMusicianByIdUseCase.js";
@@ -9,7 +10,9 @@ import { CreateSongUseCase } from "../../../application/song/CreateSongUseCase.j
 import { GetBandSongsUseCase } from "../../../application/song/GetBandSongsUseCase.js";
 import { GetSongInstrumentDetailUseCase } from "../../../application/song/GetSongInstrumentDetailUseCase.js";
 import { GetSongInstrumentsUseCase } from "../../../application/song/GetSongInstrumentsUseCase.js";
+import { InviteSongInstrumentMusicianUseCase } from "../../../application/song/InviteSongInstrumentMusicianUseCase.js";
 import { UploadSongInstrumentVideoUseCase } from "../../../application/song/UploadSongInstrumentVideoUseCase.js";
+import type { BandMemberResponse } from "../../../domain/band/BandMemberResponse.js";
 import type { InstrumentResponse } from "../../../domain/instrument/InstrumentResponse.js";
 import {
 	songInstrumentUploadStatuses,
@@ -19,6 +22,7 @@ import {
 	type SongInstrumentVideoResponse,
 } from "../../../domain/song/SongInstrumentResponse.js";
 import type { SongResponse } from "../../../domain/song/SongResponse.js";
+import { AxiosBandRepository } from "../../../infrastructure/band/AxiosBandRepository.js";
 import { AxiosInstrumentRepository } from "../../../infrastructure/instrument/AxiosInstrumentRepository.js";
 import { AxiosMusicianRepository } from "../../../infrastructure/musician/AxiosMusicianRepository.js";
 import { AxiosSongRepository } from "../../../infrastructure/song/AxiosSongRepository.js";
@@ -76,13 +80,23 @@ interface ActiveSongInstrumentUploadModalState {
 	instrumentId: string;
 }
 
+interface AssignableBandMemberViewModel {
+	id: string;
+	name: string;
+	username: string;
+}
+
 interface AssignMusicianModalState {
 	songId: string;
 	instrumentId: string;
 	email: string;
 	isSubmitting: boolean;
 	errorMsg: string;
+	members: AssignableBandMemberViewModel[];
+	isLoadingMembers: boolean;
+	membersErrorMsg: string;
 }
+
 
 interface FileInputLike {
 	files?: FileList | File[] | null;
@@ -132,9 +146,11 @@ const catalogInstrumentNames = ref<InstrumentNameMap>({});
 const musicianDisplayNames = ref<MusicianDisplayNameMap>({});
 
 const songRepository = new AxiosSongRepository();
+const bandRepository = new AxiosBandRepository();
 const instrumentRepository = new AxiosInstrumentRepository();
 const musicianRepository = new AxiosMusicianRepository();
 const createSongUseCase = new CreateSongUseCase(songRepository);
+const getBandMembersUseCase = new GetBandMembersUseCase(bandRepository);
 const getBandSongsUseCase = new GetBandSongsUseCase(songRepository);
 const createSongInstrumentUseCase = new CreateSongInstrumentUseCase(songRepository);
 const getSongInstrumentsUseCase = new GetSongInstrumentsUseCase(songRepository);
@@ -147,9 +163,13 @@ const getMusicianByIdUseCase = new GetMusicianByIdUseCase(musicianRepository);
 const assignSongInstrumentMusicianUseCase = new AssignSongInstrumentMusicianUseCase(
 	songRepository,
 );
+const inviteSongInstrumentMusicianUseCase = new InviteSongInstrumentMusicianUseCase(
+	songRepository,
+);
 const uploadSongInstrumentVideoUseCase = new UploadSongInstrumentVideoUseCase(songRepository);
 
 const selectedBand = computed(() => bandStore.selectedBand);
+const selectedBandId = computed(() => bandStore.selectedBandId);
 const canSubmit = computed(
 	() => !isLoading.value && selectedBand.value !== null,
 );
@@ -282,6 +302,90 @@ function resolveMusicianDisplayName(name: string, username: string): string {
 	}
 
 	return "";
+}
+
+function isAssignMusicianModalActive(songId: string, instrumentId: string): boolean {
+	return (
+		activeAssignMusicianModal.value?.songId === songId &&
+		activeAssignMusicianModal.value?.instrumentId === instrumentId
+	);
+}
+
+async function resolveAssignableBandMember(
+	member: BandMemberResponse,
+): Promise<AssignableBandMemberViewModel | null> {
+	const musician = await getMusicianByIdUseCase.run(member.musicianId);
+	if (!musician) {
+		return null;
+	}
+
+	const displayName = resolveMusicianDisplayName(
+		musician.name,
+		musician.username,
+	);
+	const username = musician.username.trim();
+	return {
+		id: musician.id,
+		name: displayName || musician.id,
+		username: username ? `@${username}` : "",
+	};
+}
+
+async function loadAssignableBandMembers(
+	songId: string,
+	instrumentId: string,
+	bandId: string | null,
+): Promise<void> {
+	if (!bandId || !isAssignMusicianModalActive(songId, instrumentId)) {
+		return;
+	}
+
+	activeAssignMusicianModal.value = {
+		...activeAssignMusicianModal.value,
+		isLoadingMembers: true,
+		membersErrorMsg: "",
+		members: [],
+	};
+
+	try {
+		const bandMembers = await getBandMembersUseCase.run(bandId);
+		const resolvedMembers = await Promise.all(
+			bandMembers.map(resolveAssignableBandMember),
+		);
+		if (
+			!isAssignMusicianModalActive(songId, instrumentId) ||
+			selectedBandId.value !== bandId ||
+			!activeAssignMusicianModal.value
+		) {
+			return;
+		}
+
+		activeAssignMusicianModal.value = {
+			...activeAssignMusicianModal.value,
+			members: resolvedMembers.filter(
+				(member): member is AssignableBandMemberViewModel => member !== null,
+			),
+			isLoadingMembers: false,
+			membersErrorMsg: "",
+		};
+	} catch {
+		if (
+			!isAssignMusicianModalActive(songId, instrumentId) ||
+			selectedBandId.value !== bandId ||
+			!activeAssignMusicianModal.value
+		) {
+			return;
+		}
+
+		const message = "No pudimos cargar los miembros de la banda.";
+		activeAssignMusicianModal.value = {
+			...activeAssignMusicianModal.value,
+			members: [],
+			isLoadingMembers: false,
+			membersErrorMsg: message,
+		};
+		showErrorToast(message);
+	}
 }
 
 async function ensureAvailableInstrumentsLoaded(): Promise<void> {
@@ -731,17 +835,6 @@ function mapAssignMusicianErrorMessage(details: UploadErrorDetails): string {
 	const code = details.code?.toLowerCase() ?? "";
 	const combined = `${code} ${message}`;
 
-	if (
-		combined.includes("invalid email") ||
-		combined.includes("musicianemail must be a valid email")
-	) {
-		return "Escribí un email válido para asignar el músico.";
-	}
-
-	if (combined.includes("no musician profile") || combined.includes("profile required")) {
-		return "El email no pertenece a un músico con perfil activo.";
-	}
-
 	if (details.status === 401 || details.status === 403) {
 		return "No tienes permisos para asignar músicos a este instrumento.";
 	}
@@ -751,10 +844,38 @@ function mapAssignMusicianErrorMessage(details: UploadErrorDetails): string {
 	}
 
 	if (details.status === 400) {
-		return "No pudimos asignar el músico con ese email.";
+		return "No pudimos asignar el músico seleccionado.";
 	}
 
 	return "Ocurrió un error al asignar el músico. Inténtalo de nuevo.";
+}
+
+function mapInviteMusicianErrorMessage(details: UploadErrorDetails): string {
+	const message = details.message?.toLowerCase() ?? "";
+	const code = details.code?.toLowerCase() ?? "";
+	const combined = `${code} ${message}`;
+
+	if (details.status === 401 || details.status === 403) {
+		return "No tienes permisos para invitar músicos a este instrumento.";
+	}
+
+	if (details.status === 404 || combined.includes("songinstrument_not_exists")) {
+		return "No se encontró el instrumento que intentabas actualizar.";
+	}
+
+	if (combined.includes("musicianemail cannot be empty")) {
+		return "Escribe un email antes de enviar la invitación.";
+	}
+
+	if (combined.includes("musicianemail must be a valid email")) {
+		return "Escribe un email válido antes de continuar.";
+	}
+
+	if (details.status === 400) {
+		return "No pudimos enviar la invitación al email indicado.";
+	}
+
+	return "Ocurrió un error al invitar al músico. Inténtalo de nuevo.";
 }
 
 function getSongInstrumentUploadErrorMessage(
@@ -1473,7 +1594,11 @@ function openAssignMusicianModal(songId: string, instrumentId: string): void {
 		email: "",
 		isSubmitting: false,
 		errorMsg: "",
+		members: [],
+		isLoadingMembers: false,
+		membersErrorMsg: "",
 	};
+	void loadAssignableBandMembers(songId, instrumentId, selectedBandId.value);
 }
 
 function closeAssignMusicianModal(): void {
@@ -1497,25 +1622,14 @@ function handleAssignMusicianEmailInput(event: Event): void {
 	};
 }
 
-async function handleAssignMusicianSubmit(): Promise<void> {
+async function assignMusicianById(musicianId: string): Promise<void> {
 	if (!activeAssignMusicianModal.value) {
 		return;
 	}
 
 	const modalState = activeAssignMusicianModal.value;
-	const musicianEmail = modalState.email.trim();
-	if (!musicianEmail) {
-		activeAssignMusicianModal.value = {
-			...modalState,
-			errorMsg: "Escribí el email del músico antes de confirmar.",
-		};
-		showErrorToast("Escribí el email del músico antes de confirmar.");
-		return;
-	}
-
 	activeAssignMusicianModal.value = {
 		...modalState,
-		email: musicianEmail,
 		isSubmitting: true,
 		errorMsg: "",
 	};
@@ -1524,21 +1638,15 @@ async function handleAssignMusicianSubmit(): Promise<void> {
 		await assignSongInstrumentMusicianUseCase.run(
 			modalState.songId,
 			modalState.instrumentId,
-			musicianEmail,
+			musicianId,
 		);
 		await refreshSongInstrumentDetail(modalState.songId, modalState.instrumentId);
-		if (
-			activeAssignMusicianModal.value?.songId === modalState.songId &&
-			activeAssignMusicianModal.value?.instrumentId === modalState.instrumentId
-		) {
+		if (isAssignMusicianModalActive(modalState.songId, modalState.instrumentId)) {
 			showSuccessToast("Músico asignado correctamente.");
 			closeAssignMusicianModal();
 		}
 	} catch (error: unknown) {
-		if (
-			activeAssignMusicianModal.value?.songId !== modalState.songId ||
-			activeAssignMusicianModal.value?.instrumentId !== modalState.instrumentId
-		) {
+		if (!isAssignMusicianModalActive(modalState.songId, modalState.instrumentId)) {
 			return;
 		}
 
@@ -1552,6 +1660,52 @@ async function handleAssignMusicianSubmit(): Promise<void> {
 		};
 		showErrorToast(message);
 	}
+}
+
+async function handleAssignMusicianSubmit(): Promise<void> {
+	if (!activeAssignMusicianModal.value) {
+		return;
+	}
+
+	const modalState = activeAssignMusicianModal.value;
+	activeAssignMusicianModal.value = {
+		...modalState,
+		isSubmitting: true,
+		errorMsg: "",
+	};
+
+	try {
+		await inviteSongInstrumentMusicianUseCase.run(
+			modalState.songId,
+			modalState.instrumentId,
+			modalState.email,
+		);
+		await refreshSongInstrumentDetail(modalState.songId, modalState.instrumentId);
+		if (isAssignMusicianModalActive(modalState.songId, modalState.instrumentId)) {
+			showSuccessToast("Invitación enviada correctamente.");
+			closeAssignMusicianModal();
+		}
+	} catch (error: unknown) {
+		if (!isAssignMusicianModalActive(modalState.songId, modalState.instrumentId)) {
+			return;
+		}
+
+		const message = mapInviteMusicianErrorMessage(
+			extractUploadErrorDetails(error),
+		);
+		activeAssignMusicianModal.value = {
+			...activeAssignMusicianModal.value,
+			isSubmitting: false,
+			errorMsg: message,
+		};
+		showErrorToast(message);
+	}
+}
+
+async function handleAssignBandMemberSelection(
+	member: AssignableBandMemberViewModel,
+): Promise<void> {
+	await assignMusicianById(member.id);
 }
 
 function handleSongInstrumentVideoSelection(
@@ -2118,7 +2272,7 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
               @click="closeAssignMusicianModal"
             ></button>
           </div>
-          <form @submit.prevent="handleAssignMusicianSubmit">
+          <form aria-label="Invitar músico por email" @submit.prevent="handleAssignMusicianSubmit">
             <div class="modal-body">
               <label :for="`assignMusicianEmail-${activeAssignMusicianModalContext.instrument.id}`" class="form-label">Email del músico</label>
               <input
@@ -2130,19 +2284,63 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                 :disabled="activeAssignMusicianModal.isSubmitting"
                 @input="handleAssignMusicianEmailInput"
               >
+              <p class="text-muted small mt-2 mb-0">
+                Si la persona todavía no forma parte de la banda, puedes invitarla por email.
+              </p>
+
+              <div class="border-top mt-4 pt-3">
+                <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+                  <div>
+                    <h5 class="h6 mb-1">Miembros de la banda</h5>
+                    <p class="text-muted small mb-0">Selecciona a alguien del equipo actual para asignarlo al instrumento.</p>
+                  </div>
+                  <span class="badge text-bg-light border">{{ activeAssignMusicianModal.members.length }}</span>
+                </div>
+
+                <p v-if="activeAssignMusicianModal.isLoadingMembers" class="text-muted small mb-0">
+                  Cargando miembros...
+                </p>
+                <p v-else-if="activeAssignMusicianModal.membersErrorMsg" class="text-muted small mb-0">
+                  {{ activeAssignMusicianModal.membersErrorMsg }}
+                </p>
+                <p v-else-if="activeAssignMusicianModal.members.length === 0" class="text-muted small mb-0">
+                  No hay miembros disponibles para seleccionar.
+                </p>
+                <ul v-else class="list-group list-group-flush">
+                  <li
+                    v-for="member in activeAssignMusicianModal.members"
+                    :key="member.id"
+                    class="list-group-item px-0 d-flex justify-content-between align-items-center gap-3"
+                  >
+                    <div>
+                      <p class="fw-semibold mb-1">{{ member.name }}</p>
+                      <p v-if="member.username" class="text-muted small mb-0">{{ member.username }}</p>
+                    </div>
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-primary"
+                      :aria-label="`Seleccionar a ${member.name}`"
+                      :disabled="activeAssignMusicianModal.isSubmitting"
+                      @click="handleAssignBandMemberSelection(member)"
+                    >
+                      Seleccionar
+                    </button>
+                  </li>
+                </ul>
+              </div>
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-outline-secondary" :disabled="activeAssignMusicianModal.isSubmitting" @click="closeAssignMusicianModal">
                 Cancelar
               </button>
-              <button type="submit" class="btn btn-primary" :disabled="activeAssignMusicianModal.isSubmitting">
-                <span
-                  v-if="activeAssignMusicianModal.isSubmitting"
-                  class="spinner-border spinner-border-sm me-2"
-                  aria-hidden="true"
-                ></span>
-                Confirmar
-              </button>
+                  <button
+                    type="submit"
+                    class="btn btn-primary"
+                    :disabled="activeAssignMusicianModal.isSubmitting"
+                  >
+                    Invitar por email
+                  </button>
+
             </div>
           </form>
         </div>
