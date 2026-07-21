@@ -95,6 +95,7 @@ vi.mock("../../../infrastructure/musician/AxiosMusicianRepository.js", () => ({
 import MembersView from "./MembersView.vue";
 import { MusicianEmail } from "../../../domain/musician/value-object/MusicianEmail.js";
 import { useBandStore } from "../../stores/useBandStore.js";
+import { useToastStore } from "../../stores/useToastStore.js";
 
 type TestTextNode = {
 	type: "text" | "comment" | "static";
@@ -392,6 +393,7 @@ async function flushView(): Promise<void> {
 
 describe("MembersView", () => {
 	beforeEach(() => {
+		setActivePinia(createPinia());
 		sessionStorage.getSelectedBandId.mockReset();
 		sessionStorage.setSelectedBandId.mockReset();
 		sessionStorage.clearSelectedBandId.mockReset();
@@ -404,6 +406,7 @@ describe("MembersView", () => {
 		repositoryGetMembersMock.mockResolvedValue([]);
 		repositoryAddMemberMock.mockReset();
 		musicianRepositoryGetByIdMock.mockReset();
+		useToastStore().clear();
 		repositoryCtor.mockReset();
 		musicianRepositoryCtor.mockReset();
 	});
@@ -478,7 +481,7 @@ describe("MembersView", () => {
 		view.unmount();
 	});
 
-	it("renders richer member card details once the band has members", async () => {
+	it("removes the redundant lower member details block while keeping the polished card summary", async () => {
 		repositoryGetMembersMock.mockResolvedValueOnce([
 			{ musicianId: "musician-1", role: "ADMIN" },
 		]);
@@ -495,8 +498,10 @@ describe("MembersView", () => {
 		await flushView();
 		await flushView();
 
-		expect(textContent(view.root)).toContain("Usuario");
-		expect(textContent(view.root)).toContain("Rol dentro de la banda");
+		expect(textContent(view.root)).not.toContain("Usuario");
+		expect(textContent(view.root)).not.toContain("Rol dentro de la banda");
+		expect(textContent(view.root)).toContain("@johnny");
+		expect(textContent(view.root)).toContain("Admin");
 		expect(textContent(view.root)).not.toContain("Agregar primer miembro");
 		view.unmount();
 	});
@@ -550,6 +555,12 @@ describe("MembersView", () => {
 		expect(repositoryGetMembersMock).toHaveBeenNthCalledWith(2, "band-1");
 		expect(textContent(view.root)).toContain("Flea");
 		expect(queryByTestId(view.root, "add-member-modal")).toBeNull();
+		expect(useToastStore().toasts).toEqual([
+			expect.objectContaining({
+				variant: "success",
+				message: "Miembro agregado correctamente.",
+			}),
+		]);
 		view.unmount();
 	});
 });

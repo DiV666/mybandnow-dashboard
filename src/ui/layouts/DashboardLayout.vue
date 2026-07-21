@@ -49,6 +49,11 @@ const toggleBandMenu = () => {
   isBandMenuOpen.value = !isBandMenuOpen.value;
 };
 
+const goToProfile = () => {
+  isUserMenuOpen.value = false;
+  router.push({ name: 'Profile' });
+};
+
 const selectBand = (bandId: string) => {
   bandStore.selectBand(bandId);
   isBandMenuOpen.value = false;
@@ -154,6 +159,7 @@ const logout = () => {
             <span aria-hidden="true">▾</span>
           </button>
           <div v-if="isUserMenuOpen" class="dropdown-menu dropdown-menu-end show dashboard-header-dropdown-menu dashboard-header-dropdown-panel dashboard-user-menu">
+            <button type="button" class="dropdown-item" @click="goToProfile">Mi Perfil</button>
             <button type="button" class="dropdown-item" @click="logout">Cerrar sesión</button>
           </div>
         </div>
@@ -166,18 +172,13 @@ const logout = () => {
         <div class="position-sticky pt-3">
           <ul class="nav flex-column gap-1 px-2 pb-3">
             <li class="nav-item">
-              <router-link :to="{ name: 'DashboardHome' }" class="nav-link dashboard-nav-link" active-class="active fw-bold text-primary">
-                Inicio
+              <router-link :to="{ name: 'SongsManager' }" class="nav-link dashboard-nav-link" active-class="active fw-bold text-primary">
+                Canciones
               </router-link>
             </li>
             <li class="nav-item">
               <router-link :to="{ name: 'MembersManager' }" class="nav-link dashboard-nav-link" active-class="active fw-bold text-primary">
-                Músicos
-              </router-link>
-            </li>
-            <li class="nav-item">
-              <router-link :to="{ name: 'SongsManager' }" class="nav-link dashboard-nav-link" active-class="active fw-bold text-primary">
-                Canciones
+                Miembros
               </router-link>
             </li>
             <li class="nav-item">

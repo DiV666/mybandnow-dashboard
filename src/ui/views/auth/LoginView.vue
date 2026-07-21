@@ -2,26 +2,37 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/useAuthStore.js';
+import { useToastStore } from '../../stores/useToastStore.js';
 import { LoginUseCase } from '../../../application/auth/LoginUseCase.js';
 import { AxiosAuthRepository } from '../../../infrastructure/auth/AxiosAuthRepository.js';
 
+interface HttpErrorResponse {
+  status?: number;
+}
+
+interface HttpErrorLike {
+  response?: HttpErrorResponse;
+}
+
 const email = ref('');
 const password = ref('');
-const errorMsg = ref('');
 const isLoading = ref(false);
 
 const router = useRouter();
 const authStore = useAuthStore();
+const toastStore = useToastStore();
 
 // Manual Dependency Injection for now
 const authRepository = new AxiosAuthRepository();
 const loginUseCase = new LoginUseCase(authRepository);
 
+function isHttpErrorLike(error: unknown): error is HttpErrorLike {
+  return typeof error === 'object' && error !== null && 'response' in error;
+}
+
 async function handleLogin() {
-  errorMsg.value = '';
-  
   if (!email.value || !password.value) {
-    errorMsg.value = 'Por favor, rellena todos los campos';
+    toastStore.error('Por favor, rellena todos los campos');
     return;
   }
   
@@ -31,11 +42,11 @@ async function handleLogin() {
     const token = await loginUseCase.run(email.value, password.value);
     authStore.setToken(token.value);
     router.push('/dashboard');
-  } catch (error: any) {
-    if (error.response?.status === 401) {
-      errorMsg.value = 'Credenciales inválidas';
+  } catch (error: unknown) {
+    if (isHttpErrorLike(error) && error.response?.status === 401) {
+      toastStore.error('Credenciales inválidas');
     } else {
-      errorMsg.value = 'Ocurrió un error inesperado al iniciar sesión';
+      toastStore.error('Ocurrió un error inesperado al iniciar sesión');
     }
   } finally {
     isLoading.value = false;
@@ -57,10 +68,6 @@ async function handleLogin() {
                 <p class="text-body-secondary mb-0">
                   Entrá a tu espacio y seguí construyendo videoclips con tu banda.
                 </p>
-              </div>
-
-              <div v-if="errorMsg" class="alert alert-danger border-0 shadow-sm" role="alert">
-                {{ errorMsg }}
               </div>
 
               <form @submit.prevent="handleLogin">

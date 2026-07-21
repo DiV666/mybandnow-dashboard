@@ -4,20 +4,29 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/useAuthStore.js';
 import { useBandStore } from '../stores/useBandStore.js';
 import { useMusicianStore } from '../stores/useMusicianStore.js';
+import { useToastStore } from '../stores/useToastStore.js';
 import { AxiosAuthRepository } from '../../infrastructure/auth/AxiosAuthRepository.js';
 import { LoginUseCase } from '../../application/auth/LoginUseCase.js';
 import { AuthToken } from '../../domain/auth/value-object/AuthToken.js';
+
+interface LoginErrorResponse {
+  status?: number;
+}
+
+interface LoginErrorLike {
+  response?: LoginErrorResponse;
+}
 
 const router = useRouter();
 const authStore = useAuthStore();
 const bandStore = useBandStore();
 const musicianStore = useMusicianStore();
+const toastStore = useToastStore();
 
 const authRepository = new AxiosAuthRepository();
 const loginUseCase = new LoginUseCase(authRepository);
 
 const password = ref('');
-const errorMsg = ref('');
 const isLoading = ref(false);
 
 const countdown = ref(60);
@@ -34,7 +43,7 @@ const getEmailFromToken = (): string => {
     if (parts.length === 3) {
       const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
       const jsonPayload = atob(base64);
-      const payload = JSON.parse(jsonPayload);
+      const payload = JSON.parse(jsonPayload) as { email?: string };
       return payload.email || '';
     }
   } catch {
@@ -42,6 +51,10 @@ const getEmailFromToken = (): string => {
   }
   return '';
 };
+
+function isLoginErrorLike(error: unknown): error is LoginErrorLike {
+  return typeof error === 'object' && error !== null && 'response' in error;
+}
 
 // Logouts
 const manualLogout = () => {
@@ -61,11 +74,10 @@ const autoLogout = () => {
 };
 
 const handleLogin = async () => {
-  errorMsg.value = '';
   const email = getEmailFromToken();
   
   if (!email || !password.value) {
-    errorMsg.value = 'Faltan credenciales.';
+    toastStore.error('Faltan credenciales.');
     return;
   }
   
@@ -75,11 +87,11 @@ const handleLogin = async () => {
     cleanUp();
     authStore.setToken(newAuthToken.value);
     password.value = '';
-  } catch (error: any) {
-    if (error.response?.status === 401) {
-      errorMsg.value = 'Credenciales inválidas';
+  } catch (error: unknown) {
+    if (isLoginErrorLike(error) && error.response?.status === 401) {
+      toastStore.error('Credenciales inválidas');
     } else {
-      errorMsg.value = 'Ocurrió un error inesperado al validar la sesión';
+      toastStore.error('Ocurrió un error inesperado al validar la sesión');
     }
   } finally {
     isLoading.value = false;
@@ -128,7 +140,10 @@ const startSecurityObserver = () => {
     }
     
     // 4. Verificamos que el backdrop-filter siga activo (algunos lo desactivan en DevTools para ver el fondo)
-    if (backdropStyle.backdropFilter === 'none' && (backdropStyle as any).webkitBackdropFilter === 'none') {
+    const webkitBackdropFilter = 'webkitBackdropFilter' in backdropStyle
+      ? backdropStyle.webkitBackdropFilter
+      : undefined;
+    if (backdropStyle.backdropFilter === 'none' && webkitBackdropFilter === 'none') {
       console.warn('[Security] Blur desactivado. Cerrando sesión...');
       autoLogout();
       return;
@@ -182,10 +197,6 @@ onUnmounted(() => {
           <p class="mb-4 text-center">
             Por tu seguridad, tu sesión ha expirado. Introduce tu contraseña de nuevo para continuar donde lo dejaste sin perder tus datos.
           </p>
-          
-          <div v-if="errorMsg" class="alert alert-danger py-2">
-            {{ errorMsg }}
-          </div>
           
           <form @submit.prevent="handleLogin">
             <div class="mb-3">

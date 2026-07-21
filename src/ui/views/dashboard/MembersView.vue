@@ -10,6 +10,7 @@ import {
 import { AxiosBandRepository } from "../../../infrastructure/band/AxiosBandRepository.js";
 import { AxiosMusicianRepository } from "../../../infrastructure/musician/AxiosMusicianRepository.js";
 import { useBandStore } from "../../stores/useBandStore.js";
+import { useToastStore } from "../../stores/useToastStore.js";
 
 interface MemberCardViewModel {
 	id: string;
@@ -29,6 +30,7 @@ interface HttpErrorLike {
 }
 
 const bandStore = useBandStore();
+const toastStore = useToastStore();
 const bandRepository = new AxiosBandRepository();
 const musicianRepository = new AxiosMusicianRepository();
 const addBandMemberUseCase = new AddBandMemberUseCase(bandRepository);
@@ -120,11 +122,13 @@ async function loadMembers(bandId: string | null): Promise<void> {
 			return;
 		}
 
-		members.value = [];
-		membersErrorMsg.value =
+		const message =
 			error instanceof Error
 				? error.message
 				: "Ocurrió un error inesperado al cargar los miembros.";
+		members.value = [];
+		membersErrorMsg.value = message;
+		toastStore.error(message);
 	} finally {
 		if (selectedBandId.value === bandId) {
 			isLoadingMembers.value = false;
@@ -141,7 +145,6 @@ watch(
 );
 
 function openAddMemberModal(): void {
-	errorMsg.value = "";
 	musicianEmail.value = "";
 	isAddMemberModalOpen.value = true;
 }
@@ -174,12 +177,16 @@ async function handleAddMember(): Promise<void> {
 	const trimmedEmail = musicianEmail.value.trim();
 
 	if (!bandId) {
-		errorMsg.value = "Selecciona una banda antes de agregar miembros.";
+		const message = "Selecciona una banda antes de agregar miembros.";
+		errorMsg.value = message;
+		toastStore.error(message);
 		return;
 	}
 
 	if (!trimmedEmail) {
-		errorMsg.value = "Escribí el email del músico antes de confirmar.";
+		const message = "Escribí el email del músico antes de confirmar.";
+		errorMsg.value = message;
+		toastStore.error(message);
 		return;
 	}
 
@@ -189,9 +196,12 @@ async function handleAddMember(): Promise<void> {
 	try {
 		await addBandMemberUseCase.run(bandId, trimmedEmail);
 		await loadMembers(bandId);
+		toastStore.success("Miembro agregado correctamente.");
 		closeAddMemberModal();
 	} catch (error: unknown) {
-		errorMsg.value = mapAddMemberErrorMessage(error);
+		const message = mapAddMemberErrorMessage(error);
+		errorMsg.value = message;
+		toastStore.error(message);
 		isSubmitting.value = false;
 	}
 }
@@ -238,9 +248,9 @@ async function handleAddMember(): Promise<void> {
           Cargando miembros...
         </p>
 
-        <div v-else-if="membersErrorMsg" class="alert alert-danger mb-0" role="alert">
-          {{ membersErrorMsg }}
-        </div>
+        <p v-else-if="membersErrorMsg" class="text-muted mb-0">
+          No pudimos cargar los miembros por ahora.
+        </p>
 
         <div v-else-if="members.length === 0" class="border rounded-4 bg-white p-4 p-md-5 text-center members-empty-state" data-testid="members-empty-state">
           <div
@@ -290,17 +300,6 @@ async function handleAddMember(): Promise<void> {
                   </div>
                 </div>
 
-                <dl class="row g-2 mb-0 small member-details">
-                  <div class="col-12 col-sm-6">
-                    <dt class="text-uppercase text-muted fw-semibold mb-1">Usuario</dt>
-                    <dd class="mb-0 text-body">{{ member.username }}</dd>
-                  </div>
-                  <div class="col-12 col-sm-6">
-                    <dt class="text-uppercase text-muted fw-semibold mb-1">Rol dentro de la banda</dt>
-                    <dd class="mb-0 text-body">{{ member.role }}</dd>
-                  </div>
-                </dl>
-
                 <div class="rounded-3 bg-body-tertiary px-3 py-2 border small text-muted member-note">
                   Disponible para colaborar en canciones, ensayos y nuevas grabaciones.
                 </div>
@@ -325,11 +324,8 @@ async function handleAddMember(): Promise<void> {
                 Ingresa el email del músico para sumarlo a la banda como miembro.
               </p>
 
-              <div v-if="errorMsg" class="alert alert-danger mb-3" role="alert" data-testid="add-member-error">
-                {{ errorMsg }}
-              </div>
+                  <label for="member-email" class="form-label">Email del músico</label>
 
-              <label for="member-email" class="form-label">Email del músico</label>
               <input
                 id="member-email"
                 data-testid="add-member-email-input"
@@ -405,10 +401,6 @@ async function handleAddMember(): Promise<void> {
 
 .member-avatar {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
-}
-
-.member-details dt {
-  font-size: 0.7rem;
 }
 
 .member-note {

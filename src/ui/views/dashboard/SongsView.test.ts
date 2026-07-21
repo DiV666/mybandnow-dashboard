@@ -157,6 +157,7 @@ vi.mock("../../../infrastructure/musician/AxiosMusicianRepository.js", () => ({
 import SongsView from "./SongsView.vue";
 import { useBandStore } from "../../stores/useBandStore.js";
 import { useMusicianStore } from "../../stores/useMusicianStore.js";
+import { useToastStore } from "../../stores/useToastStore.js";
 
 type TestTextNode = {
 	type: "text" | "comment" | "static";
@@ -704,6 +705,7 @@ function getBodyOverflow(): string {
 
 describe("SongsView", () => {
 	beforeEach(() => {
+		setActivePinia(createPinia());
 		sessionStorage.getSelectedBandId.mockReset();
 		sessionStorage.setSelectedBandId.mockReset();
 		sessionStorage.clearSelectedBandId.mockReset();
@@ -728,6 +730,7 @@ describe("SongsView", () => {
 		repositoryCtor.mockReset();
 		instrumentRepositoryCtor.mockReset();
 		musicianRepositoryCtor.mockReset();
+		useToastStore().clear();
 		(globalThis as { Document?: typeof Document }).Document ??=
 			class Document {} as typeof Document;
 		(globalThis as { ShadowRoot?: typeof ShadowRoot }).ShadowRoot ??=
@@ -1074,7 +1077,13 @@ describe("SongsView", () => {
 
 		expect(
 			findByText(view.root, "No se pudieron cargar las canciones."),
-		).not.toBeNull();
+		).toBeNull();
+		expect(useToastStore().toasts).toEqual([
+			expect.objectContaining({
+				variant: "error",
+				message: "No se pudieron cargar las canciones.",
+			}),
+		]);
 		view.unmount();
 	});
 
@@ -1214,7 +1223,13 @@ describe("SongsView", () => {
 		await flushView();
 
 		expect(repositorySaveMock).not.toHaveBeenCalled();
-		expect(findByText(view.root, "SongTitle cannot be empty")).not.toBeNull();
+		expect(findByText(view.root, "SongTitle cannot be empty")).toBeNull();
+		expect(useToastStore().toasts).toEqual([
+			expect.objectContaining({
+				variant: "error",
+				message: "SongTitle cannot be empty",
+			}),
+		]);
 		expect(findSubmitButton(view.root).props.disabled).toBe(false);
 		view.unmount();
 	});
@@ -1255,10 +1270,13 @@ describe("SongsView", () => {
 		expect(repositoryGetByBandIdMock).toHaveBeenNthCalledWith(1, "band-1");
 		expect(repositoryGetByBandIdMock).toHaveBeenNthCalledWith(2, "band-1");
 		expect(findByText(view.root, "Paint It Black")).not.toBeNull();
-		expect(
-			findByText(view.root, "Canción creada correctamente."),
-		).not.toBeNull();
 		expect(queryInput(view.root, "songTitle")).toBeNull();
+		expect(useToastStore().toasts).toEqual([
+			expect.objectContaining({
+				variant: "success",
+				message: "Canción creada correctamente.",
+			}),
+		]);
 
 		view.unmount();
 	});
@@ -1355,9 +1373,12 @@ describe("SongsView", () => {
 			originalVideoclipUrl: "https://www.youtube.com/watch?v=O4irXQhgMqg",
 		});
 		expect(queryInput(view.root, "songTitle")).toBeNull();
-		expect(
-			findByText(view.root, "Canción creada correctamente."),
-		).not.toBeNull();
+		expect(useToastStore().toasts).toEqual([
+			expect.objectContaining({
+				variant: "success",
+				message: "Canción creada correctamente.",
+			}),
+		]);
 
 		view.unmount();
 	});
@@ -1391,7 +1412,13 @@ describe("SongsView", () => {
 				view.root,
 				"Ya existe una canción con esos datos. Inténtalo de nuevo.",
 			),
-		).not.toBeNull();
+		).toBeNull();
+		expect(useToastStore().toasts).toEqual([
+			expect.objectContaining({
+				variant: "error",
+				message: "Ya existe una canción con esos datos. Inténtalo de nuevo.",
+			}),
+		]);
 		expect(findSubmitButton(view.root).props.disabled).toBe(false);
 		view.unmount();
 	});
@@ -1844,7 +1871,13 @@ describe("SongsView", () => {
 		).not.toBeNull();
 		expect(
 			findByText(view.root, "Escribí un email válido para asignar el músico."),
-		).not.toBeNull();
+		).toBeNull();
+		expect(useToastStore().toasts).toEqual([
+			expect.objectContaining({
+				variant: "error",
+				message: "Escribí un email válido para asignar el músico.",
+			}),
+		]);
 		expect(repositoryGetInstrumentByIdMock).not.toHaveBeenCalled();
 
 		view.unmount();
@@ -2741,7 +2774,14 @@ describe("SongsView", () => {
 				view.root,
 				"Debes completar tu perfil de músico para añadir instrumentos.",
 			),
-		).not.toBeNull();
+		).toBeNull();
+		expect(useToastStore().toasts).toEqual([
+			expect.objectContaining({
+				variant: "error",
+				message:
+					"Debes completar tu perfil de músico para añadir instrumentos.",
+			}),
+		]);
 
 		view.unmount();
 	});
@@ -2897,9 +2937,13 @@ describe("SongsView", () => {
 
 		expect(findSubmitButton(view.root).props.disabled).toBe(false);
 		expect(textContent(findSubmitButton(view.root))).toContain("Crear canción");
-		expect(
-			findByText(view.root, "No se pudo crear la canción."),
-		).not.toBeNull();
+		expect(findByText(view.root, "No se pudo crear la canción.")).toBeNull();
+		expect(useToastStore().toasts).toEqual([
+			expect.objectContaining({
+				variant: "error",
+				message: "No se pudo crear la canción.",
+			}),
+		]);
 
 		view.unmount();
 	});

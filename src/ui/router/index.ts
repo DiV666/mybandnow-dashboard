@@ -33,8 +33,7 @@ const routes: Array<RouteRecordRaw> = [
 		children: [
 			{
 				path: "",
-				name: "DashboardHome",
-				component: () => import("../views/dashboard/DashboardHomeView.vue"),
+				redirect: { name: "SongsManager" },
 			},
 			{
 				path: "create-first-band",
@@ -46,6 +45,11 @@ const routes: Array<RouteRecordRaw> = [
 				path: "members",
 				name: "MembersManager",
 				component: () => import("../views/dashboard/MembersView.vue"),
+			},
+			{
+				path: "profile",
+				name: "Profile",
+				component: () => import("../views/dashboard/ProfileView.vue"),
 			},
 			{
 				path: "songs",

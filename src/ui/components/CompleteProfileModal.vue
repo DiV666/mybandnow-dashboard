@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useMusicianStore } from '../stores/useMusicianStore.js';
+import { useToastStore } from '../stores/useToastStore.js';
+
+interface ErrorLike {
+  message?: string;
+}
 
 const musicianStore = useMusicianStore();
+const toastStore = useToastStore();
 
 const name = ref('');
 const username = ref('');
-const errorMsg = ref('');
 
 // Validación en tiempo real del username: sin espacios, sin caracteres especiales, minúsculas
 const sanitizedUsername = computed({
@@ -16,24 +21,28 @@ const sanitizedUsername = computed({
   }
 });
 
+function getErrorMessage(error: unknown): string {
+  return typeof error === 'object' && error !== null && 'message' in error
+    ? ((error as ErrorLike).message ?? 'Error al guardar el perfil. Quizá el username ya esté en uso.')
+    : 'Error al guardar el perfil. Quizá el username ya esté en uso.';
+}
+
 const handleSubmit = async () => {
-  errorMsg.value = '';
-  
   if (!name.value.trim() || !username.value.trim()) {
-    errorMsg.value = 'Todos los campos son obligatorios.';
+    toastStore.error('Todos los campos son obligatorios.');
     return;
   }
   
   if (username.value.length < 3) {
-    errorMsg.value = 'El nombre de usuario debe tener al menos 3 caracteres.';
+    toastStore.error('El nombre de usuario debe tener al menos 3 caracteres.');
     return;
   }
 
   try {
     await musicianStore.createProfile(name.value.trim(), username.value);
     // Al acabar el await, isProfileCompletionPending bajará a false y el interceptor original continuará
-  } catch (error: any) {
-    errorMsg.value = error.message || 'Error al guardar el perfil. Quizá el username ya esté en uso.';
+  } catch (error: unknown) {
+    toastStore.error(getErrorMessage(error));
   }
 };
 </script>
@@ -60,10 +69,6 @@ const handleSubmit = async () => {
           <p class="mb-4 text-center">
             Para realizar esta acción necesitas completar tu perfil de músico. Solo tomará unos segundos.
           </p>
-          
-          <div v-if="errorMsg" class="alert alert-danger py-2">
-            {{ errorMsg }}
-          </div>
           
           <form @submit.prevent="handleSubmit">
             <div class="mb-3">

@@ -24,6 +24,7 @@ import { AxiosMusicianRepository } from "../../../infrastructure/musician/AxiosM
 import { AxiosSongRepository } from "../../../infrastructure/song/AxiosSongRepository.js";
 import { useBandStore } from "../../stores/useBandStore.js";
 import { useMusicianStore } from "../../stores/useMusicianStore.js";
+import { useToastStore } from "../../stores/useToastStore.js";
 
 interface HttpErrorData {
 	message?: string;
@@ -110,11 +111,11 @@ const SONG_INSTRUMENT_PROGRESS_TICK_MS = 400;
 
 const bandStore = useBandStore();
 const musicianStore = useMusicianStore();
+const toastStore = useToastStore();
 const title = ref("");
 const originalVideoclipUrl = ref("");
 const errorMsg = ref("");
 const songsErrorMsg = ref("");
-const successMsg = ref("");
 const isCreateSongModalOpen = ref(false);
 const activeSongInstrumentUploadModal =
 	ref<ActiveSongInstrumentUploadModalState | null>(null);
@@ -228,6 +229,14 @@ let availableInstrumentsRequest: Promise<void> | null = null;
 let isViewMounted = true;
 let lastSongsRequestId = 0;
 let previousBodyOverflow: string | null = null;
+
+function showErrorToast(message: string): void {
+	toastStore.error(message);
+}
+
+function showSuccessToast(message: string): void {
+	toastStore.success(message);
+}
 
 function isHttpErrorLike(error: unknown): error is HttpErrorLike {
 	return typeof error === "object" && error !== null;
@@ -1131,16 +1140,18 @@ async function runSongInstrumentPoll(
 		if (detail.upload?.status === songInstrumentUploadStatuses.FAILED) {
 			cancelSongInstrumentPoll(songId, instrumentId);
 			resetSongInstrumentProgress(songId, instrumentId);
+			const message = mapUploadErrorMessage(
+				{
+					message: detail.upload.errorMessage,
+				},
+				"La subida del vídeo falló.",
+			);
 			setSongInstrumentUploadState(songId, instrumentId, {
 				isSubmitting: false,
 				successMsg: "",
-				errorMsg: mapUploadErrorMessage(
-					{
-						message: detail.upload.errorMessage,
-					},
-					"La subida del vídeo falló.",
-				),
+				errorMsg: message,
 			});
+			showErrorToast(message);
 			return;
 		}
 
@@ -1170,16 +1181,18 @@ async function runSongInstrumentPoll(
 			errorMsg: detail.video ? "" : undefined,
 		});
 	} catch (error: unknown) {
+		const message = mapUploadErrorMessage(
+			extractUploadErrorDetails(error),
+			"No pudimos actualizar el estado del video.",
+		);
 		cancelSongInstrumentPoll(songId, instrumentId);
 		resetSongInstrumentProgress(songId, instrumentId);
 		setSongInstrumentUploadState(songId, instrumentId, {
 			isSubmitting: false,
 			successMsg: "",
-			errorMsg: mapUploadErrorMessage(
-				extractUploadErrorDetails(error),
-				"No pudimos actualizar el estado del video.",
-			),
+			errorMsg: message,
 		});
+		showErrorToast(message);
 	}
 }
 
@@ -1293,10 +1306,12 @@ async function loadSongs(bandId: string | null) {
 		songInstrumentUploads.value = {};
 		songInstrumentDetails.value = {};
 		musicianDisplayNames.value = {};
-		songsErrorMsg.value =
+		const message =
 			error instanceof Error
 				? error.message
 				: "Ocurrió un error inesperado al cargar las canciones.";
+		songsErrorMsg.value = message;
+		showErrorToast(message);
 	} finally {
 		if (requestId === lastSongsRequestId) {
 			isLoadingSongs.value = false;
@@ -1364,7 +1379,6 @@ function openCreateSongModal(): void {
 	}
 
 	errorMsg.value = "";
-	successMsg.value = "";
 	isCreateSongModalOpen.value = true;
 }
 
@@ -1375,10 +1389,10 @@ function closeCreateSongModal(): void {
 
 async function handleCreateSong() {
 	errorMsg.value = "";
-	successMsg.value = "";
 
 	if (!selectedBand.value) {
 		errorMsg.value = "Selecciona una banda antes de crear una canción.";
+		showErrorToast(errorMsg.value);
 		return;
 	}
 
@@ -1395,7 +1409,7 @@ async function handleCreateSong() {
 
 		resetCreateSongForm();
 		isCreateSongModalOpen.value = false;
-		successMsg.value = "Canción creada correctamente.";
+		showSuccessToast("Canción creada correctamente.");
 		if (selectedBand.value?.id.value === bandId) {
 			await loadSongs(bandId);
 		}
@@ -1407,6 +1421,7 @@ async function handleCreateSong() {
 		} else {
 			errorMsg.value = "Ocurrió un error inesperado al crear la canción.";
 		}
+		showErrorToast(errorMsg.value);
 	} finally {
 		isLoading.value = false;
 	}
@@ -1494,6 +1509,7 @@ async function handleAssignMusicianSubmit(): Promise<void> {
 			...modalState,
 			errorMsg: "Escribí el email del músico antes de confirmar.",
 		};
+		showErrorToast("Escribí el email del músico antes de confirmar.");
 		return;
 	}
 
@@ -1515,6 +1531,7 @@ async function handleAssignMusicianSubmit(): Promise<void> {
 			activeAssignMusicianModal.value?.songId === modalState.songId &&
 			activeAssignMusicianModal.value?.instrumentId === modalState.instrumentId
 		) {
+			showSuccessToast("Músico asignado correctamente.");
 			closeAssignMusicianModal();
 		}
 	} catch (error: unknown) {
@@ -1525,13 +1542,15 @@ async function handleAssignMusicianSubmit(): Promise<void> {
 			return;
 		}
 
+		const message = mapAssignMusicianErrorMessage(
+			extractUploadErrorDetails(error),
+		);
 		activeAssignMusicianModal.value = {
 			...activeAssignMusicianModal.value,
 			isSubmitting: false,
-			errorMsg: mapAssignMusicianErrorMessage(
-				extractUploadErrorDetails(error),
-			),
+			errorMsg: message,
 		};
+		showErrorToast(message);
 	}
 }
 
@@ -1547,22 +1566,26 @@ function handleSongInstrumentVideoSelection(
 			: null;
 
 	if (!selectedFile) {
+		const message = "Seleccioná un vídeo antes de continuar.";
 		resetSongInstrumentProgress(songId, instrumentId);
 		setSongInstrumentUploadState(songId, instrumentId, {
 			selectedFile: null,
 			successMsg: "",
-			errorMsg: "Seleccioná un vídeo antes de continuar.",
+			errorMsg: message,
 		});
+		showErrorToast(message);
 		return;
 	}
 
 	if (selectedFile.type !== "video/mp4") {
+		const message = "El vídeo tiene que estar en formato MP4.";
 		resetSongInstrumentProgress(songId, instrumentId);
 		setSongInstrumentUploadState(songId, instrumentId, {
 			selectedFile: null,
 			successMsg: "",
-			errorMsg: "El vídeo tiene que estar en formato MP4.",
+			errorMsg: message,
 		});
+		showErrorToast(message);
 		return;
 	}
 
@@ -1580,11 +1603,12 @@ async function handleUploadSongInstrumentVideo(
 ): Promise<void> {
 	const uploadState = getSongInstrumentUploadState(songId, instrumentId);
 	if (!uploadState.selectedFile) {
+		const message = uploadState.errorMsg || "Seleccioná un vídeo antes de continuar.";
 		setSongInstrumentUploadState(songId, instrumentId, {
-			errorMsg:
-				uploadState.errorMsg || "Seleccioná un vídeo antes de continuar.",
+			errorMsg: message,
 			successMsg: "",
 		});
+		showErrorToast(message);
 		return;
 	}
 
@@ -1614,15 +1638,17 @@ async function handleUploadSongInstrumentVideo(
 		});
 		scheduleSongInstrumentPoll(songId, instrumentId, 1);
 	} catch (error: unknown) {
+		const message = mapUploadErrorMessage(
+			extractUploadErrorDetails(error),
+			"No se pudo iniciar la subida del vídeo.",
+		);
 		resetSongInstrumentProgress(songId, instrumentId);
 		setSongInstrumentUploadState(songId, instrumentId, {
-			errorMsg: mapUploadErrorMessage(
-				extractUploadErrorDetails(error),
-				"No se pudo iniciar la subida del vídeo.",
-			),
+			errorMsg: message,
 			isSubmitting: false,
 			successMsg: "",
 		});
+		showErrorToast(message);
 		setSongInstrumentUploadStatus(songId, instrumentId, null);
 	}
 }
@@ -1630,9 +1656,11 @@ async function handleUploadSongInstrumentVideo(
 async function handleCreateSongInstrument(songId: string): Promise<void> {
 	const musicianProfileId = musicianStore.profile?.id;
 	if (!musicianProfileId) {
+		const message = "Debes completar tu perfil de músico para añadir instrumentos.";
 		setSongInstrumentForm(songId, {
-			errorMsg: "Debes completar tu perfil de músico para añadir instrumentos.",
+			errorMsg: message,
 		});
+		showErrorToast(message);
 		return;
 	}
 
@@ -1665,32 +1693,38 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
 			instrumentId: "",
 			isSubmitting: false,
 		});
+		showSuccessToast("Instrumento agregado correctamente.");
 	} catch (error: unknown) {
 		if (isHttpErrorLike(error) && error.response?.status === 409) {
+			const message =
+				"Ya existe un instrumento con esos datos para esta canción. Inténtalo de nuevo.";
 			setSongInstrumentForm(songId, {
-				errorMsg:
-					"Ya existe un instrumento con esos datos para esta canción. Inténtalo de nuevo.",
+				errorMsg: message,
 				isSubmitting: false,
 			});
+			showErrorToast(message);
 			return;
 		}
 
 		if (isHttpErrorLike(error) && error.response?.status === 403) {
+			const message = "No tienes permisos para añadir instrumentos a esta canción.";
 			setSongInstrumentForm(songId, {
-				errorMsg:
-					"No tienes permisos para añadir instrumentos a esta canción.",
+				errorMsg: message,
 				isSubmitting: false,
 			});
+			showErrorToast(message);
 			return;
 		}
 
+		const message =
+			error instanceof Error
+				? error.message
+				: "Ocurrió un error inesperado al añadir el instrumento.";
 		setSongInstrumentForm(songId, {
-			errorMsg:
-				error instanceof Error
-					? error.message
-					: "Ocurrió un error inesperado al añadir el instrumento.",
+			errorMsg: message,
 			isSubmitting: false,
 		});
+		showErrorToast(message);
 	} finally {
 		if (hasSongInstrumentForm(songId) && getSongInstrumentForm(songId).isSubmitting) {
 			setSongInstrumentForm(songId, {
@@ -1714,10 +1748,6 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
 
     <div class="card">
       <div class="card-body">
-        <div v-if="successMsg" class="alert alert-success" role="alert">
-          {{ successMsg }}
-        </div>
-
         <div class="d-flex justify-content-between align-items-center mb-3 gap-3 flex-wrap">
           <div>
             <h2 class="h5 mb-0">Canciones de la banda</h2>
@@ -1744,9 +1774,9 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
           Cargando canciones...
         </p>
 
-        <div v-else-if="songsErrorMsg" class="alert alert-danger mb-0" role="alert">
-          {{ songsErrorMsg }}
-        </div>
+        <p v-else-if="songsErrorMsg" class="text-muted mb-0">
+          No pudimos cargar las canciones por ahora.
+        </p>
 
         <p v-else-if="songs.length === 0" class="text-muted mb-0">
           Esta banda todavía no tiene canciones.
@@ -1849,13 +1879,12 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                               Disponible
                             </span>
                           </div>
-                          <div
-                            v-if="getSongInstrumentUploadErrorMessage(song.id, instrument)"
-                            class="alert alert-danger mb-0 mt-2 py-2"
-                            role="alert"
-                          >
-                            {{ getSongInstrumentUploadErrorMessage(song.id, instrument) }}
-                          </div>
+                              <p
+                                v-if="getSongInstrumentUploadErrorMessage(song.id, instrument)"
+                                class="mb-0 mt-2 small text-danger-emphasis"
+                              >
+                                {{ getSongInstrumentUploadErrorMessage(song.id, instrument) }}
+                              </p>
                         </td>
                       </tr>
                     </tbody>
@@ -1928,11 +1957,6 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                       {{ instrument.name }}
                     </option>
                   </select>
-                </div>
-                <div v-if="songInstrumentForms[activeSongInstrumentFormSong.id].errorMsg" class="col-12">
-                  <div class="alert alert-danger mb-0 py-2" role="alert">
-                    {{ songInstrumentForms[activeSongInstrumentFormSong.id].errorMsg }}
-                  </div>
                 </div>
               </div>
             </div>
@@ -2026,20 +2050,18 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                 </div>
               </div>
               <div
-                v-if="getSongInstrumentStatusMessage(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument)"
-                class="alert mb-0 py-2"
-                :class="getEffectiveVideo(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument.id) ? 'alert-success' : 'alert-info'"
-                role="alert"
-              >
+                    v-if="getSongInstrumentStatusMessage(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument)"
+                    class="rounded-3 border mb-0 px-3 py-2 small"
+                    :class="getEffectiveVideo(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument.id) ? 'border-success-subtle bg-success-subtle text-success-emphasis' : 'border-info-subtle bg-info-subtle text-info-emphasis'"
+                  >
                 {{ getSongInstrumentStatusMessage(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument) }}
               </div>
-              <div
-                v-if="getSongInstrumentUploadErrorMessage(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument)"
-                class="alert alert-danger mb-0 py-2"
-                role="alert"
-              >
-                {{ getSongInstrumentUploadErrorMessage(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument) }}
-              </div>
+              <p
+                    v-if="getSongInstrumentUploadErrorMessage(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument)"
+                    class="mb-0 small text-danger-emphasis"
+                  >
+                    {{ getSongInstrumentUploadErrorMessage(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument) }}
+                  </p>
               <div v-if="getEffectiveVideo(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument.id)">
                 <a
                   :href="getEffectiveVideo(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument.id)?.url"
@@ -2098,9 +2120,6 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
           </div>
           <form @submit.prevent="handleAssignMusicianSubmit">
             <div class="modal-body">
-              <div v-if="activeAssignMusicianModal.errorMsg" class="alert alert-danger" role="alert">
-                {{ activeAssignMusicianModal.errorMsg }}
-              </div>
               <label :for="`assignMusicianEmail-${activeAssignMusicianModalContext.instrument.id}`" class="form-label">Email del músico</label>
               <input
                 :id="`assignMusicianEmail-${activeAssignMusicianModalContext.instrument.id}`"
@@ -2158,10 +2177,6 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
             @submit.prevent="handleCreateSong"
           >
             <div class="modal-body">
-              <div v-if="errorMsg" class="alert alert-danger" role="alert">
-                {{ errorMsg }}
-              </div>
-
               <div class="mb-3">
                 <label for="songTitle" class="form-label">Título</label>
                 <input

@@ -3,8 +3,8 @@ import { createPinia, setActivePinia } from "pinia";
 import { createRenderer, defineComponent, h, nextTick } from "vue";
 import type { Band } from "../../domain/band/Band.js";
 
-const { sessionStorage, routerPushMock, getMyBandsRunMock } = vi.hoisted(
-	() => ({
+const { sessionStorage, routerPushMock, getMyBandsRunMock, currentRouteState } =
+	vi.hoisted(() => ({
 		sessionStorage: {
 			getAuthToken: vi.fn<() => string | null>(),
 			setAuthToken: vi.fn<(token: string) => void>(),
@@ -18,8 +18,10 @@ const { sessionStorage, routerPushMock, getMyBandsRunMock } = vi.hoisted(
 		},
 		routerPushMock: vi.fn(),
 		getMyBandsRunMock: vi.fn<() => Promise<Band[]>>(),
-	}),
-);
+		currentRouteState: {
+			path: "/dashboard",
+		},
+	}));
 
 vi.mock("../../infrastructure/storage/browserSessionStorage.js", () => ({
 	browserSessionStorage: sessionStorage,
@@ -90,6 +92,14 @@ type TestElementNode = {
 
 type TestNode = TestTextNode | TestElementNode;
 
+const routePathsByName: Record<string, string> = {
+	CreateFirstBand: "/dashboard/create-first-band",
+	MembersManager: "/dashboard/members",
+	Profile: "/dashboard/profile",
+	SongsManager: "/dashboard/songs",
+	VideoclipsManager: "/dashboard/videoclips",
+};
+
 const RouterLinkStub = defineComponent({
 	name: "RouterLinkStub",
 	props: {
@@ -98,9 +108,47 @@ const RouterLinkStub = defineComponent({
 			required: false,
 			default: undefined,
 		},
+		activeClass: {
+			type: String,
+			required: false,
+			default: "router-link-active",
+		},
+		exactActiveClass: {
+			type: String,
+			required: false,
+			default: "router-link-exact-active",
+		},
+		class: {
+			type: String,
+			required: false,
+			default: "",
+		},
 	},
-	setup(_props, { slots }) {
-		return () => h("a", {}, slots.default?.());
+	setup(props, { slots }) {
+		return () => {
+			const resolvedPath =
+				typeof props.to === "object" && props.to !== null && "name" in props.to
+					? routePathsByName[String(props.to.name)]
+					: typeof props.to === "string"
+						? props.to
+						: "";
+			const classNames = [props.class];
+
+			if (resolvedPath && currentRouteState.path === resolvedPath) {
+				classNames.push(props.activeClass, props.exactActiveClass);
+			} else if (
+				resolvedPath &&
+				currentRouteState.path.startsWith(`${resolvedPath}/`)
+			) {
+				classNames.push(props.activeClass);
+			}
+
+			return h(
+				"a",
+				{ class: classNames.filter(Boolean).join(" ") },
+				slots.default?.(),
+			);
+		};
 	},
 });
 
@@ -310,6 +358,27 @@ function findByText(
 	return findElement(root, (node) => textContent(node).includes(text));
 }
 
+function findAllElements(
+	node: TestNode,
+	predicate: (candidate: TestElementNode) => boolean,
+): TestElementNode[] {
+	const matches: TestElementNode[] = [];
+
+	if (isElementNode(node) && predicate(node)) {
+		matches.push(node);
+	}
+
+	if (!isElementNode(node)) {
+		return matches;
+	}
+
+	for (const child of node.children) {
+		matches.push(...findAllElements(child, predicate));
+	}
+
+	return matches;
+}
+
 function renderDashboardLayout(setup?: () => void) {
 	const pinia = createPinia();
 	setActivePinia(pinia);
@@ -367,10 +436,11 @@ describe("DashboardLayout", () => {
 		sessionStorage.getSelectedBandId.mockReturnValue(null);
 		sessionStorage.getSkippedBandOnboarding.mockReturnValue(false);
 		getMyBandsRunMock.mockResolvedValue([]);
+		currentRouteState.path = "/dashboard";
 		vi.restoreAllMocks();
 	});
 
-	it("renders user actions inside a dropdown and preserves logout behavior", async () => {
+	it("renders user actions inside a dropdown, including the profile entry, and preserves logout behavior", async () => {
 		sessionStorage.getSelectedBandId.mockReturnValue("band-1");
 		getMyBandsRunMock.mockRejectedValueOnce(new Error("bands request failed"));
 		const consoleErrorSpy = vi
@@ -427,19 +497,44 @@ describe("DashboardLayout", () => {
 		clickElement(dropdownToggle);
 		await flushView();
 
+		const profileAction = findElement(
+			view.root,
+			(node) =>
+				node.type === "button" && textContent(node).includes("Mi Perfil"),
+		);
 		const logoutAction = findElement(
 			view.root,
 			(node) =>
 				node.type === "button" && textContent(node).includes("Cerrar sesión"),
 		);
 
+		expect(profileAction).not.toBeNull();
 		expect(logoutAction).not.toBeNull();
 
-		if (!logoutAction) {
+		if (!profileAction) {
+			throw new Error("Expected profile action to exist inside user dropdown");
+		}
+
+		clickElement(profileAction);
+		await flushView();
+		expect(routerPushMock).toHaveBeenCalledWith({ name: "Profile" });
+
+		clickElement(dropdownToggle);
+		await flushView();
+
+		const reopenedLogoutAction = findElement(
+			view.root,
+			(node) =>
+				node.type === "button" && textContent(node).includes("Cerrar sesión"),
+		);
+
+		expect(reopenedLogoutAction).not.toBeNull();
+
+		if (!reopenedLogoutAction) {
 			throw new Error("Expected logout action to exist inside user dropdown");
 		}
 
-		clickElement(logoutAction);
+		clickElement(reopenedLogoutAction);
 
 		const authStore = useAuthStore();
 		const bandStore = useBandStore();
@@ -810,6 +905,50 @@ describe("DashboardLayout", () => {
 		).not.toBeNull();
 		expect(findByText(view.root, "Crear banda")).toBeNull();
 		expect(consoleErrorSpy).toHaveBeenCalledOnce();
+
+		view.unmount();
+	});
+
+	it("shows only useful dashboard modules in the expected order and highlights songs on its route", async () => {
+		currentRouteState.path = "/dashboard/songs";
+		getMyBandsRunMock.mockResolvedValueOnce([
+			{
+				id: { value: "band-1" },
+				name: { value: "The Stones" },
+			} as Band,
+		]);
+		const view = renderDashboardLayout(() => {
+			const bandStore = useBandStore();
+			const musicianStore = useMusicianStore();
+			bandStore.selectedBandId = "band-1";
+			musicianStore.fetchProfile = vi.fn().mockResolvedValue(undefined);
+		});
+
+		await flushView();
+		await flushView();
+
+		const navLinks = findAllElements(
+			view.root,
+			(node) =>
+				node.type === "a" && classNames(node).includes("dashboard-nav-link"),
+		).map((node) => textContent(node).trim());
+		const songsLink = findElement(
+			view.root,
+			(node) => node.type === "a" && textContent(node).includes("Canciones"),
+		);
+		const membersLink = findElement(
+			view.root,
+			(node) => node.type === "a" && textContent(node).includes("Miembros"),
+		);
+
+		expect(navLinks).toEqual(["Canciones", "Miembros", "Videoclips"]);
+		expect(findByText(view.root, "Inicio")).toBeNull();
+		expect(classNames(songsLink as TestElementNode)).toContain(
+			"active fw-bold text-primary",
+		);
+		expect(classNames(membersLink as TestElementNode)).not.toContain(
+			"active fw-bold text-primary",
+		);
 
 		view.unmount();
 	});

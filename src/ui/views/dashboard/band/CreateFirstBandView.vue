@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import { CreateBandUseCase } from '../../../../application/band/CreateBandUseCase.js';
 import { AxiosBandRepository } from '../../../../infrastructure/band/AxiosBandRepository.js';
 import { useBandStore } from '../../../stores/useBandStore.js';
+import { useToastStore } from '../../../stores/useToastStore.js';
 
 interface HttpErrorResponse {
   status?: number;
@@ -15,8 +16,8 @@ interface HttpErrorLike {
 
 const router = useRouter();
 const bandStore = useBandStore();
+const toastStore = useToastStore();
 const bandName = ref('');
-const errorMsg = ref('');
 const isLoading = ref(false);
 const showCreateBandForm = ref(false);
 
@@ -28,10 +29,8 @@ function isHttpErrorLike(error: unknown): error is HttpErrorLike {
 }
 
 async function handleCreateBand() {
-  errorMsg.value = '';
-  
   if (!bandName.value.trim()) {
-    errorMsg.value = 'El nombre de la banda no puede estar vacío';
+    toastStore.error('El nombre de la banda no puede estar vacío');
     return;
   }
   
@@ -45,9 +44,9 @@ async function handleCreateBand() {
     window.location.href = '/dashboard'; 
   } catch (error: unknown) {
     if (isHttpErrorLike(error) && error.response?.status === 409) {
-      errorMsg.value = 'Hubo un conflicto al crear la banda. Inténtalo de nuevo.';
+      toastStore.error('Hubo un conflicto al crear la banda. Inténtalo de nuevo.');
     } else {
-      errorMsg.value = 'Ocurrió un error inesperado al crear tu banda.';
+      toastStore.error('Ocurrió un error inesperado al crear tu banda.');
     }
   } finally {
     isLoading.value = false;
@@ -56,7 +55,7 @@ async function handleCreateBand() {
 
 function handleSkipForNow() {
   bandStore.skipBandOnboarding();
-  router.push({ name: 'DashboardHome' });
+  router.push({ name: 'SongsManager' });
 }
 
 function handleShowCreateBandForm() {
@@ -84,10 +83,6 @@ function handleShowCreateBandForm() {
             >
               Crear una banda
             </button>
-
-            <div v-if="errorMsg" class="alert alert-danger mb-0" role="alert">
-              {{ errorMsg }}
-            </div>
 
             <form v-if="showCreateBandForm" @submit.prevent="handleCreateBand">
               <div class="mb-4 text-start">
