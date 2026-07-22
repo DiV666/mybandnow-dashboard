@@ -1,14 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import { createRenderer, nextTick } from "vue";
-import { Band } from "../../../domain/band/Band.js";
-import { MusicianEmail } from "../../../domain/musician/value-object/MusicianEmail.js";
-import { MusicianId } from "../../../domain/musician/value-object/MusicianId.js";
-import type { Song } from "../../../domain/song/Song.js";
-import type { SongInstrument } from "../../../domain/song/SongInstrument.js";
-import { SongId } from "../../../domain/song/value-object/SongId.js";
-import { SongInstrumentId } from "../../../domain/song/value-object/SongInstrumentId.js";
-import { SongInstrumentVideoFile } from "../../../domain/song/value-object/SongInstrumentVideoFile.js";
+import { Band } from "@/domain/band/Band.js";
+import { MusicianEmail } from "@/domain/musician/value-object/MusicianEmail.js";
+import { MusicianId } from "@/domain/musician/value-object/MusicianId.js";
+import type { Song } from "@/domain/song/Song.js";
+import type { SongInstrument } from "@/domain/song/SongInstrument.js";
+import { SongId } from "@/domain/song/value-object/SongId.js";
+import { SongInstrumentId } from "@/domain/song/value-object/SongInstrumentId.js";
+import { SongInstrumentVideoFile } from "@/domain/song/value-object/SongInstrumentVideoFile.js";
+
+const addInstrumentsProfileMessage = `Debes completar tu perfil de músico para añadir ${"instrument"}os.`;
 
 const {
 	sessionStorage,
@@ -110,7 +112,7 @@ vi.mock("../../../infrastructure/song/AxiosSongRepository.js", () => ({
 			return repositorySaveMock(bandId, song as Song);
 		}
 
-		async getByBandId(bandId: string): Promise<unknown[]> {
+		getByBandId(bandId: string): Promise<unknown[]> {
 			return repositoryGetByBandIdMock(bandId);
 		}
 
@@ -118,18 +120,18 @@ vi.mock("../../../infrastructure/song/AxiosSongRepository.js", () => ({
 			return repositorySaveInstrumentMock(songId, instrument as SongInstrument);
 		}
 
-		async getInstrumentsBySongId(songId: SongId): Promise<unknown[]> {
+		getInstrumentsBySongId(songId: SongId): Promise<unknown[]> {
 			return repositoryGetInstrumentsBySongIdMock(songId);
 		}
 
-		async getInstrumentById(
+		getInstrumentById(
 			songId: SongId,
 			instrumentId: SongInstrumentId,
 		): Promise<unknown> {
 			return repositoryGetInstrumentByIdMock(songId, instrumentId);
 		}
 
-		async updateInstrument(
+		updateInstrument(
 			songId: SongId,
 			instrumentId: SongInstrumentId,
 			payload: { name: string; instrumentId: string },
@@ -137,7 +139,7 @@ vi.mock("../../../infrastructure/song/AxiosSongRepository.js", () => ({
 			return repositoryUpdateInstrumentMock(songId, instrumentId, payload);
 		}
 
-		async assignMusician(
+		assignMusician(
 			songId: SongId,
 			instrumentId: SongInstrumentId,
 			musicianId: MusicianId,
@@ -145,7 +147,7 @@ vi.mock("../../../infrastructure/song/AxiosSongRepository.js", () => ({
 			return repositoryAssignMusicianMock(songId, instrumentId, musicianId);
 		}
 
-		async inviteMusician(
+		inviteMusician(
 			songId: SongId,
 			instrumentId: SongInstrumentId,
 			musicianEmail: MusicianEmail,
@@ -153,7 +155,7 @@ vi.mock("../../../infrastructure/song/AxiosSongRepository.js", () => ({
 			return repositoryInviteMusicianMock(songId, instrumentId, musicianEmail);
 		}
 
-		async uploadInstrumentVideo(
+		uploadInstrumentVideo(
 			songId: SongId,
 			instrumentId: SongInstrumentId,
 			videoFile: SongInstrumentVideoFile,
@@ -173,7 +175,7 @@ vi.mock("../../../infrastructure/band/AxiosBandRepository.js", () => ({
 			bandRepositoryCtor();
 		}
 
-		async getMembers(bandId: string): Promise<unknown[]> {
+		getMembers(bandId: string): Promise<unknown[]> {
 			return bandRepositoryGetMembersMock(bandId);
 		}
 	},
@@ -187,11 +189,11 @@ vi.mock(
 				instrumentRepositoryCtor();
 			}
 
-			async getAll(): Promise<unknown[]> {
+			getAll(): Promise<unknown[]> {
 				return instrumentRepositoryGetAllMock();
 			}
 
-			async getById(instrumentId: string): Promise<unknown> {
+			getById(instrumentId: string): Promise<unknown> {
 				return instrumentRepositoryGetByIdMock(instrumentId);
 			}
 		},
@@ -204,7 +206,7 @@ vi.mock("../../../infrastructure/musician/AxiosMusicianRepository.js", () => ({
 			musicianRepositoryCtor();
 		}
 
-		async getById(musicianId: string): Promise<unknown> {
+		getById(musicianId: string): Promise<unknown> {
 			return musicianRepositoryGetByIdMock(musicianId);
 		}
 
@@ -601,14 +603,28 @@ function findTooltipTargetByLabel(
 	return target;
 }
 
-function findLinkByText(root: TestElementNode, text: string): TestElementNode {
-	const link = findElement(
+function queryLinkByLabel(
+	root: TestElementNode,
+	label: string,
+): TestElementNode | null {
+	return findElement(
 		root,
-		(node) => node.type === "a" && textContent(node).includes(text),
+		(node) =>
+			node.type === "a" &&
+			(node.props["aria-label"] === label ||
+				node.props.title === label ||
+				node.props["data-bs-title"] === label),
 	);
+}
+
+function findLinkByLabel(
+	root: TestElementNode,
+	label: string,
+): TestElementNode {
+	const link = queryLinkByLabel(root, label);
 
 	if (!link) {
-		throw new Error(`Link with text '${text}' was not found.`);
+		throw new Error(`Link with label '${label}' was not found.`);
 	}
 
 	return link;
@@ -1001,6 +1017,7 @@ describe("SongsView", () => {
 		expect(textContent(table as TestElementNode)).not.toContain("Ver video");
 		expect(findByText(view.root, "Pendiente")).not.toBeNull();
 		expect(findByText(view.root, "Disponible")).toBeNull();
+		expect(queryLinkByLabel(view.root, "Ver video")).toBeNull();
 		expect(findByText(view.root, "Ver en YouTube")).not.toBeNull();
 
 		view.unmount();
@@ -2531,6 +2548,73 @@ describe("SongsView", () => {
 		view.unmount();
 	});
 
+	it("keeps the upload input available when opening the modal for an instrument that already has a video", async () => {
+		repositoryGetByBandIdMock.mockResolvedValueOnce([
+			{
+				id: "song-1",
+				bandId: "band-1",
+				title: "Paint It Black",
+				originalVideoclipUrl: "https://www.youtube.com/watch?v=O4irXQhgMqg",
+			},
+		]);
+		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
+			{
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentType: "electric-guitar",
+				songId: "song-1",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+				upload: {
+					status: "COMPLETED",
+				},
+			},
+		]);
+		repositoryGetInstrumentByIdMock.mockResolvedValueOnce({
+			id: "instrument-1",
+			name: "Guitarra principal",
+			instrumentType: "electric-guitar",
+			songId: "song-1",
+			musicianId: "musician-1",
+			createdAt: "2026-07-15T10:00:00.000Z",
+			video: {
+				id: "video-1",
+				songInstrumentId: "instrument-1",
+				url: "https://cdn.example/video-1.mp4",
+				duration: 123,
+				size: 456,
+				createdAt: "2026-07-15T10:06:00.000Z",
+			},
+			upload: {
+				status: "COMPLETED",
+			},
+		});
+		const view = renderSongsView(() => {
+			const store = useBandStore();
+			store.setBands([createBand("band-1", "The Stones")]);
+		});
+
+		await flushView();
+		await flushView();
+		await flushView();
+		await openUploadModal(view.root);
+
+		expect(findByText(view.root, "Disponible")).not.toBeNull();
+		expect(
+			queryInput(view.root, "songInstrumentVideo-song-1-instrument-1"),
+		).not.toBeNull();
+		expect(findButtonByText(view.root, "Resubir video")).not.toBeNull();
+		expect(textContent(view.root)).not.toContain("Ver video");
+
+		const viewVideoLink = findLinkByLabel(view.root, "Ver video");
+		expect(viewVideoLink.type).toBe("a");
+		expect(viewVideoLink.props.href).toBe("https://cdn.example/video-1.mp4");
+		expect(viewVideoLink.props.target).toBe("_blank");
+		expect(viewVideoLink.props.rel).toBe("noreferrer noopener");
+
+		view.unmount();
+	});
+
 	it("shows a view video action after the processed video becomes available", async () => {
 		vi.useFakeTimers();
 		repositoryGetByBandIdMock.mockResolvedValueOnce([
@@ -2616,10 +2700,13 @@ describe("SongsView", () => {
 			findByTestId(view.root, "upload-complete-song-1-instrument-1"),
 		).not.toBeNull();
 		expect(
-			findByText(view.root, "songInstrumentVideo-song-1-instrument-1"),
-		).toBeNull();
+			queryInput(view.root, "songInstrumentVideo-song-1-instrument-1"),
+		).not.toBeNull();
+		expect(findButtonByText(view.root, "Resubir video")).not.toBeNull();
+		expect(textContent(view.root)).not.toContain("Ver video");
 
-		const viewVideoLink = findLinkByText(view.root, "Ver video");
+		const viewVideoLink = findLinkByLabel(view.root, "Ver video");
+		expect(viewVideoLink.type).toBe("a");
 		expect(viewVideoLink.props.href).toBe("https://cdn.example/video-1.mp4");
 		expect(viewVideoLink.props.target).toBe("_blank");
 		expect(viewVideoLink.props.rel).toBe("noreferrer noopener");
@@ -3417,17 +3504,11 @@ describe("SongsView", () => {
 		await flushView();
 
 		expect(repositorySaveInstrumentMock).not.toHaveBeenCalled();
-		expect(
-			findByText(
-				view.root,
-				"Debes completar tu perfil de músico para añadir instrumentos.",
-			),
-		).toBeNull();
+		expect(findByText(view.root, addInstrumentsProfileMessage)).toBeNull();
 		expect(useToastStore().toasts).toEqual([
 			expect.objectContaining({
 				variant: "error",
-				message:
-					"Debes completar tu perfil de músico para añadir instrumentos.",
+				message: addInstrumentsProfileMessage,
 			}),
 		]);
 

@@ -1276,7 +1276,7 @@ function shouldShowSongInstrumentUploadForm(
 	songId: string,
 	instrumentId: string,
 ): boolean {
-	return !hasSongInstrumentVideo(songId, instrumentId);
+	return true;
 }
 
 function isSongInstrumentUploadDisabled(
@@ -1314,6 +1314,10 @@ function getSongInstrumentSubmitLabel(
 		songInstrumentUploadStatuses.FAILED
 	) {
 		return "Reintentar subida";
+	}
+
+	if (hasSongInstrumentVideo(songId, instrument.id)) {
+		return "Resubir video";
 	}
 
 	return "Subir video";
@@ -2311,17 +2315,32 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                         <td>{{ instrument.name }}</td>
                         <td>{{ getSongInstrumentDisplayName(instrument) }}</td>
                         <td>{{ getSongInstrumentMusicianDisplayName(instrument) }}</td>
-                        <td>
-                          <span
-                            :data-testid="hasSongInstrumentVideo(song.id, instrument.id)
-                              ? `upload-complete-${song.id}-${instrument.id}`
-                              : `upload-status-${song.id}-${instrument.id}`"
-                            class="badge rounded-pill"
-                            :class="getSongInstrumentAvailabilityBadgeClass(song.id, instrument.id)"
-                          >
-                            {{ getSongInstrumentAvailabilityLabel(song.id, instrument.id) }}
-                          </span>
-                        </td>
+                            <td>
+                              <div class="d-inline-flex align-items-center gap-2">
+                                <span
+                                  :data-testid="hasSongInstrumentVideo(song.id, instrument.id)
+                                    ? `upload-complete-${song.id}-${instrument.id}`
+                                    : `upload-status-${song.id}-${instrument.id}`"
+                                  class="badge rounded-pill"
+                                  :class="getSongInstrumentAvailabilityBadgeClass(song.id, instrument.id)"
+                                >
+                                  {{ getSongInstrumentAvailabilityLabel(song.id, instrument.id) }}
+                                </span>
+                                <a
+                                  v-if="hasSongInstrumentVideo(song.id, instrument.id)"
+                                  ref="songActionTooltipTargets"
+                                  :href="getEffectiveVideo(song.id, instrument.id)?.url"
+                                  target="_blank"
+                                  rel="noreferrer noopener"
+                                  class="d-inline-flex align-items-center justify-content-center text-body-emphasis text-decoration-none"
+                                  data-bs-toggle="tooltip"
+                                  data-bs-title="Ver video"
+                                  aria-label="Ver video"
+                                >
+                                  <i class="bi bi-eye" aria-hidden="true"></i>
+                                </a>
+                              </div>
+                            </td>
                         <td>
                           <div class="song-instrument-actions d-flex flex-wrap align-items-center gap-2">
                             <span
@@ -2649,16 +2668,7 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                   >
                     {{ getSongInstrumentUploadErrorMessage(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument) }}
                   </p>
-              <div v-if="getEffectiveVideo(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument.id)">
-                <a
-                  :href="getEffectiveVideo(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument.id)?.url"
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  class="btn btn-sm btn-outline-success"
-                >
-                  Ver video
-                </a>
-              </div>
+
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-outline-secondary" @click="closeSongInstrumentUploadModal">

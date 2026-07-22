@@ -1,8 +1,16 @@
+import { join } from "node:path";
+import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "vitest/config";
 import vue from "@vitejs/plugin-vue";
 
-// https://vite.dev/config/
+const projectRoot = fileURLToPath(new URL(".", import.meta.url));
+
 export default defineConfig({
+	resolve: {
+		alias: {
+			"@": join(projectRoot, "src"),
+		},
+	},
 	plugins: [
 		vue(
 			process.env.VITEST

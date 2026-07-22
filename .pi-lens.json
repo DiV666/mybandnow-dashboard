@@ -1,0 +1,5 @@
+{
+  "rules": {
+    "high-fan-out": { "threshold": 40 }
+  }
+}
