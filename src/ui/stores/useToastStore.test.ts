@@ -1,15 +1,13 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import { useToastStore } from "./useToastStore.js";
 
 describe("useToastStore", () => {
 	beforeEach(() => {
 		setActivePinia(createPinia());
-		vi.useRealTimers();
 	});
 
-	it("adds success toasts and auto-dismisses them after the default timeout", () => {
-		vi.useFakeTimers();
+	it("stores default Bootstrap delay metadata for success toasts", () => {
 		const store = useToastStore();
 
 		store.success("Canción creada correctamente.");
@@ -18,23 +16,30 @@ describe("useToastStore", () => {
 			expect.objectContaining({
 				variant: "success",
 				message: "Canción creada correctamente.",
+				durationMs: 5000,
+			}),
+		]);
+	});
+
+	it("preserves a custom Bootstrap delay until the toast is dismissed", () => {
+		const store = useToastStore();
+
+		const toastId = store.show({
+			message: "Sesión por expirar.",
+			variant: "error",
+			durationMs: 9000,
+		});
+
+		expect(store.toasts).toEqual([
+			expect.objectContaining({
+				id: toastId,
+				variant: "error",
+				message: "Sesión por expirar.",
+				durationMs: 9000,
 			}),
 		]);
 
-		vi.advanceTimersByTime(5000);
-
-		expect(store.toasts).toEqual([]);
-	});
-
-	it("allows manual dismissal before the timeout expires", () => {
-		vi.useFakeTimers();
-		const store = useToastStore();
-
-		store.error("Credenciales inválidas");
-		const [toast] = store.toasts;
-
-		store.dismiss(toast.id);
-		vi.advanceTimersByTime(5000);
+		store.dismiss(toastId);
 
 		expect(store.toasts).toEqual([]);
 	});

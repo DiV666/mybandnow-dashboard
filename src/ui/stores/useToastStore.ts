@@ -12,6 +12,7 @@ export interface ToastItem {
 	id: number;
 	message: string;
 	variant: ToastVariant;
+	durationMs: number;
 }
 
 interface ShowToastOptions {
@@ -24,27 +25,23 @@ const DEFAULT_TOAST_DURATION_MS = 5000;
 
 export const useToastStore = defineStore("toast", () => {
 	const toasts = ref<ToastItem[]>([]);
-	const timers = new Map<number, ReturnType<typeof setTimeout>>();
 	let nextToastId = 1;
 
 	function dismiss(toastId: number): void {
-		const timer = timers.get(toastId);
-		if (timer) {
-			clearTimeout(timer);
-			timers.delete(toastId);
-		}
-
 		toasts.value = toasts.value.filter((toast) => toast.id !== toastId);
 	}
 
 	function show({ message, variant, durationMs }: ShowToastOptions): number {
 		const toastId = nextToastId++;
-		toasts.value = [...toasts.value, { id: toastId, message, variant }];
-
-		const timeoutId = setTimeout(() => {
-			dismiss(toastId);
-		}, durationMs ?? DEFAULT_TOAST_DURATION_MS);
-		timers.set(toastId, timeoutId);
+		toasts.value = [
+			...toasts.value,
+			{
+				id: toastId,
+				message,
+				variant,
+				durationMs: durationMs ?? DEFAULT_TOAST_DURATION_MS,
+			},
+		];
 
 		return toastId;
 	}
@@ -58,10 +55,6 @@ export const useToastStore = defineStore("toast", () => {
 	}
 
 	function clear(): void {
-		for (const timeoutId of timers.values()) {
-			clearTimeout(timeoutId);
-		}
-		timers.clear();
 		toasts.value = [];
 	}
 
