@@ -127,14 +127,18 @@ onMounted(async () => {
 
   try {
     await musicianStore.fetchProfile();
-    const bands = await getMyBandsUseCase.run();
-    bandStore.setBands(bands);
+
+    try {
+      const bands = await getMyBandsUseCase.run();
+      bandStore.setBands(bands);
+    } catch (error) {
+      console.error('Error fetching bands', error);
+      bandStore.setBands([]);
+    }
 
     if (bandStore.shouldRedirectToCreateFirstBand) {
       router.push({ name: 'CreateFirstBand' });
     }
-  } catch (error) {
-    console.error('Error fetching bands', error);
   } finally {
     isLoading.value = false;
   }

@@ -1038,7 +1038,7 @@ describe("DashboardLayout", () => {
 		view.unmount();
 	});
 
-	it("keeps the dashboard sidebar available after refresh when a selected band was restored but band loading fails", async () => {
+	it("redirects to create-first-band and hides the dashboard shell when band loading fails after restoring a stale selection", async () => {
 		sessionStorage.getSelectedBandId.mockReturnValue("band-1");
 		getMyBandsRunMock.mockRejectedValueOnce(new Error("bands request failed"));
 		const consoleErrorSpy = vi
@@ -1063,9 +1063,11 @@ describe("DashboardLayout", () => {
 				view.root,
 				(node) => node.type === "nav" && node.props.id === "sidebarMenu",
 			),
-		).not.toBeNull();
-		expect(findByText(view.root, "Crear banda")).toBeNull();
+		).toBeNull();
+		expect(findByText(view.root, "Crear banda")).not.toBeNull();
+		expect(routerPushMock).toHaveBeenCalledWith({ name: "CreateFirstBand" });
 		expect(consoleErrorSpy).toHaveBeenCalledOnce();
+		expect(sessionStorage.clearSelectedBandId).toHaveBeenCalledOnce();
 
 		view.unmount();
 	});
