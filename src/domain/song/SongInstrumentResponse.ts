@@ -61,6 +61,11 @@ export interface SongInstrumentDetailResponse
 	upload: SongInstrumentUploadResponse | null;
 }
 
+export interface UpdateSongInstrumentPayload {
+	name: string;
+	instrumentId: string;
+}
+
 export type SongInstrumentCollectionResponse = {
 	items: SongInstrumentListItemResponse[];
 	total: number;

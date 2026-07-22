@@ -5,6 +5,7 @@ import type { MusicianId } from "../../musician/value-object/MusicianId.js";
 import type {
 	SongInstrumentDetailResponse,
 	SongInstrumentListItemResponse,
+	UpdateSongInstrumentPayload,
 } from "../SongInstrumentResponse.js";
 import type { SongResponse } from "../SongResponse.js";
 import type { SongId } from "../value-object/SongId.js";
@@ -21,6 +22,11 @@ export interface SongRepository {
 	getInstrumentById(
 		songId: SongId,
 		instrumentId: SongInstrumentId,
+	): Promise<SongInstrumentDetailResponse>;
+	updateInstrument(
+		songId: SongId,
+		instrumentId: SongInstrumentId,
+		payload: UpdateSongInstrumentPayload,
 	): Promise<SongInstrumentDetailResponse>;
 	assignMusician(
 		songId: SongId,

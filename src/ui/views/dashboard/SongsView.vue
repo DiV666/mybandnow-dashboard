@@ -1,5 +1,14 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { Tooltip } from "bootstrap";
+import {
+	computed,
+	nextTick,
+	onBeforeUnmount,
+	onMounted,
+	onUpdated,
+	ref,
+	watch,
+} from "vue";
 import { GetBandMembersUseCase } from "../../../application/band/GetBandMembersUseCase.js";
 import { GetInstrumentByIdUseCase } from "../../../application/instrument/GetInstrumentByIdUseCase.js";
 import { GetInstrumentsUseCase } from "../../../application/instrument/GetInstrumentsUseCase.js";
@@ -11,6 +20,7 @@ import { GetBandSongsUseCase } from "../../../application/song/GetBandSongsUseCa
 import { GetSongInstrumentDetailUseCase } from "../../../application/song/GetSongInstrumentDetailUseCase.js";
 import { GetSongInstrumentsUseCase } from "../../../application/song/GetSongInstrumentsUseCase.js";
 import { InviteSongInstrumentMusicianUseCase } from "../../../application/song/InviteSongInstrumentMusicianUseCase.js";
+import { UpdateSongInstrumentUseCase } from "../../../application/song/UpdateSongInstrumentUseCase.js";
 import { UploadSongInstrumentVideoUseCase } from "../../../application/song/UploadSongInstrumentVideoUseCase.js";
 import type { BandMemberResponse } from "../../../domain/band/BandMemberResponse.js";
 import type { InstrumentResponse } from "../../../domain/instrument/InstrumentResponse.js";
@@ -97,6 +107,15 @@ interface AssignMusicianModalState {
 	membersErrorMsg: string;
 }
 
+interface EditInstrumentModalState {
+	songId: string;
+	instrumentId: string;
+	name: string;
+	catalogInstrumentId: string;
+	isLoading: boolean;
+	isSubmitting: boolean;
+	errorMsg: string;
+}
 
 interface FileInputLike {
 	files?: FileList | File[] | null;
@@ -119,6 +138,10 @@ type SongInstrumentUploadMap = Record<string, SongInstrumentUploadState>;
 type SongInstrumentDetailMap = Record<string, SongInstrumentDetailResponse>;
 type InstrumentNameMap = Record<string, string>;
 type MusicianDisplayNameMap = Record<string, string>;
+type TooltipTarget = Element;
+type TooltipInstance = {
+	dispose: () => void;
+};
 
 const SONG_INSTRUMENT_POLL_INTERVAL_MS = 5000;
 const SONG_INSTRUMENT_PROGRESS_TICK_MS = 400;
@@ -134,6 +157,7 @@ const isCreateSongModalOpen = ref(false);
 const activeSongInstrumentUploadModal =
 	ref<ActiveSongInstrumentUploadModalState | null>(null);
 const activeAssignMusicianModal = ref<AssignMusicianModalState | null>(null);
+const activeEditInstrumentModal = ref<EditInstrumentModalState | null>(null);
 const isLoading = ref(false);
 const isLoadingSongs = ref(false);
 const songs = ref<SongResponse[]>([]);
@@ -144,6 +168,7 @@ const songInstrumentDetails = ref<SongInstrumentDetailMap>({});
 const availableInstruments = ref<InstrumentResponse[]>([]);
 const catalogInstrumentNames = ref<InstrumentNameMap>({});
 const musicianDisplayNames = ref<MusicianDisplayNameMap>({});
+const songActionTooltipTargets = ref<TooltipTarget[]>([]);
 
 const songRepository = new AxiosSongRepository();
 const bandRepository = new AxiosBandRepository();
@@ -166,6 +191,7 @@ const assignSongInstrumentMusicianUseCase = new AssignSongInstrumentMusicianUseC
 const inviteSongInstrumentMusicianUseCase = new InviteSongInstrumentMusicianUseCase(
 	songRepository,
 );
+const updateSongInstrumentUseCase = new UpdateSongInstrumentUseCase(songRepository);
 const uploadSongInstrumentVideoUseCase = new UploadSongInstrumentVideoUseCase(songRepository);
 
 const selectedBand = computed(() => bandStore.selectedBand);
@@ -226,12 +252,38 @@ const activeAssignMusicianModalContext = computed(() => {
 		instrument,
 	};
 });
+const activeEditInstrumentModalContext = computed(() => {
+	if (!activeEditInstrumentModal.value) {
+		return null;
+	}
+
+	const song = songs.value.find(
+		(candidate) => candidate.id === activeEditInstrumentModal.value?.songId,
+	);
+	if (!song) {
+		return null;
+	}
+
+	const instrument = getSongInstrument(
+		activeEditInstrumentModal.value.songId,
+		activeEditInstrumentModal.value.instrumentId,
+	);
+	if (!instrument) {
+		return null;
+	}
+
+	return {
+		song,
+		instrument,
+	};
+});
 const isAnyModalOpen = computed(
 	() =>
 		isCreateSongModalOpen.value ||
 		activeSongInstrumentFormSong.value !== null ||
 		activeSongInstrumentUploadModalContext.value !== null ||
-		activeAssignMusicianModalContext.value !== null,
+		activeAssignMusicianModalContext.value !== null ||
+		activeEditInstrumentModalContext.value !== null,
 );
 
 const songInstrumentPollTimeouts = new Map<
@@ -246,6 +298,7 @@ const songInstrumentPollVersions = new Map<string, number>();
 const instrumentDetailRequests = new Map<string, Promise<void>>();
 const musicianDetailRequests = new Map<string, Promise<void>>();
 let availableInstrumentsRequest: Promise<void> | null = null;
+let songActionTooltips: TooltipInstance[] = [];
 let isViewMounted = true;
 let lastSongsRequestId = 0;
 let previousBodyOverflow: string | null = null;
@@ -256,6 +309,25 @@ function showErrorToast(message: string): void {
 
 function showSuccessToast(message: string): void {
 	toastStore.success(message);
+}
+
+function disposeSongActionTooltips(): void {
+	for (const tooltip of songActionTooltips) {
+		tooltip.dispose();
+	}
+	songActionTooltips = [];
+}
+
+async function syncSongActionTooltips(): Promise<void> {
+	if (!isViewMounted) {
+		return;
+	}
+
+	await nextTick();
+	disposeSongActionTooltips();
+	songActionTooltips = songActionTooltipTargets.value.map((target) =>
+		Tooltip.getOrCreateInstance(target) as TooltipInstance,
+	);
 }
 
 function isHttpErrorLike(error: unknown): error is HttpErrorLike {
@@ -311,6 +383,13 @@ function isAssignMusicianModalActive(songId: string, instrumentId: string): bool
 	);
 }
 
+function isEditInstrumentModalActive(songId: string, instrumentId: string): boolean {
+	return (
+		activeEditInstrumentModal.value?.songId === songId &&
+		activeEditInstrumentModal.value?.instrumentId === instrumentId
+	);
+}
+
 async function resolveAssignableBandMember(
 	member: BandMemberResponse,
 ): Promise<AssignableBandMemberViewModel | null> {
@@ -340,8 +419,13 @@ async function loadAssignableBandMembers(
 		return;
 	}
 
+	const currentModal = activeAssignMusicianModal.value;
+	if (!currentModal) {
+		return;
+	}
+
 	activeAssignMusicianModal.value = {
-		...activeAssignMusicianModal.value,
+		...currentModal,
 		isLoadingMembers: true,
 		membersErrorMsg: "",
 		members: [],
@@ -360,8 +444,13 @@ async function loadAssignableBandMembers(
 			return;
 		}
 
+		const currentModal = activeAssignMusicianModal.value;
+		if (!currentModal) {
+			return;
+		}
+
 		activeAssignMusicianModal.value = {
-			...activeAssignMusicianModal.value,
+			...currentModal,
 			members: resolvedMembers.filter(
 				(member): member is AssignableBandMemberViewModel => member !== null,
 			),
@@ -378,8 +467,13 @@ async function loadAssignableBandMembers(
 		}
 
 		const message = "No pudimos cargar los miembros de la banda.";
+		const currentModal = activeAssignMusicianModal.value;
+		if (!currentModal) {
+			return;
+		}
+
 		activeAssignMusicianModal.value = {
-			...activeAssignMusicianModal.value,
+			...currentModal,
 			members: [],
 			isLoadingMembers: false,
 			membersErrorMsg: message,
@@ -615,6 +709,8 @@ function setSongInstrumentDetail(detail: SongInstrumentDetailResponse): void {
 				? {
 					...instrument,
 					name: detail.name,
+					instrumentId: detail.instrumentId,
+					instrumentType: detail.instrumentType,
 					musicianId: detail.musicianId,
 					upload: detail.upload,
 				}
@@ -878,6 +974,34 @@ function mapInviteMusicianErrorMessage(details: UploadErrorDetails): string {
 	return "Ocurrió un error al invitar al músico. Inténtalo de nuevo.";
 }
 
+function mapEditInstrumentErrorMessage(details: UploadErrorDetails): string {
+	const message = details.message?.toLowerCase() ?? "";
+	const code = details.code?.toLowerCase() ?? "";
+	const combined = `${code} ${message}`;
+
+	if (details.status === 401 || details.status === 403) {
+		return "No tienes permisos para editar este instrumento.";
+	}
+
+	if (details.status === 404 || combined.includes("instrument_not_exists")) {
+		return "No se encontró el instrumento de la canción que intentabas editar.";
+	}
+
+	if (combined.includes("songinstrumentname cannot be empty")) {
+		return "Escribe un nombre antes de guardar.";
+	}
+
+	if (combined.includes("instrumentid cannot be empty")) {
+		return "Selecciona un instrumento antes de guardar.";
+	}
+
+	if (details.status === 400) {
+		return "No pudimos actualizar el instrumento de la canción.";
+	}
+
+	return "Ocurrió un error al actualizar el instrumento. Inténtalo de nuevo.";
+}
+
 function getSongInstrumentUploadErrorMessage(
 	songId: string,
 	instrument: SongInstrumentListItemResponse,
@@ -1128,18 +1252,31 @@ function shouldShowSongInstrumentProgress(
 	);
 }
 
-function shouldShowSongInstrumentCompleteBadge(
+function hasSongInstrumentVideo(songId: string, instrumentId: string): boolean {
+	return getEffectiveVideo(songId, instrumentId) !== null;
+}
+
+function getSongInstrumentAvailabilityLabel(
 	songId: string,
 	instrumentId: string,
-): boolean {
-	return getEffectiveVideo(songId, instrumentId) !== null;
+): string {
+	return hasSongInstrumentVideo(songId, instrumentId) ? "Disponible" : "Pendiente";
+}
+
+function getSongInstrumentAvailabilityBadgeClass(
+	songId: string,
+	instrumentId: string,
+): string {
+	return hasSongInstrumentVideo(songId, instrumentId)
+		? "text-bg-success"
+		: "text-bg-warning";
 }
 
 function shouldShowSongInstrumentUploadForm(
 	songId: string,
 	instrumentId: string,
 ): boolean {
-	return getEffectiveVideo(songId, instrumentId) === null;
+	return !hasSongInstrumentVideo(songId, instrumentId);
 }
 
 function isSongInstrumentUploadDisabled(
@@ -1476,8 +1613,17 @@ watch(
 	{ immediate: true },
 );
 
+onMounted(() => {
+	void syncSongActionTooltips();
+});
+
+onUpdated(() => {
+	void syncSongActionTooltips();
+});
+
 onBeforeUnmount(() => {
 	isViewMounted = false;
+	disposeSongActionTooltips();
 	cancelAllSongInstrumentPolls();
 	if (typeof document !== "undefined" && previousBodyOverflow !== null) {
 		const bodyStyle = document.body?.style;
@@ -1605,6 +1751,100 @@ function closeAssignMusicianModal(): void {
 	activeAssignMusicianModal.value = null;
 }
 
+function setActiveEditInstrumentModal(
+	updates: Partial<EditInstrumentModalState>,
+): void {
+	if (!activeEditInstrumentModal.value) {
+		return;
+	}
+
+	activeEditInstrumentModal.value = {
+		...activeEditInstrumentModal.value,
+		...updates,
+	};
+}
+
+async function loadEditInstrumentModalDetail(
+	songId: string,
+	instrumentId: string,
+): Promise<void> {
+	try {
+		const detail = await getSongInstrumentDetailUseCase.run(songId, instrumentId);
+		if (!isEditInstrumentModalActive(songId, instrumentId)) {
+			return;
+		}
+
+		setSongInstrumentDetail(detail);
+		setActiveEditInstrumentModal({
+			name: detail.name,
+			catalogInstrumentId: getSongInstrumentCatalogId(detail),
+			isLoading: false,
+			errorMsg: "",
+		});
+	} catch {
+		if (!isEditInstrumentModalActive(songId, instrumentId)) {
+			return;
+		}
+
+		const message = "No pudimos cargar el detalle del instrumento seleccionado.";
+		setActiveEditInstrumentModal({
+			isLoading: false,
+			errorMsg: message,
+		});
+		showErrorToast(message);
+	}
+}
+
+function openEditInstrumentModal(songId: string, instrumentId: string): void {
+	const instrument = getSongInstrument(songId, instrumentId);
+	if (!instrument || !songId || !instrumentId) {
+		return;
+	}
+
+	const catalogInstrumentId = getSongInstrumentCatalogId(instrument);
+	activeEditInstrumentModal.value = {
+		songId,
+		instrumentId,
+		catalogInstrumentId,
+		name: instrument.name,
+		isLoading: catalogInstrumentId.length === 0,
+		isSubmitting: false,
+		errorMsg: "",
+	};
+	void ensureAvailableInstrumentsLoaded();
+	if (catalogInstrumentId.length === 0) {
+		void loadEditInstrumentModalDetail(songId, instrumentId);
+	}
+}
+
+function closeEditInstrumentModal(): void {
+	activeEditInstrumentModal.value = null;
+}
+
+function handleEditInstrumentNameInput(event: Event): void {
+	const target = event.target;
+	const nextValue =
+		target && typeof target === "object" && "value" in target
+			? ((target as TextInputLike).value ?? "")
+			: "";
+	setActiveEditInstrumentModal({
+		name: nextValue,
+		errorMsg: "",
+	});
+}
+
+function handleEditInstrumentCatalogInput(event: Event): void {
+	const target = event.target;
+	const nextValue =
+		target && typeof target === "object" && "value" in target
+			? ((target as TextInputLike).value ?? "")
+			: "";
+	setActiveEditInstrumentModal({
+		catalogInstrumentId: nextValue,
+		errorMsg: "",
+	});
+}
+
 function handleAssignMusicianEmailInput(event: Event): void {
 	const target = event.target;
 	const nextEmail =
@@ -1706,6 +1946,83 @@ async function handleAssignBandMemberSelection(
 	member: AssignableBandMemberViewModel,
 ): Promise<void> {
 	await assignMusicianById(member.id);
+}
+
+async function handleEditInstrumentSubmit(): Promise<void> {
+	if (!activeEditInstrumentModal.value) {
+		return;
+	}
+
+	const modalState = activeEditInstrumentModal.value;
+	const trimmedName = modalState.name.trim();
+
+	if (!modalState.songId || !modalState.instrumentId) {
+		const message = "No encontramos el instrumento de la canción que intentabas editar.";
+		setActiveEditInstrumentModal({
+			errorMsg: message,
+		});
+		showErrorToast(message);
+		return;
+	}
+
+	if (!modalState.catalogInstrumentId) {
+		const message = "Selecciona un instrumento antes de guardar.";
+		setActiveEditInstrumentModal({
+			errorMsg: message,
+		});
+		showErrorToast(message);
+		return;
+	}
+
+	if (!trimmedName) {
+		const message = "Escribe un nombre antes de guardar.";
+		setActiveEditInstrumentModal({
+			errorMsg: message,
+		});
+		showErrorToast(message);
+		return;
+	}
+
+	setActiveEditInstrumentModal({
+		isSubmitting: true,
+		errorMsg: "",
+	});
+
+	try {
+		const updatedInstrument = await updateSongInstrumentUseCase.run(
+			modalState.songId,
+			modalState.instrumentId,
+			trimmedName,
+			modalState.catalogInstrumentId,
+		);
+		if (!isEditInstrumentModalActive(modalState.songId, modalState.instrumentId)) {
+			return;
+		}
+
+		setSongInstrumentDetail(updatedInstrument);
+		if (updatedInstrument.instrumentId) {
+			try {
+				await ensureCatalogInstrumentNameLoaded(updatedInstrument.instrumentId);
+			} catch {
+				// Catalog name resolution must not break the song instrument flow.
+			}
+		}
+		showSuccessToast("Instrumento actualizado correctamente.");
+		closeEditInstrumentModal();
+	} catch (error: unknown) {
+		if (!isEditInstrumentModalActive(modalState.songId, modalState.instrumentId)) {
+			return;
+		}
+
+		const message = mapEditInstrumentErrorMessage(
+			extractUploadErrorDetails(error),
+		);
+		setActiveEditInstrumentModal({
+			isSubmitting: false,
+			errorMsg: message,
+		});
+		showErrorToast(message);
+	}
 }
 
 function handleSongInstrumentVideoSelection(
@@ -1984,6 +2301,7 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                         <th scope="col">Título de la pista</th>
                         <th scope="col">Instrumento</th>
                         <th scope="col">Músico</th>
+                        <th scope="col">Estado</th>
                         <th scope="col">Acciones</th>
                       </tr>
                     </thead>
@@ -1994,51 +2312,65 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                         <td>{{ getSongInstrumentDisplayName(instrument) }}</td>
                         <td>{{ getSongInstrumentMusicianDisplayName(instrument) }}</td>
                         <td>
-                          <div class="d-flex flex-wrap gap-2">
-                            <button type="button" class="btn btn-sm btn-outline-secondary" disabled>
-                              Editar
-                            </button>
+                          <span
+                            :data-testid="hasSongInstrumentVideo(song.id, instrument.id)
+                              ? `upload-complete-${song.id}-${instrument.id}`
+                              : `upload-status-${song.id}-${instrument.id}`"
+                            class="badge rounded-pill"
+                            :class="getSongInstrumentAvailabilityBadgeClass(song.id, instrument.id)"
+                          >
+                            {{ getSongInstrumentAvailabilityLabel(song.id, instrument.id) }}
+                          </span>
+                        </td>
+                        <td>
+                          <div class="song-instrument-actions d-flex flex-wrap align-items-center gap-2">
+                            <span
+                              ref="songActionTooltipTargets"
+                              class="song-instrument-action-wrapper d-inline-flex"
+                              tabindex="0"
+                              data-bs-toggle="tooltip"
+                              data-bs-title="Editar"
+                              aria-label="Editar"
+                            >
+                              <button
+                                type="button"
+                                class="song-instrument-action btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center px-2 rounded-2"
+                                aria-label="Editar"
+                                :disabled="!song.id || !instrument.id"
+                                @click="openEditInstrumentModal(song.id, instrument.id)"
+                              >
+                                <i class="bi bi-pencil" aria-hidden="true"></i>
+                              </button>
+                            </span>
                             <button
+                              ref="songActionTooltipTargets"
                               type="button"
-                              class="btn btn-sm btn-outline-primary"
+                              class="song-instrument-action btn btn-sm btn-outline-primary d-inline-flex align-items-center justify-content-center px-2 rounded-2"
+                              data-bs-toggle="tooltip"
+                              data-bs-title="Subir vídeo"
+                              aria-label="Subir vídeo"
                               @click="openSongInstrumentUploadModal(song.id, instrument.id)"
                             >
-                              Subir vídeo
+                              <i class="bi bi-upload" aria-hidden="true"></i>
                             </button>
                             <button
+                              ref="songActionTooltipTargets"
                               type="button"
-                              class="btn btn-sm btn-outline-dark"
+                              class="song-instrument-action btn btn-sm btn-outline-dark d-inline-flex align-items-center justify-content-center px-2 rounded-2"
+                              data-bs-toggle="tooltip"
+                              data-bs-title="Asignar músico"
+                              aria-label="Asignar músico"
                               @click="openAssignMusicianModal(song.id, instrument.id)"
                             >
-                              Asignar músico
+                              <i class="bi bi-person" aria-hidden="true"></i>
                             </button>
-                            <a
-                              v-if="getEffectiveVideo(song.id, instrument.id)"
-                              :href="getEffectiveVideo(song.id, instrument.id)?.url"
-                              target="_blank"
-                              rel="noreferrer noopener"
-                              class="btn btn-sm btn-outline-success"
-                            >
-                              Ver video
-                            </a>
                           </div>
-                          <div
-                            v-if="shouldShowSongInstrumentCompleteBadge(song.id, instrument.id)"
-                            class="mt-2"
+                          <p
+                            v-if="getSongInstrumentUploadErrorMessage(song.id, instrument)"
+                            class="mb-0 mt-2 small text-danger-emphasis"
                           >
-                            <span
-                              :data-testid="`upload-complete-${song.id}-${instrument.id}`"
-                              class="badge rounded-pill text-bg-success"
-                            >
-                              Disponible
-                            </span>
-                          </div>
-                              <p
-                                v-if="getSongInstrumentUploadErrorMessage(song.id, instrument)"
-                                class="mb-0 mt-2 small text-danger-emphasis"
-                              >
-                                {{ getSongInstrumentUploadErrorMessage(song.id, instrument) }}
-                              </p>
+                            {{ getSongInstrumentUploadErrorMessage(song.id, instrument) }}
+                          </p>
                         </td>
                       </tr>
                     </tbody>
@@ -2081,7 +2413,7 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
             <div class="modal-body">
               <div class="row g-2">
                 <div class="col-12">
-                  <label :for="`songInstrumentName-${activeSongInstrumentFormSong.id}`" class="form-label mb-1">Nombre de la pista</label>
+                  <label :for="`songInstrumentName-${activeSongInstrumentFormSong.id}`" class="form-label mb-1">Título de la pista</label>
                   <input
                     :id="`songInstrumentName-${activeSongInstrumentFormSong.id}`"
                     v-model="songInstrumentForms[activeSongInstrumentFormSong.id].name"
@@ -2134,6 +2466,107 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                   aria-hidden="true"
                 ></span>
                 {{ songInstrumentForms[activeSongInstrumentFormSong.id].isSubmitting ? 'Añadiendo...' : 'Guardar instrumento' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div
+      v-if="activeEditInstrumentModalContext && activeEditInstrumentModal"
+      class="modal d-block"
+      tabindex="-1"
+      role="dialog"
+      aria-modal="true"
+      :aria-labelledby="`editInstrumentModalTitle-${activeEditInstrumentModal.instrumentId}`"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 :id="`editInstrumentModalTitle-${activeEditInstrumentModal.instrumentId}`" class="modal-title h5">
+              Editar instrumento · {{ activeEditInstrumentModal.name || getSongInstrumentDisplayName(activeEditInstrumentModalContext.instrument) }}
+            </h4>
+            <button
+              type="button"
+              class="btn-close"
+              aria-label="Cerrar"
+              :disabled="activeEditInstrumentModal.isSubmitting"
+              @click="closeEditInstrumentModal"
+            ></button>
+          </div>
+          <form
+            :data-song-id="`edit-${activeEditInstrumentModal.instrumentId}`"
+            @submit.prevent="handleEditInstrumentSubmit"
+          >
+            <div class="modal-body d-grid gap-3">
+              <div>
+                <div class="fw-semibold">{{ activeEditInstrumentModalContext.song.title }}</div>
+                <div class="text-muted small">{{ activeEditInstrumentModalContext.instrument.name }}</div>
+              </div>
+
+              <div v-if="activeEditInstrumentModal.isLoading" class="text-muted small d-flex align-items-center gap-2">
+                <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                Cargando detalle del instrumento...
+              </div>
+
+              <div v-else class="row g-3">
+                <div class="col-12">
+                  <label :for="`editInstrumentName-${activeEditInstrumentModal.instrumentId}`" class="form-label">Título de la pista</label>
+                  <input
+                    :id="`editInstrumentName-${activeEditInstrumentModal.instrumentId}`"
+                    :value="activeEditInstrumentModal.name"
+                    type="text"
+                    class="form-control"
+                    :disabled="activeEditInstrumentModal.isSubmitting"
+                    required
+                    @input="handleEditInstrumentNameInput"
+                  >
+                </div>
+                <div class="col-12">
+<label :for="`editInstrumentCatalogId-${activeEditInstrumentModal.instrumentId}`" class="form-label">Instrumento</label>
+                      <select
+                        :id="`editInstrumentCatalogId-${activeEditInstrumentModal.instrumentId}`"
+                        :value="activeEditInstrumentModal.catalogInstrumentId"
+                        class="form-select"
+                        :disabled="activeEditInstrumentModal.isSubmitting"
+                        required
+                        @change="handleEditInstrumentCatalogInput"
+                      >
+                        <option value="" disabled>
+                          Selecciona un instrumento
+                        </option>
+                        <option
+                          v-for="instrument in availableInstruments"
+                          :key="instrument.id"
+                          :value="instrument.id"
+                        >
+                          {{ instrument.name }}
+                        </option>
+                      </select>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                :disabled="activeEditInstrumentModal.isSubmitting"
+                @click="closeEditInstrumentModal"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                class="btn btn-primary"
+                :disabled="activeEditInstrumentModal.isLoading || activeEditInstrumentModal.isSubmitting"
+              >
+                <span
+                  v-if="activeEditInstrumentModal.isSubmitting"
+                  class="spinner-border spinner-border-sm me-2"
+                  aria-hidden="true"
+                ></span>
+                {{ activeEditInstrumentModal.isSubmitting ? 'Guardando...' : 'Guardar cambios' }}
               </button>
             </div>
           </form>
@@ -2423,3 +2856,20 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
     <div v-if="isCreateSongModalOpen" class="modal-backdrop show"></div>
   </div>
 </template>
+
+<style scoped>
+.song-instrument-action-wrapper {
+	line-height: 0;
+}
+
+.song-instrument-action {
+	min-width: 2.85rem;
+	height: 2rem;
+	padding-inline: 0.8rem;
+}
+
+.song-instrument-action :deep(.bi) {
+	font-size: 0.85rem;
+	line-height: 1;
+}
+</style>

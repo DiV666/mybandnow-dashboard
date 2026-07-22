@@ -8,6 +8,7 @@ import type {
 	SongInstrumentCollectionResponse,
 	SongInstrumentDetailResponse,
 	SongInstrumentListItemResponse,
+	UpdateSongInstrumentPayload,
 } from "../../domain/song/SongInstrumentResponse.js";
 import type {
 	SongCollectionResponse,
@@ -61,13 +62,26 @@ export class AxiosSongRepository implements SongRepository {
 		return response.data;
 	}
 
+	async updateInstrument(
+		songId: SongId,
+		instrumentId: SongInstrumentId,
+		payload: UpdateSongInstrumentPayload,
+	): Promise<SongInstrumentDetailResponse> {
+		await httpClient.patch(
+			`/v1/songs/${songId.value}/instruments/${instrumentId.value}`,
+			payload,
+		);
+
+		return this.getInstrumentById(songId, instrumentId);
+	}
+
 	async assignMusician(
 		songId: SongId,
 		instrumentId: SongInstrumentId,
 		musicianId: MusicianId,
 	): Promise<void> {
 		await httpClient.patch(
-			`/v1/songs/${songId.value}/instruments/${instrumentId.value}`,
+			`/v1/songs/${songId.value}/instruments/${instrumentId.value}/musician-assign`,
 			{
 				musicianId: musicianId.value,
 			},

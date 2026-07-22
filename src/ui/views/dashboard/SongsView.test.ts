@@ -17,6 +17,7 @@ const {
 	repositorySaveInstrumentMock,
 	repositoryGetInstrumentsBySongIdMock,
 	repositoryGetInstrumentByIdMock,
+	repositoryUpdateInstrumentMock,
 	repositoryAssignMusicianMock,
 	repositoryInviteMusicianMock,
 	repositoryUploadInstrumentVideoMock,
@@ -24,6 +25,8 @@ const {
 	instrumentRepositoryGetAllMock,
 	instrumentRepositoryGetByIdMock,
 	musicianRepositoryGetByIdMock,
+	bootstrapTooltipCtor,
+	bootstrapTooltipDisposeMock,
 	repositoryCtor,
 	bandRepositoryCtor,
 	instrumentRepositoryCtor,
@@ -46,6 +49,14 @@ const {
 	repositoryGetInstrumentByIdMock:
 		vi.fn<
 			(songId: SongId, instrumentId: SongInstrumentId) => Promise<unknown>
+		>(),
+	repositoryUpdateInstrumentMock:
+		vi.fn<
+			(
+				songId: SongId,
+				instrumentId: SongInstrumentId,
+				payload: { name: string; instrumentId: string },
+			) => Promise<unknown>
 		>(),
 	repositoryAssignMusicianMock:
 		vi.fn<
@@ -77,6 +88,8 @@ const {
 		vi.fn<(instrumentId: string) => Promise<unknown>>(),
 	musicianRepositoryGetByIdMock:
 		vi.fn<(musicianId: string) => Promise<unknown>>(),
+	bootstrapTooltipCtor: vi.fn<(element: unknown) => void>(),
+	bootstrapTooltipDisposeMock: vi.fn<() => void>(),
 	repositoryCtor: vi.fn(),
 	bandRepositoryCtor: vi.fn(),
 	instrumentRepositoryCtor: vi.fn(),
@@ -114,6 +127,14 @@ vi.mock("../../../infrastructure/song/AxiosSongRepository.js", () => ({
 			instrumentId: SongInstrumentId,
 		): Promise<unknown> {
 			return repositoryGetInstrumentByIdMock(songId, instrumentId);
+		}
+
+		async updateInstrument(
+			songId: SongId,
+			instrumentId: SongInstrumentId,
+			payload: { name: string; instrumentId: string },
+		): Promise<unknown> {
+			return repositoryUpdateInstrumentMock(songId, instrumentId, payload);
 		}
 
 		async assignMusician(
@@ -193,6 +214,17 @@ vi.mock("../../../infrastructure/musician/AxiosMusicianRepository.js", () => ({
 
 		async createProfile(): Promise<void> {
 			return;
+		}
+	},
+}));
+
+vi.mock("bootstrap", () => ({
+	Tooltip: class {
+		static getOrCreateInstance(element: unknown) {
+			bootstrapTooltipCtor(element);
+			return {
+				dispose: bootstrapTooltipDisposeMock,
+			};
 		}
 	},
 }));
@@ -533,6 +565,42 @@ function findButtonByText(
 	return button;
 }
 
+function findButtonByLabel(
+	root: TestElementNode,
+	label: string,
+): TestElementNode {
+	const button = findElement(
+		root,
+		(node) =>
+			node.type === "button" &&
+			(node.props["aria-label"] === label || node.props.title === label),
+	);
+
+	if (!button) {
+		throw new Error(`Button with label '${label}' was not found.`);
+	}
+
+	return button;
+}
+
+function findTooltipTargetByLabel(
+	root: TestElementNode,
+	label: string,
+): TestElementNode {
+	const target = findElement(
+		root,
+		(node) =>
+			node.props["data-bs-toggle"] === "tooltip" &&
+			(node.props["data-bs-title"] === label || node.props.title === label),
+	);
+
+	if (!target) {
+		throw new Error(`Tooltip target with label '${label}' was not found.`);
+	}
+
+	return target;
+}
+
 function findLinkByText(root: TestElementNode, text: string): TestElementNode {
 	const link = findElement(
 		root,
@@ -672,7 +740,7 @@ function clickButton(button: TestElementNode) {
 }
 
 async function openUploadModal(root: TestElementNode) {
-	clickButton(findButtonByText(root, "Subir vídeo"));
+	clickButton(findButtonByLabel(root, "Subir vídeo"));
 	await flushView();
 }
 
@@ -696,6 +764,11 @@ function setSelectValue(select: TestElementNode, value: string) {
 			select.selectedIndex = index;
 		}
 	});
+	const onChange = select.props.onChange;
+	if (typeof onChange === "function") {
+		onChange({ target: select });
+		return;
+	}
 	select.dispatchEvent({ type: "change", target: select });
 }
 
@@ -764,6 +837,7 @@ describe("SongsView", () => {
 		repositoryGetInstrumentsBySongIdMock.mockReset();
 		repositoryGetInstrumentsBySongIdMock.mockResolvedValue([]);
 		repositoryGetInstrumentByIdMock.mockReset();
+		repositoryUpdateInstrumentMock.mockReset();
 		repositoryAssignMusicianMock.mockReset();
 		repositoryInviteMusicianMock.mockReset();
 		repositoryUploadInstrumentVideoMock.mockReset();
@@ -777,6 +851,8 @@ describe("SongsView", () => {
 		bandRepositoryCtor.mockReset();
 		instrumentRepositoryCtor.mockReset();
 		musicianRepositoryCtor.mockReset();
+		bootstrapTooltipCtor.mockReset();
+		bootstrapTooltipDisposeMock.mockReset();
 		useToastStore().clear();
 		(globalThis as { Document?: typeof Document }).Document ??=
 			class Document {} as typeof Document;
@@ -804,7 +880,7 @@ describe("SongsView", () => {
 		);
 	});
 
-	it("renders each song instruments inside a table with row actions", async () => {
+	it("renders each song instruments inside a table with icon actions and status pills", async () => {
 		repositoryGetByBandIdMock.mockResolvedValueOnce([
 			{
 				id: "song-1",
@@ -848,11 +924,69 @@ describe("SongsView", () => {
 		expect(findByText(view.root, "Paint It Black")).not.toBeNull();
 		const table = findElement(view.root, (node) => node.type === "table");
 		expect(table).not.toBeNull();
+		expect(bootstrapTooltipCtor).toHaveBeenCalledTimes(3);
+		expect(findTooltipTargetByLabel(view.root, "Editar").type).toBe("span");
+		expect(findTooltipTargetByLabel(view.root, "Editar").props.tabindex).toBe(
+			"0",
+		);
+		expect(findTooltipTargetByLabel(view.root, "Subir vídeo").type).toBe(
+			"button",
+		);
+		expect(findTooltipTargetByLabel(view.root, "Asignar músico").type).toBe(
+			"button",
+		);
+		expect(
+			String(findTooltipTargetByLabel(view.root, "Subir vídeo").props.class),
+		).toContain("song-instrument-action");
+		expect(
+			String(findTooltipTargetByLabel(view.root, "Asignar músico").props.class),
+		).toContain("song-instrument-action");
+		expect(
+			String(findTooltipTargetByLabel(view.root, "Editar").props.class),
+		).toContain("song-instrument-action-wrapper");
+		expect(
+			String(findButtonByLabel(view.root, "Editar").props.class),
+		).toContain("px-2");
+		expect(
+			String(findButtonByLabel(view.root, "Editar").props.class),
+		).toContain("rounded-2");
+		expect(
+			findElement(
+				findButtonByLabel(view.root, "Editar"),
+				(node) =>
+					node.type === "i" && String(node.props.class).includes("bi-pencil"),
+			),
+		).not.toBeNull();
+		expect(
+			findElement(
+				findButtonByLabel(view.root, "Subir vídeo"),
+				(node) =>
+					node.type === "i" && String(node.props.class).includes("bi-upload"),
+			),
+		).not.toBeNull();
+		expect(
+			findElement(
+				findButtonByLabel(view.root, "Asignar músico"),
+				(node) =>
+					node.type === "i" && String(node.props.class).includes("bi-person"),
+			),
+		).not.toBeNull();
+		expect(
+			String(
+				findElement(
+					view.root,
+					(node) =>
+						node.type === "div" &&
+						String(node.props.class).includes("song-instrument-actions"),
+				)?.props.class,
+			),
+		).toContain("song-instrument-actions");
 		expect(textContent(table as TestElementNode)).toContain(
 			"Título de la pista",
 		);
 		expect(textContent(table as TestElementNode)).toContain("Instrumento");
 		expect(textContent(table as TestElementNode)).toContain("Músico");
+		expect(textContent(table as TestElementNode)).toContain("Estado");
 		expect(textContent(table as TestElementNode)).toContain("Acciones");
 		expect(textContent(table as TestElementNode)).toContain("#1");
 		expect(textContent(table as TestElementNode)).toContain(
@@ -861,12 +995,212 @@ describe("SongsView", () => {
 		expect(textContent(table as TestElementNode)).toContain("Electric Guitar");
 		expect(textContent(table as TestElementNode)).toContain("Keith Richards");
 		expect(textContent(table as TestElementNode)).not.toContain("musician-1");
-		expect(textContent(table as TestElementNode)).toContain("Editar");
-		expect(textContent(table as TestElementNode)).toContain("Subir vídeo");
-		expect(textContent(table as TestElementNode)).toContain("Asignar músico");
+		expect(findButtonByLabel(view.root, "Editar").disabled).toBe(false);
+		expect(findButtonByLabel(view.root, "Subir vídeo")).not.toBeNull();
+		expect(findButtonByLabel(view.root, "Asignar músico")).not.toBeNull();
+		expect(textContent(table as TestElementNode)).not.toContain("Ver video");
+		expect(findByText(view.root, "Pendiente")).not.toBeNull();
+		expect(findByText(view.root, "Disponible")).toBeNull();
 		expect(findByText(view.root, "Ver en YouTube")).not.toBeNull();
 
 		view.unmount();
+	});
+
+	it("opens the edit modal using the current song instrument row even when the catalog id is missing", async () => {
+		repositoryGetByBandIdMock.mockResolvedValueOnce([
+			{
+				id: "song-1",
+				bandId: "band-1",
+				title: "Paint It Black",
+				originalVideoclipUrl: "https://www.youtube.com/watch?v=O4irXQhgMqg",
+			},
+		]);
+		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
+			{
+				id: "instrument-1",
+				name: "Guitarra principal",
+				songId: "song-1",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+			},
+		]);
+		repositoryGetInstrumentByIdMock.mockResolvedValueOnce({
+			id: "instrument-1",
+			name: "Guitarra principal",
+			instrumentId: "catalog-1",
+			songId: "song-1",
+			musicianId: "musician-1",
+			createdAt: "2026-07-15T10:00:00.000Z",
+			video: null,
+			upload: null,
+		});
+		const view = renderSongsView(() => {
+			const store = useBandStore();
+			store.setBands([createBand("band-1", "The Stones")]);
+		});
+
+		await flushView();
+		await flushView();
+
+		expect(findButtonByLabel(view.root, "Editar").disabled).toBe(false);
+		clickButton(findButtonByLabel(view.root, "Editar"));
+		await flushView();
+		await flushView();
+
+		expect(repositoryGetInstrumentByIdMock).toHaveBeenCalledWith(
+			new SongId("song-1"),
+			new SongInstrumentId("instrument-1"),
+		);
+		expect(
+			findByText(view.root, "Editar instrumento · Guitarra principal"),
+		).not.toBeNull();
+		expect(findInput(view.root, "editInstrumentName-instrument-1").value).toBe(
+			"Guitarra principal",
+		);
+		expect(
+			findSelect(view.root, "editInstrumentCatalogId-instrument-1").value,
+		).toBe("catalog-1");
+
+		view.unmount();
+	});
+
+	it("opens the edit modal with the song instrument detail and updates the table after saving", async () => {
+		repositoryGetByBandIdMock.mockResolvedValueOnce([
+			{
+				id: "song-1",
+				bandId: "band-1",
+				title: "Paint It Black",
+				originalVideoclipUrl: "https://www.youtube.com/watch?v=O4irXQhgMqg",
+			},
+		]);
+		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
+			{
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentId: "catalog-1",
+				songId: "song-1",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+				upload: null,
+			},
+		]);
+		instrumentRepositoryGetAllMock.mockResolvedValueOnce([
+			{
+				id: "catalog-1",
+				name: "Electric Guitar",
+				description: "Amplified guitar",
+				createdAt: "2026-07-15T09:55:00.000Z",
+			},
+			{
+				id: "catalog-2",
+				name: "Drums",
+				description: "Acoustic drum kit",
+				createdAt: "2026-07-15T09:56:00.000Z",
+			},
+		]);
+		instrumentRepositoryGetByIdMock.mockResolvedValueOnce({
+			id: "catalog-1",
+			name: "Electric Guitar",
+			description: "Amplified guitar",
+			createdAt: "2026-07-15T09:55:00.000Z",
+		});
+		repositoryUpdateInstrumentMock.mockResolvedValueOnce({
+			id: "instrument-1",
+			name: "Guitarra eléctrica",
+			instrumentId: "catalog-2",
+			songId: "song-1",
+			musicianId: "musician-1",
+			createdAt: "2026-07-15T10:00:00.000Z",
+			video: null,
+			upload: null,
+		});
+		const view = renderSongsView(() => {
+			const store = useBandStore();
+			store.setBands([createBand("band-1", "The Stones")]);
+		});
+
+		await flushView();
+		await flushView();
+
+		clickButton(findButtonByLabel(view.root, "Editar"));
+		await flushView();
+		await flushView();
+
+		expect(
+			findByText(view.root, "Editar instrumento · Guitarra principal"),
+		).not.toBeNull();
+		expect(instrumentRepositoryGetByIdMock).toHaveBeenCalledTimes(1);
+		expect(instrumentRepositoryGetByIdMock).toHaveBeenLastCalledWith(
+			"catalog-1",
+		);
+		const nameInput = findInput(view.root, "editInstrumentName-instrument-1");
+		const instrumentSelect = findSelect(
+			view.root,
+			"editInstrumentCatalogId-instrument-1",
+		);
+		expect(nameInput.value).toBe("Guitarra principal");
+		expect(instrumentSelect.value).toBe("catalog-1");
+		expect(textContent(instrumentSelect)).toContain("Electric Guitar");
+
+		setInputValue(nameInput, "Guitarra eléctrica");
+		setSelectValue(instrumentSelect, "catalog-2");
+		await flushView();
+
+		await submitForm(findSongInstrumentForm(view.root, "edit-instrument-1"));
+		await flushView();
+		await flushView();
+
+		expect(repositoryUpdateInstrumentMock).toHaveBeenCalledWith(
+			new SongId("song-1"),
+			new SongInstrumentId("instrument-1"),
+			{
+				name: "Guitarra eléctrica",
+				instrumentId: "catalog-2",
+			},
+		);
+		expect(findByText(view.root, "Guitarra eléctrica")).not.toBeNull();
+		expect(findByText(view.root, "Drums")).not.toBeNull();
+		expect(queryInput(view.root, "editInstrumentName-instrument-1")).toBeNull();
+		expect(useToastStore().toasts).toEqual([
+			expect.objectContaining({
+				variant: "success",
+				message: "Instrumento actualizado correctamente.",
+			}),
+		]);
+
+		view.unmount();
+	});
+
+	it("disposes the action tooltips when the view unmounts", async () => {
+		repositoryGetByBandIdMock.mockResolvedValueOnce([
+			{
+				id: "song-1",
+				bandId: "band-1",
+				title: "Paint It Black",
+				originalVideoclipUrl: "https://www.youtube.com/watch?v=O4irXQhgMqg",
+			},
+		]);
+		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
+			{
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentId: "catalog-1",
+				songId: "song-1",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+			},
+		]);
+		const view = renderSongsView(() => {
+			const store = useBandStore();
+			store.setBands([createBand("band-1", "The Stones")]);
+		});
+
+		await flushView();
+		await flushView();
+
+		view.unmount();
+
+		expect(bootstrapTooltipDisposeMock).toHaveBeenCalled();
 	});
 
 	it("falls back to the musician username and caches lookups for repeated musician ids", async () => {
@@ -1822,7 +2156,7 @@ describe("SongsView", () => {
 		await flushView();
 		await flushView();
 
-		clickButton(findButtonByText(view.root, "Asignar músico"));
+		clickButton(findButtonByLabel(view.root, "Asignar músico"));
 		await flushView();
 		await flushView();
 
@@ -1927,7 +2261,7 @@ describe("SongsView", () => {
 		await flushView();
 		await flushView();
 
-		clickButton(findButtonByText(view.root, "Asignar músico"));
+		clickButton(findButtonByLabel(view.root, "Asignar músico"));
 		await flushView();
 		await flushView();
 
@@ -2005,7 +2339,7 @@ describe("SongsView", () => {
 		await flushView();
 		await flushView();
 
-		clickButton(findButtonByText(view.root, "Asignar músico"));
+		clickButton(findButtonByLabel(view.root, "Asignar músico"));
 		await flushView();
 		await flushView();
 
@@ -2070,7 +2404,7 @@ describe("SongsView", () => {
 		await flushView();
 		await flushView();
 
-		clickButton(findButtonByText(view.root, "Asignar músico"));
+		clickButton(findButtonByLabel(view.root, "Asignar músico"));
 		await flushView();
 		await flushView();
 		clickButton(
@@ -2157,7 +2491,7 @@ describe("SongsView", () => {
 		await flushView();
 		await flushView();
 
-		clickButton(findButtonByText(view.root, "Asignar músico"));
+		clickButton(findButtonByLabel(view.root, "Asignar músico"));
 		await flushView();
 		await flushView();
 		setInputValue(

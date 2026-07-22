@@ -187,7 +187,55 @@ describe("AxiosSongRepository", () => {
 		});
 	});
 
-	it("should patch the selected song instrument with the musician id", async () => {
+	it("should patch the selected song instrument and then return its refreshed detail", async () => {
+		const patchSpy = vi
+			.spyOn(httpClient, "patch")
+			.mockResolvedValue({ data: undefined } as never);
+		const getSpy = vi.spyOn(httpClient, "get").mockResolvedValue({
+			data: {
+				id: "instrument-456",
+				name: "Guitarra acústica",
+				instrumentId: "catalog-2",
+				songId: "song-123",
+				musicianId: "musician-789",
+				createdAt: "2026-07-15T10:00:00.000Z",
+				video: null,
+				upload: null,
+			},
+		} as never);
+
+		const instrument = await repository.updateInstrument(
+			new SongId("song-123"),
+			new SongInstrumentId("instrument-456"),
+			{
+				name: "Guitarra acústica",
+				instrumentId: "catalog-2",
+			},
+		);
+
+		expect(patchSpy).toHaveBeenCalledWith(
+			"/v1/songs/song-123/instruments/instrument-456",
+			{
+				name: "Guitarra acústica",
+				instrumentId: "catalog-2",
+			},
+		);
+		expect(getSpy).toHaveBeenCalledWith(
+			"/v1/songs/song-123/instruments/instrument-456",
+		);
+		expect(instrument).toEqual({
+			id: "instrument-456",
+			name: "Guitarra acústica",
+			instrumentId: "catalog-2",
+			songId: "song-123",
+			musicianId: "musician-789",
+			createdAt: "2026-07-15T10:00:00.000Z",
+			video: null,
+			upload: null,
+		});
+	});
+
+	it("should patch the selected song instrument musician assignment endpoint", async () => {
 		const patchSpy = vi
 			.spyOn(httpClient, "patch")
 			.mockResolvedValue({ data: undefined } as never);
@@ -199,7 +247,7 @@ describe("AxiosSongRepository", () => {
 		);
 
 		expect(patchSpy).toHaveBeenCalledWith(
-			"/v1/songs/song-123/instruments/instrument-456",
+			"/v1/songs/song-123/instruments/instrument-456/musician-assign",
 			{
 				musicianId: "musician-789",
 			},

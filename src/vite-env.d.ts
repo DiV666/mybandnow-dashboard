@@ -10,3 +10,19 @@ declare module "*.vue" {
 	>;
 	export default component;
 }
+
+declare module "bootstrap" {
+	export class Tooltip {
+		constructor(element: Element, options?: unknown);
+		static getOrCreateInstance(element: Element, options?: unknown): Tooltip;
+		dispose(): void;
+	}
+
+	export class Toast {
+		constructor(element: Element, options?: unknown);
+		show(): void;
+		hide(): void;
+		dispose(): void;
+		static getOrCreateInstance(element: Element, options?: unknown): Toast;
+	}
+}
