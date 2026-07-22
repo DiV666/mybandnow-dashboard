@@ -435,6 +435,31 @@ describe("MembersView", () => {
 		await flushView();
 		await flushView();
 
+		const memberCard = findElement(
+			view.root,
+			(node) =>
+				node.type === "article" &&
+				typeof node.props.class === "string" &&
+				node.props.class.includes("member-card"),
+		);
+		const memberHeader = findElement(
+			view.root,
+			(node) =>
+				node.type === "div" &&
+				typeof node.props.class === "string" &&
+				node.props.class.includes("member-card-header") &&
+				node.props.class.includes("border-bottom") &&
+				textContent(node).includes("Perfil de músico"),
+		);
+		const memberAvatar = findElement(
+			view.root,
+			(node) =>
+				node.type === "div" &&
+				typeof node.props.class === "string" &&
+				node.props.class.includes("member-avatar") &&
+				textContent(node).includes("JF"),
+		);
+
 		expect(repositoryGetMembersMock).toHaveBeenCalledWith("band-1");
 		expect(musicianRepositoryGetByIdMock).toHaveBeenNthCalledWith(
 			1,
@@ -446,6 +471,7 @@ describe("MembersView", () => {
 		);
 		expect(queryByTestId(view.root, "members-empty-state")).toBeNull();
 		expect(findByTestId(view.root, "members-grid")).not.toBeNull();
+		expect(memberCard).not.toBeNull();
 		expect(textContent(view.root)).toContain("Equipo actual");
 		expect(textContent(view.root)).toContain("2 miembros");
 		expect(textContent(view.root)).toContain("John Frusciante");
@@ -456,6 +482,23 @@ describe("MembersView", () => {
 		expect(textContent(view.root)).toContain("Flea");
 		expect(textContent(view.root)).toContain("@flea");
 		expect(textContent(view.root)).toContain("Miembro");
+		expect(textContent(view.root)).not.toContain(
+			"Disponible para colaborar en canciones, ensayos y nuevas grabaciones.",
+		);
+		expect(
+			findElement(
+				view.root,
+				(node) =>
+					typeof node.props.class === "string" &&
+					node.props.class.includes("member-note"),
+			),
+		).toBeNull();
+		expect(memberHeader?.props.class).toContain("member-card-header");
+		expect(memberHeader?.props.class).toContain("bg-white");
+		expect(memberHeader?.props.class).toContain("border-bottom");
+		expect(memberHeader?.props.class).not.toContain("bg-body-tertiary");
+		expect(memberAvatar?.props.class).toContain("member-avatar");
+		expect(memberAvatar?.props.style).toBeUndefined();
 		view.unmount();
 	});
 

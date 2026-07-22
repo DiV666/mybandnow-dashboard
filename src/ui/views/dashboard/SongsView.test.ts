@@ -2061,7 +2061,7 @@ describe("SongsView", () => {
 		expect(
 			findByText(view.root, "Añadir instrumento a Paint It Black"),
 		).not.toBeNull();
-		expect(findByText(view.root, "Nombre de la pista")).not.toBeNull();
+		expect(findByText(view.root, "Título de la pista")).not.toBeNull();
 		const instrumentSelect = findSelect(view.root, "songInstrumentId-song-1");
 		expect(textContent(instrumentSelect)).toContain("Electric Guitar");
 		setInputValue(

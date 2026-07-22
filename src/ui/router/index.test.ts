@@ -23,6 +23,14 @@ vi.mock("vue-router", async () => {
 	};
 });
 
+vi.mock("bootstrap", () => ({
+	Tooltip: {
+		getOrCreateInstance: vi.fn(() => ({
+			dispose: vi.fn(),
+		})),
+	},
+}));
+
 import { router } from "./index.js";
 import { useAuthStore } from "../stores/useAuthStore.js";
 

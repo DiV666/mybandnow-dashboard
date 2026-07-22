@@ -276,7 +276,7 @@ async function handleAddMember(): Promise<void> {
         <div v-else class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3" data-testid="members-grid">
           <div v-for="member in members" :key="member.id" class="col">
             <article class="card h-100 border-0 shadow-sm overflow-hidden bg-white member-card">
-              <div class="bg-body-tertiary border-bottom px-4 py-3 d-flex justify-content-between align-items-center gap-2 flex-wrap">
+              <div class="member-card-header bg-white border-bottom px-4 py-3 d-flex justify-content-between align-items-center gap-2 flex-wrap">
                 <div>
                   <p class="text-uppercase text-muted fw-semibold small mb-1">Perfil de músico</p>
                   <h3 class="h6 mb-0">{{ member.name }}</h3>
@@ -284,12 +284,11 @@ async function handleAddMember(): Promise<void> {
                 <span class="badge rounded-pill member-role-badge" :class="member.roleClass">{{ member.role }}</span>
               </div>
 
-              <div class="card-body p-4 d-flex flex-column gap-3">
+              <div class="card-body p-4 d-flex flex-column gap-3 member-card-body">
                 <div class="d-flex gap-3 align-items-center">
                   <div
                     class="rounded-circle bg-body-secondary text-secondary fw-semibold d-inline-flex align-items-center justify-content-center flex-shrink-0 border member-avatar"
-                    style="width: 72px; height: 72px;"
-                    :aria-label="`Avatar placeholder de ${member.name}`"
+:aria-label="`Avatar placeholder de ${member.name}`"
                   >
                     {{ member.avatarInitials }}
                   </div>
@@ -300,9 +299,6 @@ async function handleAddMember(): Promise<void> {
                   </div>
                 </div>
 
-                <div class="rounded-3 bg-body-tertiary px-3 py-2 border small text-muted member-note">
-                  Disponible para colaborar en canciones, ensayos y nuevas grabaciones.
-                </div>
               </div>
             </article>
           </div>
@@ -386,13 +382,21 @@ async function handleAddMember(): Promise<void> {
 }
 
 .member-card {
-  border: 1px solid rgba(13, 110, 253, 0.08);
+  border: 1px solid rgba(var(--bs-body-color-rgb), 0.08);
 }
 
 .member-card:hover {
   transform: translateY(-2px);
   box-shadow: var(--bs-box-shadow) !important;
-  border-color: rgba(13, 110, 253, 0.2);
+  border-color: rgba(var(--bs-body-color-rgb), 0.16);
+}
+
+.member-card-header {
+  background-color: var(--bs-white);
+}
+
+.member-card-body {
+  min-height: 100%;
 }
 
 .member-role-badge {
@@ -400,12 +404,11 @@ async function handleAddMember(): Promise<void> {
 }
 
 .member-avatar {
+  width: 72px;
+  height: 72px;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
 }
 
-.member-note {
-  margin-top: auto;
-}
 
 @media (max-width: 575.98px) {
   .member-card {
