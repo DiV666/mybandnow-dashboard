@@ -1070,7 +1070,7 @@ describe("DashboardLayout", () => {
 		view.unmount();
 	});
 
-	it("shows only useful dashboard modules in the expected order and highlights songs on its route", async () => {
+	it("renders a Bootstrap-first sidebar nav while preserving the dashboard modules, icons, and active route styling", async () => {
 		currentRouteState.path = "/dashboard/songs";
 		getMyBandsRunMock.mockResolvedValueOnce([
 			{
@@ -1088,10 +1088,18 @@ describe("DashboardLayout", () => {
 		await flushView();
 		await flushView();
 
+		const sidebarNavList = findElement(
+			view.root,
+			(node) =>
+				node.type === "ul" &&
+				classNames(node).includes("nav-pills") &&
+				classNames(node).includes("flex-column"),
+		);
 		const navLinks = findAllElements(
 			view.root,
 			(node) =>
-				node.type === "a" && classNames(node).includes("dashboard-nav-link"),
+				node.type === "a" &&
+				classNames(node).includes("dashboard-sidebar-link"),
 		).map((node) => textContent(node).trim());
 		const songsLink = findElement(
 			view.root,
@@ -1101,14 +1109,109 @@ describe("DashboardLayout", () => {
 			view.root,
 			(node) => node.type === "a" && textContent(node).includes("Miembros"),
 		);
+		const videoclipsLink = findElement(
+			view.root,
+			(node) => node.type === "a" && textContent(node).includes("Videoclips"),
+		);
+		const songsIcon = songsLink
+			? findElement(
+					songsLink,
+					(node) =>
+						node.type === "i" &&
+						classNames(node).includes("bi-music-note-list"),
+				)
+			: null;
+		const membersIcon = membersLink
+			? findElement(
+					membersLink,
+					(node) => node.type === "i" && classNames(node).includes("bi-people"),
+				)
+			: null;
+		const videoclipsIcon = videoclipsLink
+			? findElement(
+					videoclipsLink,
+					(node) =>
+						node.type === "i" && classNames(node).includes("bi-camera-video"),
+				)
+			: null;
 
+		expect(sidebarNavList).not.toBeNull();
 		expect(navLinks).toEqual(["Canciones", "Miembros", "Videoclips"]);
 		expect(findByText(view.root, "Inicio")).toBeNull();
+		expect(classNames(songsLink as TestElementNode)).toContain("nav-link");
+		expect(classNames(songsLink as TestElementNode)).toContain("d-flex");
 		expect(classNames(songsLink as TestElementNode)).toContain(
-			"active fw-bold text-primary",
+			"align-items-center",
+		);
+		expect(classNames(songsLink as TestElementNode)).toContain("gap-2");
+		expect(classNames(songsLink as TestElementNode)).toContain("rounded-pill");
+		expect(classNames(songsLink as TestElementNode)).toContain("active");
+		expect(classNames(songsLink as TestElementNode)).toContain("fw-semibold");
+		expect(classNames(songsLink as TestElementNode)).toContain(
+			"dashboard-sidebar-link--active",
+		);
+		expect(classNames(songsLink as TestElementNode)).not.toContain(
+			"text-primary",
+		);
+		expect(classNames(songsLink as TestElementNode)).not.toContain(
+			"dashboard-nav-link",
+		);
+		expect(classNames(membersLink as TestElementNode)).not.toContain("active");
+		expect(songsIcon).not.toBeNull();
+		expect(membersIcon).not.toBeNull();
+		expect(videoclipsIcon).not.toBeNull();
+		expect(classNames(songsIcon as TestElementNode)).toContain(
+			"dashboard-sidebar-link__icon",
+		);
+		expect(classNames(membersIcon as TestElementNode)).toContain(
+			"dashboard-sidebar-link__icon",
+		);
+		expect(classNames(videoclipsIcon as TestElementNode)).toContain(
+			"dashboard-sidebar-link__icon",
+		);
+
+		view.unmount();
+	});
+
+	it("keeps Bootstrap nav semantics on inactive dashboard links too", async () => {
+		currentRouteState.path = "/dashboard/members";
+		getMyBandsRunMock.mockResolvedValueOnce([
+			{
+				id: { value: "band-1" },
+				name: { value: "The Stones" },
+			} as Band,
+		]);
+		const view = renderDashboardLayout(() => {
+			const bandStore = useBandStore();
+			const musicianStore = useMusicianStore();
+			bandStore.selectedBandId = "band-1";
+			musicianStore.fetchProfile = vi.fn().mockResolvedValue(undefined);
+		});
+
+		await flushView();
+		await flushView();
+
+		const songsLink = findElement(
+			view.root,
+			(node) => node.type === "a" && textContent(node).includes("Canciones"),
+		);
+		const membersLink = findElement(
+			view.root,
+			(node) => node.type === "a" && textContent(node).includes("Miembros"),
+		);
+
+		expect(classNames(songsLink as TestElementNode)).toContain("nav-link");
+		expect(classNames(songsLink as TestElementNode)).toContain(
+			"dashboard-sidebar-link",
+		);
+		expect(classNames(songsLink as TestElementNode)).not.toContain("active");
+		expect(classNames(membersLink as TestElementNode)).toContain("active");
+		expect(classNames(membersLink as TestElementNode)).toContain("fw-semibold");
+		expect(classNames(membersLink as TestElementNode)).toContain(
+			"dashboard-sidebar-link--active",
 		);
 		expect(classNames(membersLink as TestElementNode)).not.toContain(
-			"active fw-bold text-primary",
+			"text-primary",
 		);
 
 		view.unmount();

@@ -270,32 +270,35 @@ onBeforeUnmount(() => {
         class="col-md-3 col-lg-2 d-md-block dashboard-sidebar sidebar collapse"
       >
         <div class="position-sticky pt-3">
-          <ul class="nav flex-column gap-1 px-2 pb-3">
+          <ul class="nav nav-pills flex-column gap-1 px-2 pb-3 dashboard-sidebar-nav">
             <li class="nav-item">
               <router-link
                 :to="{ name: 'SongsManager' }"
-                class="nav-link dashboard-nav-link"
-                active-class="active fw-bold text-primary"
+                class="nav-link d-flex align-items-center gap-2 rounded-pill px-3 py-2 dashboard-sidebar-link"
+                active-class="active fw-semibold dashboard-sidebar-link--active"
               >
-                Canciones
+                <i class="bi bi-music-note-list dashboard-sidebar-link__icon" aria-hidden="true"></i>
+                <span>Canciones</span>
               </router-link>
             </li>
             <li class="nav-item">
               <router-link
                 :to="{ name: 'MembersManager' }"
-                class="nav-link dashboard-nav-link"
-                active-class="active fw-bold text-primary"
+                class="nav-link d-flex align-items-center gap-2 rounded-pill px-3 py-2 dashboard-sidebar-link"
+                active-class="active fw-semibold dashboard-sidebar-link--active"
               >
-                Miembros
+                <i class="bi bi-people dashboard-sidebar-link__icon" aria-hidden="true"></i>
+                <span>Miembros</span>
               </router-link>
             </li>
             <li class="nav-item">
               <router-link
                 :to="{ name: 'VideoclipsManager' }"
-                class="nav-link dashboard-nav-link"
-                active-class="active fw-bold text-primary"
+                class="nav-link d-flex align-items-center gap-2 rounded-pill px-3 py-2 dashboard-sidebar-link"
+                active-class="active fw-semibold dashboard-sidebar-link--active"
               >
-                Videoclips
+                <i class="bi bi-camera-video dashboard-sidebar-link__icon" aria-hidden="true"></i>
+                <span>Videoclips</span>
               </router-link>
             </li>
           </ul>
@@ -455,23 +458,44 @@ onBeforeUnmount(() => {
   border-right: 1px solid rgba(var(--bs-primary-rgb), 0.08);
 }
 
-.dashboard-nav-link {
-  padding: 0.75rem 1rem;
-  border-radius: var(--bs-border-radius-pill);
+.dashboard-sidebar-nav {
+  --bs-nav-pills-link-active-bg: rgba(var(--bs-primary-rgb), 0.12);
+  --bs-nav-pills-link-active-color: var(--bs-emphasis-color);
+}
+
+.dashboard-sidebar-link {
   color: var(--bs-body-color);
   transition:
     background-color 0.2s ease,
     color 0.2s ease,
-    transform 0.2s ease;
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-.dashboard-nav-link:hover {
+.dashboard-sidebar-link--active {
+  color: var(--bs-emphasis-color);
+  box-shadow: inset 0 0 0 1px rgba(var(--bs-primary-rgb), 0.08);
+}
+
+.dashboard-sidebar-link:hover,
+.dashboard-sidebar-link:focus-visible {
   background-color: rgba(var(--bs-primary-rgb), 0.06);
+  color: var(--bs-emphasis-color);
   transform: translateX(2px);
 }
 
-.dashboard-nav-link.active {
-  background-color: rgba(var(--bs-primary-rgb), 0.12);
+.dashboard-sidebar-link__icon {
+  width: 1.125rem;
+  font-size: 1rem;
+  line-height: 1;
+  text-align: center;
+  opacity: 0.85;
+}
+
+.dashboard-sidebar-link.active .dashboard-sidebar-link__icon,
+.dashboard-sidebar-link:hover .dashboard-sidebar-link__icon,
+.dashboard-sidebar-link:focus-visible .dashboard-sidebar-link__icon {
+  opacity: 1;
 }
 
 .dashboard-user-nav .nav-link {
