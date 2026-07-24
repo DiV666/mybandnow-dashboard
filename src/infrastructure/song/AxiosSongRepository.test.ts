@@ -53,6 +53,7 @@ describe("AxiosSongRepository", () => {
 						bandId: "band-123",
 						title: "Paint It Black",
 						originalVideoclipUrl: "https://www.youtube.com/watch?v=O4irXQhgMqg",
+						originalVideoClipDurationSeconds: 187,
 					},
 				],
 				total: 1,
@@ -68,6 +69,7 @@ describe("AxiosSongRepository", () => {
 				bandId: "band-123",
 				title: "Paint It Black",
 				originalVideoclipUrl: "https://www.youtube.com/watch?v=O4irXQhgMqg",
+				originalVideoClipDurationSeconds: 187,
 			},
 		]);
 	});
@@ -233,6 +235,27 @@ describe("AxiosSongRepository", () => {
 			video: null,
 			upload: null,
 		});
+	});
+
+	it("should patch the selected song instrument video timing through the dedicated video endpoint", async () => {
+		const patchSpy = vi
+			.spyOn(httpClient, "patch")
+			.mockResolvedValue({ data: undefined } as never);
+
+		await repository.updateInstrumentVideoStartTime(
+			new SongId("song-123"),
+			new SongInstrumentId("instrument-456"),
+			{
+				startTimeMs: 3500,
+			},
+		);
+
+		expect(patchSpy).toHaveBeenCalledWith(
+			"/v1/songs/song-123/instruments/instrument-456/video",
+			{
+				startTimeMs: 3500,
+			},
+		);
 	});
 
 	it("should patch the selected song instrument musician assignment endpoint", async () => {

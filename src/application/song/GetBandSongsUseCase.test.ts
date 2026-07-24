@@ -20,6 +20,7 @@ describe("GetBandSongsUseCase", () => {
 				bandId: "band-123",
 				title: "Paint It Black",
 				originalVideoclipUrl: "https://www.youtube.com/watch?v=O4irXQhgMqg",
+				originalVideoClipDurationSeconds: 187,
 			},
 		];
 		repositoryMock.getByBandId.mockResolvedValue(songs);

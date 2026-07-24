@@ -63,4 +63,19 @@ describe("dashboard routes", () => {
 		expect(router.currentRoute.value.name).toBe("Profile");
 		expect(router.currentRoute.value.fullPath).toBe("/dashboard/profile");
 	});
+
+	it("resolves the song track editor route inside the authenticated dashboard shell", async () => {
+		const authStore = useAuthStore();
+		authStore.setToken("token-123");
+
+		await router.push(
+			"/dashboard/songs/song-123/tracks?title=Paint%20It%20Black",
+		);
+
+		expect(router.currentRoute.value.name).toBe("SongTrackEditor");
+		expect(router.currentRoute.value.params.songId).toBe("song-123");
+		expect(router.currentRoute.value.fullPath).toBe(
+			"/dashboard/songs/song-123/tracks?title=Paint%20It%20Black",
+		);
+	});
 });

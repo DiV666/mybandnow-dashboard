@@ -57,6 +57,11 @@ const routes: Array<RouteRecordRaw> = [
 				component: () => import("../views/dashboard/SongsView.vue"),
 			},
 			{
+				path: "songs/:songId/tracks",
+				name: "SongTrackEditor",
+				component: () => import("../views/dashboard/SongTrackEditorView.vue"),
+			},
+			{
 				path: "videoclips",
 				name: "VideoclipsManager",
 				component: () => import("../views/dashboard/VideoclipsView.vue"),

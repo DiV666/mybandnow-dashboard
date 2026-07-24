@@ -9,6 +9,7 @@ import {
 	ref,
 	watch,
 } from "vue";
+import { useRouter } from "vue-router";
 import { GetBandMembersUseCase } from "../../../application/band/GetBandMembersUseCase.js";
 import { GetInstrumentByIdUseCase } from "../../../application/instrument/GetInstrumentByIdUseCase.js";
 import { GetInstrumentsUseCase } from "../../../application/instrument/GetInstrumentsUseCase.js";
@@ -149,6 +150,7 @@ const SONG_INSTRUMENT_PROGRESS_TICK_MS = 400;
 const bandStore = useBandStore();
 const musicianStore = useMusicianStore();
 const toastStore = useToastStore();
+const router = useRouter();
 const title = ref("");
 const originalVideoclipUrl = ref("");
 const errorMsg = ref("");
@@ -1029,8 +1031,13 @@ function getSongInstrumentStatusMessage(
 	instrument: SongInstrumentListItemResponse,
 ): string {
 	const uploadState = getSongInstrumentUploadState(songId, instrument.id);
+	const progressStage = uploadState.progressStage;
 	const video = getEffectiveVideo(songId, instrument.id);
-	if (video) {
+	if (
+		video &&
+		progressStage !== songInstrumentUploadProgressStages.REQUEST &&
+		progressStage !== songInstrumentUploadProgressStages.BACKEND
+	) {
 		return "";
 	}
 
@@ -1224,6 +1231,12 @@ function completeSongInstrumentProgress(songId: string, instrumentId: string): v
 		progress: 100,
 		progressStage: songInstrumentUploadProgressStages.COMPLETE,
 	});
+	if (
+		activeSongInstrumentUploadModal.value?.songId === songId &&
+		activeSongInstrumentUploadModal.value?.instrumentId === instrumentId
+	) {
+		closeSongInstrumentUploadModal();
+	}
 }
 
 function resetSongInstrumentProgress(songId: string, instrumentId: string): void {
@@ -1238,10 +1251,6 @@ function shouldShowSongInstrumentProgress(
 	songId: string,
 	instrumentId: string,
 ): boolean {
-	if (getEffectiveVideo(songId, instrumentId)) {
-		return false;
-	}
-
 	const progressStage = getSongInstrumentUploadState(
 		songId,
 		instrumentId,
@@ -1557,6 +1566,7 @@ async function loadSongs(bandId: string | null) {
 			nextSongs.map((song) => [song.id, getSongInstrumentForm(song.id)]),
 		);
 		await loadSongInstruments(nextSongs, requestId);
+		await focusSongAnchorFromLocation();
 	} catch (error: unknown) {
 		if (requestId !== lastSongsRequestId || !isViewMounted) {
 			return;
@@ -1696,6 +1706,43 @@ async function handleCreateSong() {
 	} finally {
 		isLoading.value = false;
 	}
+}
+
+function openSongTrackEditor(song: SongResponse): void {
+	void router.push({
+		name: "SongTrackEditor",
+		params: { songId: song.id },
+		query: {
+			title: song.title,
+			...(typeof song.originalVideoClipDurationSeconds === "number"
+				? {
+					originalVideoClipDurationSeconds: String(
+						song.originalVideoClipDurationSeconds,
+					),
+				}
+				: {}),
+		},
+	});
+}
+
+async function focusSongAnchorFromLocation(): Promise<void> {
+	if (typeof window === "undefined" || typeof document === "undefined") {
+		return;
+	}
+
+	const anchorId = window.location.hash.replace(/^#/, "").trim();
+	if (!anchorId) {
+		return;
+	}
+
+	await nextTick();
+	const target = document.getElementById(anchorId);
+	if (!(target instanceof HTMLElement)) {
+		return;
+	}
+
+	target.scrollIntoView({ block: "start", behavior: "auto" });
+	target.focus({ preventScroll: true });
 }
 
 function openSongInstrumentForm(songId: string): void {
@@ -2260,25 +2307,36 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
         <div v-else data-testid="songs-list" class="d-grid gap-3">
           <article
             v-for="song in songs"
+            :id="song.id"
             :key="song.id"
             class="border rounded-3 p-3 bg-body-tertiary"
+            tabindex="-1"
           >
-            <div class="d-flex flex-column gap-3">
-              <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-2">
-                <div>
-                  <h3 class="h5 mb-1">{{ song.title }}</h3>
-                  <p class="text-muted small mb-0">Videoclip original</p>
-                </div>
-                <a
-                  :href="song.originalVideoclipUrl"
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  class="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-2"
-                >
-                  <span aria-hidden="true">▶</span>
-                  <span>Ver en YouTube</span>
-                </a>
-              </div>
+                <div class="d-flex flex-column gap-3">
+                  <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-2">
+                    <div>
+                      <h3 class="h5 mb-1">{{ song.title }}</h3>
+                      <p class="text-muted small mb-0">Videoclip original</p>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        class="btn btn-outline-primary btn-sm"
+                        @click="openSongTrackEditor(song)"
+                      >
+                        Editar pistas
+                      </button>
+                      <a
+                        :href="song.originalVideoclipUrl"
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        class="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-2"
+                      >
+                        <span aria-hidden="true">▶</span>
+                        <span>Ver en YouTube</span>
+                      </a>
+                    </div>
+                  </div>
 
               <section class="border-top pt-3">
                 <div

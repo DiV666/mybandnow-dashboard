@@ -34,6 +34,11 @@ export interface SongInstrumentVideoResponse {
 	duration: number;
 	size: number;
 	createdAt: string;
+	startTimeMs?: number;
+}
+
+interface SongInstrumentTimelineFields {
+	startTimeMs?: number;
 }
 
 interface SongInstrumentCatalogReference {
@@ -41,17 +46,19 @@ interface SongInstrumentCatalogReference {
 	instrumentType?: string;
 }
 
-export type SongInstrumentListItemResponse = SongInstrumentCatalogReference & {
-	id: string;
-	name: string;
-	songId: string;
-	musicianId: string;
-	createdAt: string;
-	upload: SongInstrumentUploadResponse | null;
-};
+export type SongInstrumentListItemResponse = SongInstrumentCatalogReference &
+	SongInstrumentTimelineFields & {
+		id: string;
+		name: string;
+		songId: string;
+		musicianId: string;
+		createdAt: string;
+		upload: SongInstrumentUploadResponse | null;
+	};
 
 export interface SongInstrumentDetailResponse
-	extends SongInstrumentCatalogReference {
+	extends SongInstrumentCatalogReference,
+		SongInstrumentTimelineFields {
 	id: string;
 	name: string;
 	songId: string;
@@ -64,6 +71,11 @@ export interface SongInstrumentDetailResponse
 export interface UpdateSongInstrumentPayload {
 	name: string;
 	instrumentId: string;
+	startTimeMs?: number;
+}
+
+export interface UpdateSongInstrumentVideoPayload {
+	startTimeMs: number;
 }
 
 export type SongInstrumentCollectionResponse = {

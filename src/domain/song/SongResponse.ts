@@ -3,6 +3,7 @@ export type SongResponse = {
 	bandId: string;
 	title: string;
 	originalVideoclipUrl: string;
+	originalVideoClipDurationSeconds: number | null;
 };
 
 export type SongCollectionResponse = {

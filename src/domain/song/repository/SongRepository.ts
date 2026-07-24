@@ -6,6 +6,7 @@ import type {
 	SongInstrumentDetailResponse,
 	SongInstrumentListItemResponse,
 	UpdateSongInstrumentPayload,
+	UpdateSongInstrumentVideoPayload,
 } from "../SongInstrumentResponse.js";
 import type { SongResponse } from "../SongResponse.js";
 import type { SongId } from "../value-object/SongId.js";
@@ -28,6 +29,11 @@ export interface SongRepository {
 		instrumentId: SongInstrumentId,
 		payload: UpdateSongInstrumentPayload,
 	): Promise<SongInstrumentDetailResponse>;
+	updateInstrumentVideoStartTime(
+		songId: SongId,
+		instrumentId: SongInstrumentId,
+		payload: UpdateSongInstrumentVideoPayload,
+	): Promise<void>;
 	assignMusician(
 		songId: SongId,
 		instrumentId: SongInstrumentId,
