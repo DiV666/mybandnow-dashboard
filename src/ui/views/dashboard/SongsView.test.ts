@@ -2659,7 +2659,7 @@ describe("SongsView", () => {
 		view.unmount();
 	});
 
-	it("shows upload progress in the modal when reuploading over an existing processed video", async () => {
+	it("closes the modal after accepting a reupload and switches the table pill away from disponible", async () => {
 		vi.useFakeTimers();
 		repositoryGetByBandIdMock.mockResolvedValueOnce([
 			{
@@ -2773,19 +2773,24 @@ describe("SongsView", () => {
 		pendingUpload.resolve();
 		await submitPromise;
 		await flushView();
+
+		expect(
+			querySongInstrumentForm(view.root, "song-1-instrument-1"),
+		).toBeNull();
+		const songArticle = findSongArticle(view.root, "Paint It Black");
+		expect(textContent(songArticle)).not.toContain("Disponible");
+		expect(textContent(songArticle)).toContain("Pendiente de validación");
+
 		await vi.advanceTimersByTimeAsync(5000);
 		await flushView();
 
-		expect(
-			queryByTestId(view.root, "upload-progress-song-1-instrument-1"),
-		).not.toBeNull();
-		expect(textContent(view.root)).toContain("%");
+		expect(textContent(songArticle)).toContain("Procesando");
 
 		view.unmount();
 		vi.useRealTimers();
 	});
 
-	it("keeps the upload modal open after the upload request is accepted and leaves the song row free of inline progress UI", async () => {
+	it("closes the upload modal right after the upload request is accepted and moves the waiting state to the row pill", async () => {
 		repositoryGetByBandIdMock.mockResolvedValueOnce([
 			{
 				id: "song-1",
@@ -2830,10 +2835,10 @@ describe("SongsView", () => {
 
 		expect(
 			querySongInstrumentForm(view.root, "song-1-instrument-1"),
-		).not.toBeNull();
+		).toBeNull();
 		expect(
 			findByText(view.root, "Subida aceptada. Pendiente de validación."),
-		).not.toBeNull();
+		).toBeNull();
 		const songArticle = findSongArticle(view.root, "Paint It Black");
 		expect(
 			findElement(
@@ -2842,9 +2847,7 @@ describe("SongsView", () => {
 					node.props["data-testid"] === "upload-progress-song-1-instrument-1",
 			),
 		).toBeNull();
-		expect(textContent(songArticle)).not.toContain(
-			"Subida aceptada. Pendiente de validación.",
-		);
+		expect(textContent(songArticle)).toContain("Pendiente de validación");
 		expect(textContent(songArticle)).not.toContain(
 			"Subiendo video al servidor...",
 		);
@@ -2928,7 +2931,7 @@ describe("SongsView", () => {
 		await flushView();
 		expect(
 			querySongInstrumentForm(view.root, "song-1-instrument-1"),
-		).not.toBeNull();
+		).toBeNull();
 		await vi.advanceTimersByTimeAsync(5000);
 		await flushView();
 		await vi.advanceTimersByTimeAsync(5000);
@@ -3025,8 +3028,10 @@ describe("SongsView", () => {
 
 		expect(findByText(view.root, "Subiendo video al servidor...")).toBeNull();
 		expect(
-			findByText(view.root, "Subida aceptada. Pendiente de validación."),
-		).not.toBeNull();
+			querySongInstrumentForm(view.root, "song-1-instrument-1"),
+		).toBeNull();
+		const songArticle = findSongArticle(view.root, "Paint It Black");
+		expect(textContent(songArticle)).toContain("Pendiente de validación");
 
 		view.unmount();
 		vi.useRealTimers();
@@ -3111,15 +3116,15 @@ describe("SongsView", () => {
 		expect(repositoryUploadInstrumentVideoMock).toHaveBeenCalledOnce();
 		expect(findByText(view.root, "Video subido correctamente.")).toBeNull();
 		expect(
-			findByText(view.root, "Subida aceptada. Pendiente de validación."),
-		).not.toBeNull();
+			querySongInstrumentForm(view.root, "song-1-instrument-1"),
+		).toBeNull();
+		const songArticle = findSongArticle(view.root, "Paint It Black");
+		expect(textContent(songArticle)).toContain("Pendiente de validación");
 		expect(findByText(view.root, "Subiendo video al servidor...")).toBeNull();
 
 		await vi.advanceTimersByTimeAsync(5000);
 		await flushView();
-		expect(
-			findByText(view.root, "Procesando y sincronizando video..."),
-		).not.toBeNull();
+		expect(textContent(songArticle)).toContain("Procesando");
 		expect(repositoryGetInstrumentByIdMock).toHaveBeenNthCalledWith(
 			1,
 			new SongId("song-1"),
@@ -3461,21 +3466,17 @@ describe("SongsView", () => {
 			new SongInstrumentVideoFile(videoFile),
 		);
 		expect(
-			findByText(view.root, "Subida aceptada. Pendiente de validación."),
-		).not.toBeNull();
+			querySongInstrumentForm(view.root, "song-1-instrument-1"),
+		).toBeNull();
+		expect(textContent(songArticle)).toContain("Pendiente de validación");
 
 		await vi.advanceTimersByTimeAsync(5000);
 		await flushView();
 
-		const backendProgress = findByTestId(
-			view.root,
-			"upload-progress-song-1-instrument-1",
-		);
-		expect(Number(backendProgress.props["aria-valuenow"])).toBeGreaterThan(0);
-		expect(Number(backendProgress.props["aria-valuenow"])).toBeLessThan(100);
 		expect(
-			findByText(view.root, "Video recibido. Validando archivo..."),
-		).not.toBeNull();
+			queryByTestId(view.root, "upload-progress-song-1-instrument-1"),
+		).toBeNull();
+		expect(textContent(songArticle)).toContain("Validando archivo");
 		expect(
 			findElement(
 				songArticle,

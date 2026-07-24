@@ -744,7 +744,18 @@ function getEffectiveUpload(
 	songId: string,
 	instrument: SongInstrumentListItemResponse,
 ): SongInstrumentUploadResponse | null {
-	return getSongInstrumentDetail(songId, instrument.id)?.upload ?? instrument.upload;
+	const detailUpload = getSongInstrumentDetail(songId, instrument.id)?.upload ?? null;
+	const instrumentUpload = instrument.upload ?? null;
+
+	if (
+		instrumentUpload &&
+		(isSongInstrumentInProgress(instrumentUpload) ||
+			instrumentUpload.status === songInstrumentUploadStatuses.FAILED)
+	) {
+		return instrumentUpload;
+	}
+
+	return detailUpload ?? instrumentUpload;
 }
 
 function getEffectiveVideo(
@@ -1231,12 +1242,6 @@ function completeSongInstrumentProgress(songId: string, instrumentId: string): v
 		progress: 100,
 		progressStage: songInstrumentUploadProgressStages.COMPLETE,
 	});
-	if (
-		activeSongInstrumentUploadModal.value?.songId === songId &&
-		activeSongInstrumentUploadModal.value?.instrumentId === instrumentId
-	) {
-		closeSongInstrumentUploadModal();
-	}
 }
 
 function resetSongInstrumentProgress(songId: string, instrumentId: string): void {
@@ -1269,6 +1274,32 @@ function getSongInstrumentAvailabilityLabel(
 	songId: string,
 	instrumentId: string,
 ): string {
+	const instrument = getSongInstrument(songId, instrumentId);
+	const upload = instrument ? getEffectiveUpload(songId, instrument) : null;
+
+	if (upload?.status === songInstrumentUploadStatuses.FAILED) {
+		return "Error";
+	}
+
+	if (upload?.status === songInstrumentUploadStatuses.PENDING) {
+		return "Pendiente de validación";
+	}
+
+	if (upload?.status === songInstrumentUploadStatuses.READY) {
+		return "Validando archivo";
+	}
+
+	if (upload?.status === songInstrumentUploadStatuses.PROCESSING) {
+		return "Procesando";
+	}
+
+	if (
+		upload?.status === songInstrumentUploadStatuses.COMPLETED &&
+		!hasSongInstrumentVideo(songId, instrumentId)
+	) {
+		return "Finalizando";
+	}
+
 	return hasSongInstrumentVideo(songId, instrumentId) ? "Disponible" : "Pendiente";
 }
 
@@ -1276,9 +1307,44 @@ function getSongInstrumentAvailabilityBadgeClass(
 	songId: string,
 	instrumentId: string,
 ): string {
+	const instrument = getSongInstrument(songId, instrumentId);
+	const upload = instrument ? getEffectiveUpload(songId, instrument) : null;
+
+	if (upload?.status === songInstrumentUploadStatuses.FAILED) {
+		return "text-bg-danger";
+	}
+
+	if (upload?.status === songInstrumentUploadStatuses.PENDING) {
+		return "text-bg-warning";
+	}
+
+	if (upload?.status === songInstrumentUploadStatuses.READY) {
+		return "text-bg-info";
+	}
+
+	if (upload?.status === songInstrumentUploadStatuses.PROCESSING) {
+		return "text-bg-primary";
+	}
+
+	if (
+		upload?.status === songInstrumentUploadStatuses.COMPLETED &&
+		!hasSongInstrumentVideo(songId, instrumentId)
+	) {
+		return "text-bg-secondary";
+	}
+
 	return hasSongInstrumentVideo(songId, instrumentId)
 		? "text-bg-success"
 		: "text-bg-warning";
+}
+
+function getSongInstrumentAvailabilityTestId(
+	songId: string,
+	instrumentId: string,
+): string {
+	return getSongInstrumentAvailabilityLabel(songId, instrumentId) === "Disponible"
+		? `upload-complete-${songId}-${instrumentId}`
+		: `upload-status-${songId}-${instrumentId}`;
 }
 
 function shouldShowSongInstrumentUploadForm(
@@ -2159,6 +2225,7 @@ async function handleUploadSongInstrumentVideo(
 			status: songInstrumentUploadStatuses.PENDING,
 		});
 		scheduleSongInstrumentPoll(songId, instrumentId, 1);
+		closeSongInstrumentUploadModal();
 	} catch (error: unknown) {
 		const message = mapUploadErrorMessage(
 			extractUploadErrorDetails(error),
@@ -2376,9 +2443,7 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                             <td>
                               <div class="d-inline-flex align-items-center gap-2">
                                 <span
-                                  :data-testid="hasSongInstrumentVideo(song.id, instrument.id)
-                                    ? `upload-complete-${song.id}-${instrument.id}`
-                                    : `upload-status-${song.id}-${instrument.id}`"
+                                  :data-testid="getSongInstrumentAvailabilityTestId(song.id, instrument.id)"
                                   class="badge rounded-pill"
                                   :class="getSongInstrumentAvailabilityBadgeClass(song.id, instrument.id)"
                                 >
