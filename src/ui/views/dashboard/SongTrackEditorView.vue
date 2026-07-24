@@ -1,5 +1,14 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { Tooltip } from "bootstrap";
+import {
+	computed,
+	nextTick,
+	onBeforeUnmount,
+	onMounted,
+	onUpdated,
+	ref,
+	watch,
+} from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
 	GetSongInstrumentDetailUseCase,
@@ -71,6 +80,10 @@ interface PlayerSyncState {
 	isPlaying: boolean;
 }
 
+interface TooltipInstance {
+	dispose: () => void;
+}
+
 const AUTOSAVE_STATES = {
 	idle: "idle",
 	pending: "pending",
@@ -122,6 +135,7 @@ const isZoomPopoverOpen = ref(false);
 const timelineScrollWrapperRef = ref<HTMLElement | null>(null);
 
 const autosaveTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const trackControlTooltipTargets = new Map<string, Element>();
 const autosaveFadeTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const autosaveClearTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const syncPlayerRefs = new Map<string, PlayerLike>();
@@ -130,6 +144,8 @@ const selectedPreviewRef = ref<PlayerLike | null>(null);
 let selectedPreviewSyncState: PlayerSyncState | null = null;
 let playbackTimer: ReturnType<typeof setInterval> | null = null;
 let lastPlaybackTickMs = 0;
+let trackControlTooltips: TooltipInstance[] = [];
+let isViewMounted = true;
 
 const songId = computed(() => String(route.params.songId ?? ""));
 const songTitle = computed(() => {
@@ -1060,6 +1076,45 @@ function getTrackToggleButtonStyle(): Record<string, string> {
 	};
 }
 
+function getTrackSoloTooltipLabel(track: EditorTrack): string {
+	return track.isSoloed ? "Quitar solo" : "Solo de pista";
+}
+
+function getTrackMuteTooltipLabel(track: EditorTrack): string {
+	return track.isMuted ? "Activar audio" : "Silenciar pista";
+}
+
+function setTrackControlTooltipTarget(
+	key: string,
+	element: Element | null,
+): void {
+	if (!element) {
+		trackControlTooltipTargets.delete(key);
+		return;
+	}
+
+	trackControlTooltipTargets.set(key, element);
+}
+
+function disposeTrackControlTooltips(): void {
+	for (const tooltip of trackControlTooltips) {
+		tooltip.dispose();
+	}
+	trackControlTooltips = [];
+}
+
+async function syncTrackControlTooltips(): Promise<void> {
+	if (!isViewMounted) {
+		return;
+	}
+
+	await nextTick();
+	disposeTrackControlTooltips();
+	trackControlTooltips = Array.from(trackControlTooltipTargets.values()).map(
+		(target) => Tooltip.getOrCreateInstance(target) as TooltipInstance,
+	);
+}
+
 async function loadTracks(): Promise<void> {
 	isLoading.value = true;
 	errorMessage.value = "";
@@ -1135,11 +1190,19 @@ watch(isPlaying, (playing) => {
 
 onMounted(() => {
 	void loadTracks();
+	void syncTrackControlTooltips();
+});
+
+onUpdated(() => {
+	void syncTrackControlTooltips();
 });
 
 onBeforeUnmount(() => {
+	isViewMounted = false;
 	stopPlaybackTimer();
 	dragState.value = null;
+	disposeTrackControlTooltips();
+	trackControlTooltipTargets.clear();
 	for (const trackId of autosaveTimers.keys()) {
 		clearAutosaveTimer(trackId);
 	}
@@ -1392,10 +1455,12 @@ onBeforeUnmount(() => {
 										<button
 											type="button"
 											:data-testid="`track-solo-toggle-${track.id}`"
+											:ref="(element) => setTrackControlTooltipTarget(`solo-${track.id}`, element)"
 											:class="getTrackToggleButtonClass(track.isSoloed, 'btn-danger')"
 											:style="getTrackToggleButtonStyle()"
 											:aria-pressed="track.isSoloed"
-											:title="track.isSoloed ? 'Quitar solo' : 'Solo de pista'"
+											data-bs-toggle="tooltip"
+											:data-bs-title="getTrackSoloTooltipLabel(track)"
 											@click="toggleTrackSolo(track.id)"
 										>
 											<span class="fw-semibold">S</span>
@@ -1404,10 +1469,12 @@ onBeforeUnmount(() => {
 										<button
 											type="button"
 											:data-testid="`track-mute-toggle-${track.id}`"
+											:ref="(element) => setTrackControlTooltipTarget(`mute-${track.id}`, element)"
 											:class="getTrackToggleButtonClass(track.isMuted, 'btn-warning')"
 											:style="getTrackToggleButtonStyle()"
 											:aria-pressed="track.isMuted"
-											:title="track.isMuted ? 'Activar audio' : 'Silenciar pista'"
+											data-bs-toggle="tooltip"
+											:data-bs-title="getTrackMuteTooltipLabel(track)"
 											@click="toggleTrackMute(track.id)"
 										>
 											<i

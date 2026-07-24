@@ -17,6 +17,8 @@ const {
 	localStorageState,
 	elementClientWidthState,
 	elementBoundingWidthState,
+	bootstrapTooltipCtor,
+	bootstrapTooltipDisposeMock,
 } = vi.hoisted(() => ({
 	routeState: {
 		params: {
@@ -49,6 +51,8 @@ const {
 	elementBoundingWidthState: {
 		value: 720,
 	},
+	bootstrapTooltipCtor: vi.fn<(element: unknown) => void>(),
+	bootstrapTooltipDisposeMock: vi.fn<() => void>(),
 }));
 
 vi.mock("vue-router", () => ({
@@ -81,6 +85,17 @@ vi.mock("../../../infrastructure/song/AxiosSongRepository.js", () => ({
 				instrumentId,
 				payload,
 			);
+		}
+	},
+}));
+
+vi.mock("bootstrap", () => ({
+	Tooltip: class {
+		static getOrCreateInstance(element: unknown) {
+			bootstrapTooltipCtor(element);
+			return {
+				dispose: bootstrapTooltipDisposeMock,
+			};
 		}
 	},
 }));
@@ -520,6 +535,8 @@ describe("SongTrackEditorView", () => {
 		repositoryGetInstrumentsBySongIdMock.mockReset();
 		repositoryGetInstrumentByIdMock.mockReset();
 		repositoryUpdateInstrumentVideoStartTimeMock.mockReset();
+		bootstrapTooltipCtor.mockReset();
+		bootstrapTooltipDisposeMock.mockReset();
 		localStorageState.clear();
 		elementClientWidthState.value = 720;
 		elementBoundingWidthState.value = 720;
@@ -2889,6 +2906,76 @@ describe("SongTrackEditorView", () => {
 		expect(previewMonitor.currentTime).toBeCloseTo(3, 2);
 
 		view.unmount();
+	});
+
+	it("uses Bootstrap tooltips for the solo and mute toggles while preserving accessible labels", async () => {
+		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
+			{
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentId: "catalog-1",
+				songId: "song-123",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+				upload: { status: "COMPLETED" },
+			},
+		]);
+		repositoryGetInstrumentByIdMock.mockResolvedValueOnce({
+			id: "instrument-1",
+			name: "Guitarra principal",
+			instrumentId: "catalog-1",
+			songId: "song-123",
+			musicianId: "musician-1",
+			createdAt: "2026-07-15T10:00:00.000Z",
+			startTimeMs: 0,
+			video: {
+				id: "video-1",
+				songInstrumentId: "instrument-1",
+				url: "https://cdn.example/guitar.mp4",
+				duration: 12,
+				size: 456,
+				createdAt: "2026-07-15T10:02:00.000Z",
+			},
+			upload: { status: "COMPLETED" },
+		});
+
+		const view = renderView();
+		await flushView();
+		await flushView();
+
+		const soloButton = findByTestId(
+			view.root,
+			"track-solo-toggle-instrument-1",
+		);
+		const muteButton = findByTestId(
+			view.root,
+			"track-mute-toggle-instrument-1",
+		);
+
+		expect(soloButton.props.title).toBeUndefined();
+		expect(soloButton.props["data-bs-toggle"]).toBe("tooltip");
+		expect(soloButton.props["data-bs-title"]).toBe("Solo de pista");
+		expect(textContent(soloButton)).toContain("Solo");
+		expect(muteButton.props.title).toBeUndefined();
+		expect(muteButton.props["data-bs-toggle"]).toBe("tooltip");
+		expect(muteButton.props["data-bs-title"]).toBe("Silenciar pista");
+		expect(textContent(muteButton)).toContain("Silenciar");
+		expect(bootstrapTooltipCtor).toHaveBeenCalledWith(soloButton);
+		expect(bootstrapTooltipCtor).toHaveBeenCalledWith(muteButton);
+
+		clickButton(soloButton);
+		await flushView();
+
+		expect(
+			findByTestId(view.root, "track-solo-toggle-instrument-1").props[
+				"data-bs-title"
+			],
+		).toBe("Quitar solo");
+		expect(bootstrapTooltipDisposeMock).toHaveBeenCalled();
+
+		view.unmount();
+
+		expect(bootstrapTooltipDisposeMock).toHaveBeenCalled();
 	});
 
 	it("shows rounded compact toggle buttons and limits the active visual state to the toggled controls only", async () => {
