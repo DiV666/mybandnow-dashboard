@@ -823,9 +823,9 @@ describe("SongTrackEditorView", () => {
 				height: "100%",
 				width: "3px",
 				background:
-					"linear-gradient(180deg, rgba(255,255,255,0.95) 0%, var(--bs-danger) 20%, var(--bs-danger) 100%)",
+					"linear-gradient(180deg, rgba(255,255,255,0.95) 0%, var(--bs-primary) 20%, var(--bs-primary) 100%)",
 				boxShadow:
-					"0 0 0 1px rgba(255,255,255,0.35), 0 0 10px rgba(var(--bs-danger-rgb), 0.25)",
+					"0 0 0 1px rgba(255,255,255,0.35), 0 0 10px rgba(var(--bs-primary-rgb), 0.25)",
 			}),
 		);
 
@@ -909,12 +909,12 @@ describe("SongTrackEditorView", () => {
 			String(
 				findByTestId(view.root, "track-meta-instrument-1").props.class || "",
 			),
-		).toContain("border-danger-subtle");
+		).toContain("border-primary-subtle");
 		expect(
 			String(
 				findByTestId(view.root, "track-meta-instrument-1").props.class || "",
 			),
-		).toContain("bg-danger-subtle");
+		).toContain("bg-primary-subtle");
 		expect(
 			String(
 				findByTestId(view.root, "track-meta-instrument-1").props.class || "",
@@ -924,12 +924,12 @@ describe("SongTrackEditorView", () => {
 			String(
 				findByTestId(view.root, "track-clip-instrument-1").props.class || "",
 			),
-		).toContain("bg-danger-subtle");
+		).toContain("bg-primary-subtle");
 		expect(
 			String(
 				findByTestId(view.root, "track-clip-instrument-1").props.class || "",
 			),
-		).toContain("text-danger-emphasis");
+		).toContain("text-primary-emphasis");
 
 		clickButton(findButtonByText(view.root, "Bajo"));
 		await flushView();
@@ -941,12 +941,12 @@ describe("SongTrackEditorView", () => {
 			String(
 				findByTestId(view.root, "track-meta-instrument-2").props.class || "",
 			),
-		).toContain("border-danger-subtle");
+		).toContain("border-primary-subtle");
 		expect(
 			String(
 				findByTestId(view.root, "track-meta-instrument-2").props.class || "",
 			),
-		).toContain("bg-danger-subtle");
+		).toContain("bg-primary-subtle");
 		expect(
 			String(
 				findByTestId(view.root, "track-meta-instrument-2").props.class || "",
@@ -956,12 +956,12 @@ describe("SongTrackEditorView", () => {
 			String(
 				findByTestId(view.root, "track-clip-instrument-2").props.class || "",
 			),
-		).toContain("bg-danger-subtle");
+		).toContain("bg-primary-subtle");
 		expect(
 			String(
 				findByTestId(view.root, "track-clip-instrument-2").props.class || "",
 			),
-		).toContain("text-danger-emphasis");
+		).toContain("text-primary-emphasis");
 
 		view.unmount();
 	});
@@ -1616,7 +1616,7 @@ describe("SongTrackEditorView", () => {
 				height: "100%",
 				width: "3px",
 				background:
-					"linear-gradient(180deg, rgba(255,255,255,0.95) 0%, var(--bs-danger) 20%, var(--bs-danger) 100%)",
+					"linear-gradient(180deg, rgba(255,255,255,0.95) 0%, var(--bs-primary) 20%, var(--bs-primary) 100%)",
 			}),
 		);
 		expect(
@@ -3080,7 +3080,7 @@ describe("SongTrackEditorView", () => {
 				findByTestId(view.root, "track-solo-toggle-instrument-1").props.class ||
 					"",
 			),
-		).toContain("btn-danger");
+		).toContain("btn-primary");
 		expect(
 			String(
 				findByTestId(view.root, "track-solo-toggle-instrument-2").props.class ||
@@ -3109,7 +3109,7 @@ describe("SongTrackEditorView", () => {
 				findByTestId(view.root, "track-solo-toggle-instrument-1").props.class ||
 					"",
 			),
-		).toContain("btn-danger");
+		).toContain("btn-primary");
 		expect(
 			String(
 				findByTestId(view.root, "track-solo-toggle-instrument-2").props.class ||

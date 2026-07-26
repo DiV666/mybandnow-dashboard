@@ -61,6 +61,14 @@ const filesWithoutLargeBootstrapClasses = [
 	"src/ui/views/dashboard/band/CreateFirstBandView.vue",
 ] as const;
 
+const filesWithoutHardcodedThemeColors = [
+	"src/ui/views/SessionClosedView.vue",
+	"src/ui/views/dashboard/MembersView.vue",
+	"src/ui/components/CompleteProfileModal.vue",
+	"src/ui/components/SessionExpiredModal.vue",
+	"src/ui/components/BackendUnavailableModal.vue",
+] as const;
+
 describe("global style contracts", () => {
 	it("restores the global button padding without shrinking form controls", () => {
 		expect(stylesheet).toContain(".btn {");
@@ -78,6 +86,14 @@ describe("global style contracts", () => {
 
 			expect(source).not.toMatch(/\bbtn-lg\b/);
 			expect(source).not.toMatch(/\bform-control-lg\b/);
+		}
+	});
+
+	it("keeps core components and views free from hardcoded light/dark theme color classes", () => {
+		for (const filePath of filesWithoutHardcodedThemeColors) {
+			const source = readFileSync(resolve(process.cwd(), filePath), "utf8");
+
+			expect(source).not.toMatch(/\b(bg-white|bg-light|text-dark|text-muted)\b/);
 		}
 	});
 

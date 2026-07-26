@@ -38,7 +38,7 @@ function retryConnection(): void {
           <p class="mb-3 text-center">
             No hemos podido conectar con el servidor. Revisa si el backend está levantado o inténtalo de nuevo en unos segundos.
           </p>
-          <p class="text-muted small mb-0 text-center">
+          <p class="text-body-secondary small mb-0 text-center">
             Tu sesión sigue activa. No cerraremos tu sesión por este problema de conexión.
           </p>
         </div>

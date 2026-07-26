@@ -494,7 +494,7 @@ describe("MembersView", () => {
 			),
 		).toBeNull();
 		expect(memberHeader?.props.class).toContain("member-card-header");
-		expect(memberHeader?.props.class).toContain("bg-white");
+		expect(memberHeader?.props.class).not.toContain("bg-white");
 		expect(memberHeader?.props.class).toContain("border-bottom");
 		expect(memberHeader?.props.class).not.toContain("bg-body-tertiary");
 		expect(memberAvatar?.props.class).toContain("member-avatar");

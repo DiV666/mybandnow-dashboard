@@ -1,7 +1,7 @@
 <template>
   <div class="container text-center py-5">
     <h1 class="display-4 fw-bold mb-4">Plataforma Colaborativa de Videoclips</h1>
-    <p class="lead text-muted mb-5">
+    <p class="lead text-body-secondary mb-5">
       Mybandnow te permite crear videoclips musicales a distancia. Mezcla pistas de diferentes músicos y genera un producto final profesional.
     </p>
     <router-link :to="{ name: 'Login' }" class="btn btn-primary px-5">Empezar ahora</router-link>

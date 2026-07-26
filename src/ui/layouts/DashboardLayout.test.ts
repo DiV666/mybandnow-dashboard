@@ -1146,7 +1146,7 @@ describe("DashboardLayout", () => {
 			"align-items-center",
 		);
 		expect(classNames(songsLink as TestElementNode)).toContain("gap-2");
-		expect(classNames(songsLink as TestElementNode)).toContain("rounded-pill");
+		expect(classNames(songsLink as TestElementNode)).toContain("rounded-0");
 		expect(classNames(songsLink as TestElementNode)).toContain("active");
 		expect(classNames(songsLink as TestElementNode)).toContain("fw-semibold");
 		expect(classNames(songsLink as TestElementNode)).toContain(

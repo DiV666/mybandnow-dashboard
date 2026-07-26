@@ -59,7 +59,7 @@ async function handleLogin() {
     <div class="container py-4 py-lg-5">
       <div class="row justify-content-center align-items-center h-100 py-3">
         <div class="col-md-7 col-lg-5 col-xl-4">
-          <div class="login-card card border-0 overflow-hidden">
+          <div class="login-card card overflow-hidden">
             <div class="login-accent"></div>
             <div class="card-body p-4 p-lg-5">
               <div class="text-center mb-4">
@@ -139,6 +139,13 @@ async function handleLogin() {
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.08em;
+}
+
+:deep([data-bs-theme="dark"]) .login-kicker,
+[data-bs-theme="dark"] .login-kicker {
+  background-color: rgba(255, 255, 255, 0.06);
+  color: var(--bs-body-color);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
 }
 
 .login-submit {

@@ -229,8 +229,8 @@ onUnmounted(() => {
         </div>
         
         <!-- Pie con la cuenta atrás -->
-        <div class="modal-footer bg-light justify-content-center p-2">
-          <small class="text-muted" style="font-size: 0.75rem;">
+        <div class="modal-footer bg-body-tertiary justify-content-center p-2">
+          <small class="text-body-secondary" style="font-size: 0.75rem;">
             Se cerrará sesión automáticamente en <strong class="text-danger">{{ countdown }}</strong> segundos.
           </small>
         </div>

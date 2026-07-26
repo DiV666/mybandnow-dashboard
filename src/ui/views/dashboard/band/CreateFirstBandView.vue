@@ -68,8 +68,8 @@ function handleShowCreateBandForm() {
     <div class="col-md-8 col-lg-6">
       <div class="card shadow-sm border-primary">
         <div class="card-body p-5 text-center">
-          <h2 class="mb-3 text-primary">¡Bienvenido a Mybandnow!</h2>
-          <p class="text-muted mb-4">
+          <h2 class="mb-3">¡Bienvenido a Mybandnow!</h2>
+          <p class="text-body-secondary mb-4">
             Parece que aún no formas parte de ninguna banda. <br>
             Puedes crear tu primer grupo musical ahora o continuar y hacerlo más tarde.
           </p>

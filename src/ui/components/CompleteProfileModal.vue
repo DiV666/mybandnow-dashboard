@@ -86,7 +86,7 @@ const handleSubmit = async () => {
             <div class="mb-4">
               <label class="form-label fw-bold">Nombre de usuario (único)</label>
               <div class="input-group">
-                <span class="input-group-text bg-light text-secondary">@</span>
+                <span class="input-group-text bg-body-tertiary text-body-secondary">@</span>
                 <input 
                   type="text" 
                   class="form-control" 
@@ -96,7 +96,7 @@ const handleSubmit = async () => {
                   :disabled="musicianStore.isLoading"
                 >
               </div>
-              <small class="text-muted d-block mt-1">Solo minúsculas, números y barras bajas.</small>
+              <small class="text-body-secondary d-block mt-1">Solo minúsculas, números y barras bajas.</small>
             </div>
             
             <div class="d-grid gap-2 mt-4">

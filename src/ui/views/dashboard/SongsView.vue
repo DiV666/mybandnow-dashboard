@@ -2487,7 +2487,7 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                             <button
                               ref="songActionTooltipTargets"
                               type="button"
-                              class="song-instrument-action btn btn-sm btn-outline-primary d-inline-flex align-items-center justify-content-center px-2 rounded-2"
+                              class="song-instrument-action btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center px-2 rounded-2"
                               data-bs-toggle="tooltip"
                               data-bs-title="Subir vídeo"
                               aria-label="Subir vídeo"
@@ -2498,7 +2498,7 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                             <button
                               ref="songActionTooltipTargets"
                               type="button"
-                              class="song-instrument-action btn btn-sm btn-outline-dark d-inline-flex align-items-center justify-content-center px-2 rounded-2"
+                              class="song-instrument-action btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center px-2 rounded-2"
                               data-bs-toggle="tooltip"
                               data-bs-title="Asignar músico"
                               aria-label="Asignar músico"
@@ -2923,7 +2923,7 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
       aria-modal="true"
       aria-labelledby="createSongModalTitle"
     >
-      <div class="modal-dialog">
+      <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
             <h2 id="createSongModalTitle" class="modal-title h5">Crear canción</h2>

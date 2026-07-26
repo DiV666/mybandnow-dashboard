@@ -6,6 +6,7 @@ import { AxiosBandRepository } from '../../infrastructure/band/AxiosBandReposito
 import { useAuthStore } from '../stores/useAuthStore.js';
 import { useBandStore } from '../stores/useBandStore.js';
 import { useMusicianStore } from '../stores/useMusicianStore.js';
+import bandLogoPlaceholder from '../../assets/band-logo-placeholder.png';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -179,7 +180,7 @@ onBeforeUnmount(() => {
               @click="toggleBandMenu"
             >
               <span class="dashboard-band-toggle__label text-truncate">{{ selectedBandName }}</span>
-              <span aria-hidden="true" class="dashboard-band-toggle__icon">▾</span>
+              <span aria-hidden="true" class="dashboard-dropdown-icon">▾</span>
             </button>
 
             <div
@@ -192,7 +193,7 @@ onBeforeUnmount(() => {
                 type="button"
                 class="dropdown-item dashboard-band-option"
                 data-band-option="true"
-                :class="{ 'dashboard-band-option--active': band.id.value === bandStore.selectedBandId }"
+                :class="{ active: band.id.value === bandStore.selectedBandId, 'dashboard-band-option--active': band.id.value === bandStore.selectedBandId }"
                 @click="selectBand(band.id.value)"
               >
                 <span class="text-truncate">{{ band.name.value }}</span>
@@ -253,15 +254,21 @@ onBeforeUnmount(() => {
               <strong>Bienvenido, </strong>{{ musicianStore.profile.name || musicianStore.profile.username }}
             </span>
             <span v-else>Mi cuenta</span>
-            <span aria-hidden="true">▾</span>
+            <span aria-hidden="true" class="dashboard-dropdown-icon">▾</span>
           </button>
 
           <div
             v-if="isUserMenuOpen"
             class="dropdown-menu dropdown-menu-end show dashboard-header-dropdown-menu dashboard-header-dropdown-panel dashboard-user-menu"
           >
-            <button type="button" class="dropdown-item" @click="goToProfile">Mi Perfil</button>
-            <button type="button" class="dropdown-item" @click="logout">Cerrar sesión</button>
+            <button type="button" class="dropdown-item d-flex align-items-center gap-2" @click="goToProfile">
+              <i class="bi bi-person" aria-hidden="true"></i>
+              <span>Mi Perfil</span>
+            </button>
+            <button type="button" class="dropdown-item d-flex align-items-center gap-2 text-danger-emphasis" @click="logout">
+              <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+              <span>Cerrar sesión</span>
+            </button>
           </div>
         </div>
       </div>
@@ -273,39 +280,59 @@ onBeforeUnmount(() => {
         id="sidebarMenu"
         class="col-md-3 col-lg-2 d-md-block dashboard-sidebar sidebar collapse"
       >
-        <div class="position-sticky pt-3">
-          <ul class="nav nav-pills flex-column gap-1 px-2 pb-3 dashboard-sidebar-nav">
-            <li class="nav-item">
-              <router-link
-                :to="{ name: 'SongsManager' }"
-                class="nav-link d-flex align-items-center gap-2 rounded-pill px-3 py-2 dashboard-sidebar-link"
-                active-class="active fw-semibold dashboard-sidebar-link--active"
-              >
-                <i class="bi bi-music-note-list dashboard-sidebar-link__icon" aria-hidden="true"></i>
-                <span>Canciones</span>
-              </router-link>
-            </li>
-            <li class="nav-item">
-              <router-link
-                :to="{ name: 'MembersManager' }"
-                class="nav-link d-flex align-items-center gap-2 rounded-pill px-3 py-2 dashboard-sidebar-link"
-                active-class="active fw-semibold dashboard-sidebar-link--active"
-              >
-                <i class="bi bi-people dashboard-sidebar-link__icon" aria-hidden="true"></i>
-                <span>Miembros</span>
-              </router-link>
-            </li>
-            <li class="nav-item">
-              <router-link
-                :to="{ name: 'VideoclipsManager' }"
-                class="nav-link d-flex align-items-center gap-2 rounded-pill px-3 py-2 dashboard-sidebar-link"
-                active-class="active fw-semibold dashboard-sidebar-link--active"
-              >
-                <i class="bi bi-camera-video dashboard-sidebar-link__icon" aria-hidden="true"></i>
-                <span>Videoclips</span>
-              </router-link>
-            </li>
-          </ul>
+        <div class="position-sticky pt-3 pb-3">
+          <div class="card dashboard-sidebar-card overflow-hidden">
+            <div class="card-body p-3 text-center">
+              <div class="dashboard-band-logo-wrapper mb-3 mx-auto">
+                <img
+                  :src="bandLogoPlaceholder"
+                  alt="Logo de la banda"
+                  class="dashboard-band-logo img-fluid rounded-3"
+                >
+              </div>
+
+              <h6 class="dashboard-sidebar-band-name text-truncate mb-0" :title="selectedBandName">
+                {{ selectedBandName }}
+              </h6>
+            </div>
+
+            <hr class="my-0 dashboard-sidebar-divider">
+
+            <div class="card-body p-2">
+              <ul class="nav nav-pills flex-column gap-1 dashboard-sidebar-nav">
+                <li class="nav-item">
+                  <router-link
+                    :to="{ name: 'SongsManager' }"
+                    class="nav-link d-flex align-items-center gap-2 rounded-0 px-3 py-2 dashboard-sidebar-link"
+                    active-class="active fw-semibold dashboard-sidebar-link--active"
+                  >
+                    <i class="bi bi-music-note-list dashboard-sidebar-link__icon" aria-hidden="true"></i>
+                    <span>Canciones</span>
+                  </router-link>
+                </li>
+                <li class="nav-item">
+                  <router-link
+                    :to="{ name: 'MembersManager' }"
+                    class="nav-link d-flex align-items-center gap-2 rounded-0 px-3 py-2 dashboard-sidebar-link"
+                    active-class="active fw-semibold dashboard-sidebar-link--active"
+                  >
+                    <i class="bi bi-people dashboard-sidebar-link__icon" aria-hidden="true"></i>
+                    <span>Miembros</span>
+                  </router-link>
+                </li>
+                <li class="nav-item">
+                  <router-link
+                    :to="{ name: 'VideoclipsManager' }"
+                    class="nav-link d-flex align-items-center gap-2 rounded-0 px-3 py-2 dashboard-sidebar-link"
+                    active-class="active fw-semibold dashboard-sidebar-link--active"
+                  >
+                    <i class="bi bi-camera-video dashboard-sidebar-link__icon" aria-hidden="true"></i>
+                    <span>Videoclips</span>
+                  </router-link>
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
       </nav>
 
@@ -334,8 +361,8 @@ onBeforeUnmount(() => {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr) max-content;
   align-items: center;
-  background: color-mix(in srgb, var(--bs-body-bg) 74%, var(--rock-surface-container));
-  border-bottom: 1px solid rgba(var(--bs-primary-rgb), 0.08);
+  background: var(--rock-surface-container);
+  border-bottom: 1px solid var(--rock-surface-border);
   backdrop-filter: blur(16px);
 }
 
@@ -401,6 +428,14 @@ onBeforeUnmount(() => {
   transform: none;
 }
 
+[data-bs-theme="dark"] .dashboard-header-dropdown-toggle:hover,
+[data-bs-theme="dark"] .dashboard-header-dropdown-toggle:focus,
+[data-bs-theme="dark"] .dashboard-header-dropdown-toggle:focus-visible,
+[data-bs-theme="dark"] .dashboard-header-dropdown-toggle:active {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
 .dashboard-band-dropdown .dashboard-header-dropdown-toggle {
   width: 100%;
   padding: 0.5rem 0.875rem;
@@ -410,15 +445,18 @@ onBeforeUnmount(() => {
   min-width: 0;
 }
 
+.dashboard-dropdown-icon,
 .dashboard-band-toggle__icon {
   font-size: 0.75rem;
+  line-height: 1;
+  opacity: 0.8;
 }
 
 .dashboard-header-dropdown-menu {
-  border-color: rgba(var(--bs-primary-rgb), 0.12);
-  border-radius: 1rem;
-  background-color: var(--bs-body-bg);
-  box-shadow: 0 0.75rem 1.5rem rgba(15, 23, 42, 0.1);
+  border-color: var(--bs-dropdown-border-color);
+  border-radius: var(--bs-border-radius-lg);
+  background-color: var(--bs-dropdown-bg);
+  box-shadow: 0 0.75rem 1.5rem rgba(0, 0, 0, 0.2);
   overflow: hidden;
 }
 
@@ -446,12 +484,16 @@ onBeforeUnmount(() => {
 
 .dashboard-band-option:hover,
 .dashboard-band-option:focus {
-  background: rgba(var(--bs-primary-rgb), 0.08);
+  background: var(--bs-dropdown-link-hover-bg);
+  color: var(--bs-dropdown-link-hover-color);
 }
 
-.dashboard-band-option--active {
-  background: rgba(var(--bs-primary-rgb), 0.12);
-  color: var(--bs-emphasis-color);
+.dashboard-band-option--active,
+.dropdown-item.active,
+.dropdown-item:active {
+  background-color: var(--bs-dropdown-link-active-bg) !important;
+  color: var(--bs-dropdown-link-active-color) !important;
+  font-weight: 600;
 }
 
 .sidebar {
@@ -459,15 +501,51 @@ onBeforeUnmount(() => {
 }
 
 .dashboard-sidebar {
-  border-right: 1px solid rgba(var(--bs-primary-rgb), 0.08);
+  border-right: 1px solid var(--rock-surface-border);
+}
+
+.dashboard-sidebar-card {
+  border: 1px solid var(--rock-surface-border);
+  background: var(--rock-surface-container);
+  box-shadow: var(--rock-surface-shadow);
+}
+
+.dashboard-band-logo-wrapper {
+  width: min(80%, 9.5rem);
+  aspect-ratio: 1 / 1;
+  padding: 0.35rem;
+  border-radius: var(--bs-border-radius-lg);
+  border: 1px solid var(--rock-surface-border);
+  background: color-mix(in srgb, var(--bs-body-bg) 60%, transparent);
+}
+
+.dashboard-band-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--bs-border-radius);
+}
+
+.dashboard-sidebar-band-name {
+  font-family: var(--rock-heading-font-family);
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  color: var(--bs-heading-color);
+  text-transform: uppercase;
+}
+
+.dashboard-sidebar-divider {
+  border-color: var(--rock-surface-border);
+  opacity: 0.8;
 }
 
 .dashboard-sidebar-nav {
   --bs-nav-pills-link-active-bg: rgba(var(--bs-primary-rgb), 0.12);
-  --bs-nav-pills-link-active-color: var(--bs-emphasis-color);
+  --bs-nav-pills-link-active-color: var(--bs-heading-color);
 }
 
 .dashboard-sidebar-link {
+  border-radius: 0.5rem;
   color: var(--bs-body-color);
   transition:
     background-color 0.2s ease,
@@ -477,15 +555,31 @@ onBeforeUnmount(() => {
 }
 
 .dashboard-sidebar-link--active {
-  color: var(--bs-emphasis-color);
+  color: var(--bs-heading-color);
   box-shadow: inset 0 0 0 1px rgba(var(--bs-primary-rgb), 0.08);
 }
 
 .dashboard-sidebar-link:hover,
 .dashboard-sidebar-link:focus-visible {
   background-color: rgba(var(--bs-primary-rgb), 0.06);
-  color: var(--bs-emphasis-color);
+  color: var(--bs-heading-color);
   transform: translateX(2px);
+}
+
+[data-bs-theme="dark"] .dashboard-sidebar-nav {
+  --bs-nav-pills-link-active-bg: rgba(255, 219, 60, 0.14);
+  --bs-nav-pills-link-active-color: #ffdb3c;
+}
+
+[data-bs-theme="dark"] .dashboard-sidebar-link--active {
+  color: #ffdb3c;
+  box-shadow: inset 0 0 0 1px rgba(255, 219, 60, 0.3);
+}
+
+[data-bs-theme="dark"] .dashboard-sidebar-link:hover,
+[data-bs-theme="dark"] .dashboard-sidebar-link:focus-visible {
+  background-color: rgba(255, 219, 60, 0.08);
+  color: #ffdb3c;
 }
 
 .dashboard-sidebar-link__icon {
@@ -528,12 +622,14 @@ onBeforeUnmount(() => {
 
 .dashboard-user-menu .dropdown-item:hover,
 .dashboard-user-menu .dropdown-item:focus {
-  background-color: rgba(var(--bs-primary-rgb), 0.08);
+  background-color: var(--bs-dropdown-link-hover-bg);
+  color: var(--bs-dropdown-link-hover-color);
 }
 
-.dashboard-user-menu .dropdown-item:active {
-  background-color: rgba(var(--bs-primary-rgb), 0.12);
-  color: var(--bs-body-color);
+.dashboard-user-menu .dropdown-item:active,
+.dashboard-user-menu .dropdown-item.active {
+  background-color: var(--bs-dropdown-link-active-bg) !important;
+  color: var(--bs-dropdown-link-active-color) !important;
 }
 
 @media (max-width: 767.98px) {

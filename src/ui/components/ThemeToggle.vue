@@ -40,11 +40,15 @@ function onToggle(): void {
 	right: 1rem;
 	bottom: 1rem;
 	z-index: var(--rock-z-floating-control);
-	width: 2.5rem;
-	height: 2.5rem;
+	width: 2.75rem;
+	height: 2.75rem;
+	min-height: 2.75rem;
 	padding: 0;
 	border-width: 1px;
-	border-radius: 999px;
+	border-radius: 50%;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
 	background-color: color-mix(in srgb, var(--bs-body-bg) 88%, transparent);
 	backdrop-filter: blur(8px);
 	box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);

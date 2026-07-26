@@ -68,7 +68,7 @@ function mapRole(role: BandMemberRole): Pick<MemberCardViewModel, "role" | "role
 	if (role === bandMemberRoles.ADMIN) {
 		return {
 			role: "Admin",
-			roleClass: "text-bg-warning text-dark",
+			roleClass: "text-bg-warning",
 		};
 	}
 
@@ -212,7 +212,7 @@ async function handleAddMember(): Promise<void> {
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom gap-3">
       <div>
         <h1 class="h2 mb-1">Miembros de la banda</h1>
-        <p class="text-muted mb-0">
+        <p class="text-body-secondary mb-0">
           Gestiona a las personas que forman parte del proyecto.
         </p>
       </div>
@@ -233,26 +233,26 @@ async function handleAddMember(): Promise<void> {
         <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
           <div>
             <h2 class="h5 mb-1">Equipo actual</h2>
-            <p class="text-muted mb-0 small">
+            <p class="text-body-secondary mb-0 small">
               {{ members.length }} integrante<span v-if="members.length !== 1">s</span> cargado<span v-if="members.length !== 1">s</span>.
             </p>
           </div>
-          <span class="badge text-bg-light border members-count-badge">{{ members.length }} miembros</span>
+          <span class="badge bg-body-secondary text-body border members-count-badge">{{ members.length }} miembros</span>
         </div>
 
-        <p v-if="!selectedBandId" class="text-muted mb-0">
+        <p v-if="!selectedBandId" class="text-body-secondary mb-0">
           Selecciona una banda para ver sus miembros.
         </p>
 
-        <p v-else-if="isLoadingMembers" class="text-muted mb-0" data-testid="members-loading-state">
+        <p v-else-if="isLoadingMembers" class="text-body-secondary mb-0" data-testid="members-loading-state">
           Cargando miembros...
         </p>
 
-        <p v-else-if="membersErrorMsg" class="text-muted mb-0">
+        <p v-else-if="membersErrorMsg" class="text-body-secondary mb-0">
           No pudimos cargar los miembros por ahora.
         </p>
 
-        <div v-else-if="members.length === 0" class="border rounded-4 bg-white p-4 p-md-5 text-center members-empty-state" data-testid="members-empty-state">
+        <div v-else-if="members.length === 0" class="border rounded-4 surface-container p-4 p-md-5 text-center members-empty-state" data-testid="members-empty-state">
           <div
             class="mx-auto mb-3 d-inline-flex align-items-center justify-content-center rounded-circle bg-body-secondary text-secondary shadow-sm"
             style="width: 72px; height: 72px;"
@@ -261,7 +261,7 @@ async function handleAddMember(): Promise<void> {
             🎸
           </div>
           <h3 class="h6 mb-2">Todavía no hay miembros cargados.</h3>
-          <p class="text-muted mb-3">
+          <p class="text-body-secondary mb-3">
             Agrega tu primer integrante para empezar a gestionar roles, ensayos y colaboraciones.
           </p>
           <button
@@ -275,10 +275,10 @@ async function handleAddMember(): Promise<void> {
 
         <div v-else class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3" data-testid="members-grid">
           <div v-for="member in members" :key="member.id" class="col">
-            <article class="card h-100 border-0 shadow-sm overflow-hidden bg-white member-card">
-              <div class="member-card-header bg-white border-bottom px-4 py-3 d-flex justify-content-between align-items-center gap-2 flex-wrap">
+            <article class="card h-100 border-0 shadow-sm overflow-hidden member-card">
+              <div class="member-card-header border-bottom px-4 py-3 d-flex justify-content-between align-items-center gap-2 flex-wrap">
                 <div>
-                  <p class="text-uppercase text-muted fw-semibold small mb-1">Perfil de músico</p>
+                  <p class="text-uppercase text-body-secondary fw-semibold small mb-1">Perfil de músico</p>
                   <h3 class="h6 mb-0">{{ member.name }}</h3>
                 </div>
                 <span class="badge rounded-pill member-role-badge" :class="member.roleClass">{{ member.role }}</span>
@@ -288,14 +288,14 @@ async function handleAddMember(): Promise<void> {
                 <div class="d-flex gap-3 align-items-center">
                   <div
                     class="rounded-circle bg-body-secondary text-secondary fw-semibold d-inline-flex align-items-center justify-content-center flex-shrink-0 border member-avatar"
-:aria-label="`Avatar placeholder de ${member.name}`"
+                    :aria-label="`Avatar placeholder de ${member.name}`"
                   >
                     {{ member.avatarInitials }}
                   </div>
 
                   <div class="min-w-0">
                     <p class="mb-1 fw-semibold text-truncate">{{ member.username }}</p>
-                    <p class="text-muted small mb-0">Integrante activo de la banda</p>
+                    <p class="text-body-secondary small mb-0">Integrante activo de la banda</p>
                   </div>
                 </div>
 
@@ -316,7 +316,7 @@ async function handleAddMember(): Promise<void> {
 
           <form data-testid="add-member-form" @submit.prevent="handleAddMember">
             <div class="modal-body">
-              <p class="text-muted small">
+              <p class="text-body-secondary small">
                 Ingresa el email del músico para sumarlo a la banda como miembro.
               </p>
 
@@ -392,7 +392,7 @@ async function handleAddMember(): Promise<void> {
 }
 
 .member-card-header {
-  background-color: var(--bs-white);
+  background-color: transparent;
 }
 
 .member-card-body {

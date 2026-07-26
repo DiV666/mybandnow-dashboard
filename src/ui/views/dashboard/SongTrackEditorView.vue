@@ -231,9 +231,9 @@ function getPlayheadLineStyle(): Record<string, string> {
 		width: "3px",
 		borderRadius: "999px",
 		background:
-			"linear-gradient(180deg, rgba(255,255,255,0.95) 0%, var(--bs-danger) 20%, var(--bs-danger) 100%)",
+			"linear-gradient(180deg, rgba(255,255,255,0.95) 0%, var(--bs-primary) 20%, var(--bs-primary) 100%)",
 		boxShadow:
-			"0 0 0 1px rgba(255,255,255,0.35), 0 0 10px rgba(var(--bs-danger-rgb), 0.25)",
+			"0 0 0 1px rgba(255,255,255,0.35), 0 0 10px rgba(var(--bs-primary-rgb), 0.25)",
 		opacity: "0.95",
 	};
 }
@@ -902,6 +902,8 @@ function startTrackDrag(trackId: string, event: TrackDragEventLike): void {
 		return;
 	}
 
+	selectTrack(trackId);
+
 	event.preventDefault?.();
 	dragState.value = {
 		trackId,
@@ -1022,7 +1024,7 @@ function getTrackMetaCardClass(track: EditorTrack): string[] {
 		"shadow-sm",
 		"position-relative",
 		selectedTrackId.value === track.id
-			? "border-danger-subtle bg-danger-subtle bg-opacity-10"
+			? "border-primary-subtle bg-primary-subtle bg-opacity-10"
 			: "border-secondary-subtle",
 	];
 }
@@ -1039,8 +1041,8 @@ function getTrackClipClass(track: EditorTrack): string[] {
 		"fw-semibold",
 		"shadow-sm",
 		selectedTrackId.value === track.id
-			? "bg-danger-subtle border-danger-subtle text-danger-emphasis"
-			: "bg-primary bg-opacity-75 border-primary-subtle text-white",
+			? "bg-primary-subtle border-primary-subtle text-primary-emphasis"
+			: "bg-body-tertiary border-secondary-subtle text-body",
 	];
 }
 
@@ -1456,7 +1458,7 @@ onBeforeUnmount(() => {
 											type="button"
 											:data-testid="`track-solo-toggle-${track.id}`"
 											:ref="(element) => setTrackControlTooltipTarget(`solo-${track.id}`, element)"
-											:class="getTrackToggleButtonClass(track.isSoloed, 'btn-danger')"
+											:class="getTrackToggleButtonClass(track.isSoloed, 'btn-primary')"
 											:style="getTrackToggleButtonStyle()"
 											:aria-pressed="track.isSoloed"
 											data-bs-toggle="tooltip"
@@ -1538,7 +1540,8 @@ onBeforeUnmount(() => {
 							<section
 								:data-testid="`track-lane-${track.id}`"
 								class="border position-relative bg-dark-subtle shadow-sm overflow-hidden d-flex align-items-stretch"
-								:style="{ padding: '0', width: '100%', minHeight: '4rem' }"
+								:style="{ padding: '0', width: '100%', minHeight: '4rem', cursor: 'pointer' }"
+								@click="selectTrack(track.id)"
 							>
 								<div :data-testid="`track-lane-scroll-wrapper-${track.id}`" class="overflow-x-auto overflow-y-hidden w-100 h-100 d-flex align-items-stretch">
 									<div
@@ -1567,13 +1570,14 @@ onBeforeUnmount(() => {
 												width: `${getTrackWidthPx(track)}px`,
 												height: '3.75rem',
 												transform: 'translateY(-50%)',
-											justifyContent: 'flex-start',
+												justifyContent: 'flex-start',
 												minWidth: '0.75rem',
 												boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.25)',
 												cursor: 'grab',
 												touchAction: 'none',
 												userSelect: 'none',
 											}"
+											@click.stop="selectTrack(track.id)"
 											@pointerdown="startTrackDrag(track.id, $event)"
 											@pointermove="moveTrackDrag(track.id, $event)"
 											@pointerup="endTrackDrag(track.id, $event)"
