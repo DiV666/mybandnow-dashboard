@@ -1,0 +1,32 @@
+{
+  "auth": {
+    "login": {
+      "kicker": "Backstage Access",
+      "title": "Iniciar Sessió",
+      "description": "Entra al teu espai i continua construint videoclips amb la teva banda.",
+      "email": "Correu electrònic",
+      "emailPlaceholder": "user@example.com",
+      "password": "Contrasenya",
+      "passwordHelp": "Accés segur",
+      "passwordPlaceholder": "••••••••",
+      "submitLoading": "Entrant...",
+      "submit": "Entrar al backstage",
+      "errors": {
+        "emptyFields": "Si us plau, omple tots els camps",
+        "invalidCredentials": "Credencials invàlides",
+        "unexpected": "S'ha produït un error inesperat en iniciar sessió"
+      }
+    }
+  },
+  "dashboard": {
+    "home": {
+      "title": "Benvingut al Tauler d'Administració",
+      "stats": {
+        "bands": "Grups",
+        "musicians": "Músics",
+        "songs": "Cançons",
+        "videoclips": "Videoclips"
+      }
+    }
+  }
+}

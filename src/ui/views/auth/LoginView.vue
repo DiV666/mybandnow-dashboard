@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '../../stores/useAuthStore.js';
 import { useToastStore } from '../../stores/useToastStore.js';
 import { LoginUseCase } from '../../../application/auth/LoginUseCase.js';
@@ -21,6 +22,7 @@ const isLoading = ref(false);
 const router = useRouter();
 const authStore = useAuthStore();
 const toastStore = useToastStore();
+const { t } = useI18n();
 
 // Manual Dependency Injection for now
 const authRepository = new AxiosAuthRepository();
@@ -32,7 +34,7 @@ function isHttpErrorLike(error: unknown): error is HttpErrorLike {
 
 async function handleLogin() {
   if (!email.value || !password.value) {
-    toastStore.error('Por favor, rellena todos los campos');
+    toastStore.error(t('auth.login.errors.emptyFields'));
     return;
   }
   
@@ -44,9 +46,9 @@ async function handleLogin() {
     router.push('/dashboard');
   } catch (error: unknown) {
     if (isHttpErrorLike(error) && error.response?.status === 401) {
-      toastStore.error('Credenciales inválidas');
+      toastStore.error(t('auth.login.errors.invalidCredentials'));
     } else {
-      toastStore.error('Ocurrió un error inesperado al iniciar sesión');
+      toastStore.error(t('auth.login.errors.unexpected'));
     }
   } finally {
     isLoading.value = false;
@@ -55,7 +57,7 @@ async function handleLogin() {
 </script>
 
 <template>
-  <section class="login-shell">
+  <section class="login-shell" :aria-label="$t('auth.login.title')">
     <div class="container py-4 py-lg-5">
       <div class="row justify-content-center align-items-center h-100 py-3">
         <div class="col-md-7 col-lg-5 col-xl-4">
@@ -63,22 +65,22 @@ async function handleLogin() {
             <div class="login-accent"></div>
             <div class="card-body p-4 p-lg-5">
               <div class="text-center mb-4">
-                <span class="login-kicker text-uppercase">Backstage Access</span>
-                <h2 class="mb-2 mt-3">Iniciar Sesión</h2>
+                <span class="login-kicker text-uppercase">{{ $t('auth.login.kicker') }}</span>
+                <h2 class="mb-2 mt-3">{{ $t('auth.login.title') }}</h2>
                 <p class="text-body-secondary mb-0">
-                  Entrá a tu espacio y seguí construyendo videoclips con tu banda.
+                  {{ $t('auth.login.description') }}
                 </p>
               </div>
 
               <form @submit.prevent="handleLogin">
                 <div class="mb-3">
-                  <label for="email" class="form-label fw-semibold">Correo electrónico</label>
+                  <label for="email" class="form-label fw-semibold">{{ $t('auth.login.email') }}</label>
                   <input
                     type="email"
                     class="form-control login-input"
                     id="email"
                     v-model="email"
-                    placeholder="user@example.com"
+                    :placeholder="$t('auth.login.emailPlaceholder')"
                     required
                     autocomplete="email"
                   >
@@ -86,15 +88,15 @@ async function handleLogin() {
 
                 <div class="mb-4">
                   <div class="d-flex justify-content-between align-items-center mb-2">
-                    <label for="password" class="form-label fw-semibold mb-0">Contraseña</label>
-                    <small class="text-body-secondary">Acceso seguro</small>
+                    <label for="password" class="form-label fw-semibold mb-0">{{ $t('auth.login.password') }}</label>
+                    <small class="text-body-secondary">{{ $t('auth.login.passwordHelp') }}</small>
                   </div>
                   <input
                     type="password"
                     class="form-control login-input"
                     id="password"
                     v-model="password"
-                    placeholder="••••••••"
+                    :placeholder="$t('auth.login.passwordPlaceholder')"
                     required
                     autocomplete="current-password"
                   >
@@ -104,9 +106,10 @@ async function handleLogin() {
                   type="submit"
                   class="btn btn-primary w-100 login-submit"
                   :disabled="isLoading"
+                  aria-live="polite"
                 >
                   <span v-if="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                  {{ isLoading ? 'Entrando...' : 'Entrar al backstage' }}
+                  {{ isLoading ? $t('auth.login.submitLoading') : $t('auth.login.submit') }}
                 </button>
               </form>
             </div>
@@ -127,7 +130,7 @@ async function handleLogin() {
 
 .login-accent {
   height: 0.45rem;
-  background: linear-gradient(90deg, var(--bs-primary), var(--bs-warning, var(--bs-primary)));
+  background: linear-gradient(90deg, var(--bs-primary), var(--rock-accent-tertiary));
 }
 
 .login-kicker {

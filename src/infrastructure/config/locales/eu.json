@@ -1,0 +1,32 @@
+{
+  "auth": {
+    "login": {
+      "kicker": "Backstage Access",
+      "title": "Hasi Saioa",
+      "description": "Sartu zure espaziora eta jarraitu bideoklipak sortzen zure taldearekin.",
+      "email": "Posta elektronikoa",
+      "emailPlaceholder": "user@example.com",
+      "password": "Pasahitza",
+      "passwordHelp": "Sarbide segurua",
+      "passwordPlaceholder": "••••••••",
+      "submitLoading": "Sartzen...",
+      "submit": "Sartu backstagera",
+      "errors": {
+        "emptyFields": "Mesedez, bete eremu guztiak",
+        "invalidCredentials": "Kredentzial baliogabeak",
+        "unexpected": "Ustekabeko errorea gertatu da saioa hastean"
+      }
+    }
+  },
+  "dashboard": {
+    "home": {
+      "title": "Ongi etorri Administrazio Panelera",
+      "stats": {
+        "bands": "Taldeak",
+        "musicians": "Musikariak",
+        "songs": "Abestiak",
+        "videoclips": "Bideoklipak"
+      }
+    }
+  }
+}

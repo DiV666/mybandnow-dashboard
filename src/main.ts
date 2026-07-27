@@ -22,7 +22,10 @@ const initialTheme = resolveInitialTheme({
 
 applyTheme(initialTheme);
 
+import { i18n } from "./infrastructure/config/i18n.js";
+
 const app = createApp(App);
+app.use(i18n);
 
 const pinia = createPinia();
 app.use(pinia);

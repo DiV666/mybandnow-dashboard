@@ -1,0 +1,32 @@
+{
+  "auth": {
+    "login": {
+      "kicker": "Backstage Access",
+      "title": "Log In",
+      "description": "Enter your space and keep building videoclips with your band.",
+      "email": "Email address",
+      "emailPlaceholder": "user@example.com",
+      "password": "Password",
+      "passwordHelp": "Secure access",
+      "passwordPlaceholder": "••••••••",
+      "submitLoading": "Entering...",
+      "submit": "Enter backstage",
+      "errors": {
+        "emptyFields": "Please fill out all fields",
+        "invalidCredentials": "Invalid credentials",
+        "unexpected": "An unexpected error occurred while logging in"
+      }
+    }
+  },
+  "dashboard": {
+    "home": {
+      "title": "Welcome to the Admin Dashboard",
+      "stats": {
+        "bands": "Bands",
+        "musicians": "Musicians",
+        "songs": "Songs",
+        "videoclips": "Videoclips"
+      }
+    }
+  }
+}

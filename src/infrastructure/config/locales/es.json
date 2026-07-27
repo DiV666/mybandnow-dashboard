@@ -1,0 +1,32 @@
+{
+  "auth": {
+    "login": {
+      "kicker": "Backstage Access",
+      "title": "Iniciar Sesión",
+      "description": "Entrá a tu espacio y seguí construyendo videoclips con tu banda.",
+      "email": "Correo electrónico",
+      "emailPlaceholder": "user@example.com",
+      "password": "Contraseña",
+      "passwordHelp": "Acceso seguro",
+      "passwordPlaceholder": "••••••••",
+      "submitLoading": "Entrando...",
+      "submit": "Entrar al backstage",
+      "errors": {
+        "emptyFields": "Por favor, rellena todos los campos",
+        "invalidCredentials": "Credenciales inválidas",
+        "unexpected": "Ocurrió un error inesperado al iniciar sesión"
+      }
+    }
+  },
+  "dashboard": {
+    "home": {
+      "title": "Bienvenido al Panel de Administración",
+      "stats": {
+        "bands": "Grupos",
+        "musicians": "Músicos",
+        "songs": "Canciones",
+        "videoclips": "Videoclips"
+      }
+    }
+  }
+}
