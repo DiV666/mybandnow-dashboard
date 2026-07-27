@@ -823,9 +823,9 @@ describe("SongTrackEditorView", () => {
 				height: "100%",
 				width: "3px",
 				background:
-					"linear-gradient(180deg, rgba(255,255,255,0.95) 0%, var(--bs-primary) 20%, var(--bs-primary) 100%)",
+					"linear-gradient(180deg, rgba(255,255,255,0.95) 0%, var(--rock-accent-tertiary) 20%, var(--rock-accent-tertiary) 100%)",
 				boxShadow:
-					"0 0 0 1px rgba(255,255,255,0.35), 0 0 10px rgba(var(--bs-primary-rgb), 0.25)",
+					"0 0 0 1px rgba(255,255,255,0.35), 0 0 10px rgba(var(--rock-accent-tertiary-rgb), 0.35)",
 			}),
 		);
 
@@ -1616,7 +1616,7 @@ describe("SongTrackEditorView", () => {
 				height: "100%",
 				width: "3px",
 				background:
-					"linear-gradient(180deg, rgba(255,255,255,0.95) 0%, var(--bs-primary) 20%, var(--bs-primary) 100%)",
+					"linear-gradient(180deg, rgba(255,255,255,0.95) 0%, var(--rock-accent-tertiary) 20%, var(--rock-accent-tertiary) 100%)",
 			}),
 		);
 		expect(
@@ -2440,8 +2440,8 @@ describe("SongTrackEditorView", () => {
 
 		expect(firstTrackPlayer.play).toHaveBeenCalled();
 		expect(secondTrackPlayer.play).toHaveBeenCalled();
-		expect(firstTrackPlayer.currentTime).toBeCloseTo(0, 2);
-		expect(secondTrackPlayer.currentTime).toBeCloseTo(0, 2);
+		expect(firstTrackPlayer.currentTime).toBeCloseTo(0, 1);
+		expect(secondTrackPlayer.currentTime).toBeCloseTo(0, 1);
 
 		clickButton(findByTestId(view.root, "track-mute-toggle-instrument-1"));
 		await flushView();

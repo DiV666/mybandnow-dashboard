@@ -134,18 +134,12 @@ async function handleLogin() {
   display: inline-block;
   padding: 0.35rem 0.75rem;
   border-radius: var(--bs-border-radius-pill);
-  background-color: rgba(var(--bs-primary-rgb), 0.12);
-  color: var(--bs-primary);
+  background-color: rgba(var(--rock-accent-tertiary-rgb), 0.12);
+  color: var(--rock-accent-tertiary);
+  box-shadow: inset 0 0 0 1px rgba(var(--rock-accent-tertiary-rgb), 0.28);
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.08em;
-}
-
-:deep([data-bs-theme="dark"]) .login-kicker,
-[data-bs-theme="dark"] .login-kicker {
-  background-color: rgba(255, 255, 255, 0.06);
-  color: var(--bs-body-color);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
 }
 
 .login-submit {

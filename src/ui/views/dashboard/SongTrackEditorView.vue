@@ -231,9 +231,9 @@ function getPlayheadLineStyle(): Record<string, string> {
 		width: "3px",
 		borderRadius: "999px",
 		background:
-			"linear-gradient(180deg, rgba(255,255,255,0.95) 0%, var(--bs-primary) 20%, var(--bs-primary) 100%)",
+			"linear-gradient(180deg, rgba(255,255,255,0.95) 0%, var(--rock-accent-tertiary) 20%, var(--rock-accent-tertiary) 100%)",
 		boxShadow:
-			"0 0 0 1px rgba(255,255,255,0.35), 0 0 10px rgba(var(--bs-primary-rgb), 0.25)",
+			"0 0 0 1px rgba(255,255,255,0.35), 0 0 10px rgba(var(--rock-accent-tertiary-rgb), 0.35)",
 		opacity: "0.95",
 	};
 }
@@ -1258,15 +1258,15 @@ onBeforeUnmount(() => {
 					data-testid="editor-summary"
 					class="d-flex flex-wrap align-items-center gap-2 mb-3"
 				>
-					<span class="badge rounded-pill text-bg-light border text-body-secondary px-3 py-2">
+					<span class="badge rounded-pill editor-summary-pill px-3 py-2">
 						{{ trackCountLabel }}
 					</span>
-					<span class="badge rounded-pill text-bg-light border text-body-secondary px-3 py-2">
+					<span class="badge rounded-pill editor-summary-pill px-3 py-2">
 						{{ `Zoom ${timelineZoomPercent}%` }}
 					</span>
 					<span
 						v-if="originalVideoClipDurationLabel"
-						class="badge rounded-pill text-bg-light border text-body-secondary px-3 py-2"
+						class="badge rounded-pill editor-summary-pill px-3 py-2"
 					>
 						{{ originalVideoClipDurationLabel }}
 					</span>
@@ -1595,3 +1595,11 @@ onBeforeUnmount(() => {
 		</div>
 	</section>
 </template>
+
+<style scoped>
+.editor-summary-pill {
+	background-color: rgba(var(--bs-secondary-rgb), 0.1);
+	border: 1px solid rgba(var(--bs-secondary-rgb), 0.25);
+	color: var(--bs-body-color);
+}
+</style>

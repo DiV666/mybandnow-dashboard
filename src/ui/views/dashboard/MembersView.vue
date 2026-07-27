@@ -74,7 +74,7 @@ function mapRole(role: BandMemberRole): Pick<MemberCardViewModel, "role" | "role
 
 	return {
 		role: "Miembro",
-		roleClass: "text-bg-secondary",
+		roleClass: "member-role-badge--member",
 	};
 }
 
@@ -401,6 +401,12 @@ async function handleAddMember(): Promise<void> {
 
 .member-role-badge {
   letter-spacing: 0.01em;
+}
+
+.member-role-badge--member {
+  background-color: rgba(var(--bs-secondary-rgb), 0.1);
+  color: var(--bs-body-color);
+  border: 1px solid rgba(var(--bs-secondary-rgb), 0.25);
 }
 
 .member-avatar {

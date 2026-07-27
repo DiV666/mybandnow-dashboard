@@ -51,7 +51,7 @@ function onToggle(): void {
 	justify-content: center;
 	background-color: color-mix(in srgb, var(--bs-body-bg) 88%, transparent);
 	backdrop-filter: blur(8px);
-	box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+	box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15), 0 0 0 2px rgba(var(--rock-accent-tertiary-rgb), 0.35);
 }
 
 .theme-toggle span {

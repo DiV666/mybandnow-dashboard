@@ -506,6 +506,7 @@ onBeforeUnmount(() => {
 
 .dashboard-sidebar-card {
   border: 1px solid var(--rock-surface-border);
+  border-top: 3px solid var(--rock-accent-tertiary);
   background: var(--rock-surface-container);
   box-shadow: var(--rock-surface-shadow);
 }
