@@ -160,12 +160,26 @@ onBeforeUnmount(() => {
 
   <div v-else class="dashboard-layout container-fluid d-flex flex-column p-0">
     <header class="navbar dashboard-topbar px-3 py-2 shadow-sm gap-3">
-      <a class="navbar-brand dashboard-brand me-0 px-0" href="#">Mybandnow Admin</a>
+      <!-- Mobile Brand Area -->
+      <div class="d-flex w-100 align-items-center justify-content-between d-md-none">
+        <button
+          class="navbar-toggler border-0 px-1"
+          type="button"
+          data-bs-toggle="offcanvas"
+          data-bs-target="#sidebarMenu"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <a class="navbar-brand dashboard-brand m-0 p-0" href="#">Mybandnow Admin</a>
+      </div>
+
+      <!-- Desktop Brand -->
+      <a class="navbar-brand dashboard-brand me-0 px-0 d-none d-md-block" href="#">Mybandnow Admin</a>
 
       <div
         v-if="bandStore.hasBands"
         ref="bandMenuContainer"
-        class="dashboard-topbar__center"
+        class="dashboard-topbar__center d-none d-md-flex"
       >
         <div class="dashboard-band-switcher d-flex align-items-center justify-content-center gap-2 flex-wrap">
           <span class="dashboard-label text-nowrap mb-0">Banda Activa:</span>
@@ -206,7 +220,7 @@ onBeforeUnmount(() => {
 
       <div
         v-else-if="!shouldShowBandShell"
-        class="dashboard-topbar__center dashboard-topbar__center--fallback"
+        class="dashboard-topbar__center dashboard-topbar__center--fallback d-none d-md-flex"
       >
         <button
           type="button"
@@ -229,18 +243,9 @@ onBeforeUnmount(() => {
         </button>
       </div>
 
-      <button
-        class="navbar-toggler position-absolute d-md-none collapsed"
-        type="button"
-        data-bs-toggle="collapse"
-        data-bs-target="#sidebarMenu"
-      >
-        <span class="navbar-toggler-icon"></span>
-      </button>
-
       <div
         ref="userMenuContainer"
-        class="navbar-nav dashboard-user-nav dashboard-topbar__end d-flex flex-row align-items-center"
+        class="navbar-nav dashboard-user-nav dashboard-topbar__end d-none d-md-flex flex-row align-items-center"
       >
         <div class="nav-item text-nowrap position-relative dashboard-user-dropdown">
           <button
@@ -274,14 +279,67 @@ onBeforeUnmount(() => {
       </div>
     </header>
 
-    <div class="row flex-grow-1 m-0">
+    <div class="row flex-grow-1 m-0 dashboard-body">
       <nav
         v-if="shouldShowBandShell"
         id="sidebarMenu"
-        class="col-md-3 col-lg-2 d-md-block dashboard-sidebar sidebar collapse"
+        class="col-md-3 col-lg-2 d-md-block dashboard-sidebar sidebar offcanvas-md offcanvas-start"
+        tabindex="-1"
       >
-        <div class="position-sticky pt-3 pb-3">
-          <div class="card dashboard-sidebar-card overflow-hidden">
+        <div class="offcanvas-header d-md-none border-bottom border-secondary-subtle">
+          <h5 class="offcanvas-title font-monospace fw-bold m-0" style="font-family: var(--rock-heading-font-family) !important;">Menú</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebarMenu" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body flex-column p-0 p-md-3">
+          <!-- Mobile Band Switcher -->
+          <div v-if="bandStore.hasBands" class="d-md-none p-3 border-bottom border-secondary-subtle bg-body-tertiary">
+            <span class="d-block text-muted small mb-2 fw-semibold text-uppercase" style="letter-spacing: 0.05em;">Banda Activa</span>
+            <div class="d-flex flex-column gap-2">
+                <button
+                v-for="band in bandStore.bands"
+                :key="band.id.value"
+                type="button"
+                class="btn btn-sm text-start fw-medium"
+                :class="band.id.value === bandStore.selectedBandId ? 'btn-primary' : 'btn-outline-secondary'"
+                data-bs-dismiss="offcanvas"
+                data-bs-target="#sidebarMenu"
+                @click="selectBand(band.id.value)"
+              >
+                {{ band.name.value }}
+                <span v-if="band.id.value === bandStore.selectedBandId" class="float-end" aria-hidden="true">✓</span>
+              </button>
+            </div>
+          </div>
+          <div v-else-if="!shouldShowBandShell" class="d-md-none p-3 border-bottom border-secondary-subtle">
+            <button
+              type="button"
+              class="btn btn-primary btn-sm w-100 d-inline-flex align-items-center justify-content-center gap-2"
+              data-bs-dismiss="offcanvas"
+              data-bs-target="#sidebarMenu"
+              @click="goToCreateFirstBand"
+            >
+              <i class="bi bi-plus-circle" aria-hidden="true"></i>
+              <span>Crear banda</span>
+            </button>
+          </div>
+
+          <!-- Mobile User Menu -->
+          <div class="d-md-none p-3 border-bottom border-secondary-subtle bg-body-tertiary mb-3">
+            <span class="d-block text-muted small mb-2 fw-semibold text-uppercase" style="letter-spacing: 0.05em;">
+              <span v-if="musicianStore.profile">{{ musicianStore.profile.name || musicianStore.profile.username }}</span>
+              <span v-else>Mi cuenta</span>
+            </span>
+            <div class="d-flex flex-column gap-2">
+              <button type="button" class="btn btn-sm btn-outline-secondary text-start d-flex align-items-center gap-2" data-bs-dismiss="offcanvas" data-bs-target="#sidebarMenu" @click="goToProfile">
+                <i class="bi bi-person" aria-hidden="true"></i> Mi Perfil
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-danger text-start d-flex align-items-center gap-2" data-bs-dismiss="offcanvas" data-bs-target="#sidebarMenu" @click="logout">
+                <i class="bi bi-box-arrow-right" aria-hidden="true"></i> Cerrar sesión
+              </button>
+            </div>
+          </div>
+
+          <div class="card dashboard-sidebar-card overflow-hidden mx-3 mx-md-0">
             <div class="card-body p-3 text-center">
               <div class="dashboard-band-logo-wrapper mb-3 mx-auto">
                 <img
@@ -305,6 +363,8 @@ onBeforeUnmount(() => {
                     :to="{ name: 'SongsManager' }"
                     class="nav-link d-flex align-items-center gap-2 rounded-0 px-3 py-2 dashboard-sidebar-link"
                     active-class="active fw-semibold dashboard-sidebar-link--active"
+                    data-bs-dismiss="offcanvas"
+                    data-bs-target="#sidebarMenu"
                   >
                     <i class="bi bi-music-note-list dashboard-sidebar-link__icon" aria-hidden="true"></i>
                     <span>Canciones</span>
@@ -315,6 +375,8 @@ onBeforeUnmount(() => {
                     :to="{ name: 'MembersManager' }"
                     class="nav-link d-flex align-items-center gap-2 rounded-0 px-3 py-2 dashboard-sidebar-link"
                     active-class="active fw-semibold dashboard-sidebar-link--active"
+                    data-bs-dismiss="offcanvas"
+                    data-bs-target="#sidebarMenu"
                   >
                     <i class="bi bi-people dashboard-sidebar-link__icon" aria-hidden="true"></i>
                     <span>Miembros</span>
@@ -325,6 +387,8 @@ onBeforeUnmount(() => {
                     :to="{ name: 'VideoclipsManager' }"
                     class="nav-link d-flex align-items-center gap-2 rounded-0 px-3 py-2 dashboard-sidebar-link"
                     active-class="active fw-semibold dashboard-sidebar-link--active"
+                    data-bs-dismiss="offcanvas"
+                    data-bs-target="#sidebarMenu"
                   >
                     <i class="bi bi-camera-video dashboard-sidebar-link__icon" aria-hidden="true"></i>
                     <span>Videoclips</span>
@@ -637,14 +701,8 @@ onBeforeUnmount(() => {
   .dashboard-topbar {
     display: flex;
     flex-wrap: wrap;
-    align-items: flex-start;
+    align-items: center;
     padding-block: 1rem;
-  }
-
-  .dashboard-topbar__center,
-  .dashboard-topbar__end {
-    width: 100%;
-    justify-content: flex-start;
   }
 
   .dashboard-band-switcher,
@@ -656,6 +714,37 @@ onBeforeUnmount(() => {
     width: 100%;
     justify-content: space-between;
     margin-left: 0 !important;
+  }
+
+  #sidebarMenu.offcanvas-md {
+    max-width: 85vw;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  #sidebarMenu.offcanvas-md .offcanvas-body {
+    flex: 1 1 auto !important;
+    overflow-y: auto !important;
+    height: 100% !important;
+    max-height: calc(100vh - 60px); /* fallback to ensure it never exceeds screen minus header */
+  }
+}
+
+@media (min-width: 768px) {
+  .dashboard-layout {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .dashboard-body {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .dashboard-sidebar,
+  .dashboard-main {
+    height: 100%;
+    overflow-y: auto;
   }
 }
 </style>
