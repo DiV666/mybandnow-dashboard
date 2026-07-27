@@ -92,6 +92,9 @@
     <main class="public-layout__content">
       <router-view />
     </main>
+
+    <ThemeToggle />
+    <LocaleToggle />
   </div>
 </template>
 
@@ -99,6 +102,8 @@
 import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import type { RouteLocationRaw } from "vue-router";
+import ThemeToggle from "../components/ThemeToggle.vue";
+import LocaleToggle from "../components/LocaleToggle.vue";
 
 interface BootstrapOffcanvasInstance {
   hide(): void;

@@ -2,7 +2,7 @@
 	<button
 		type="button"
 		class="theme-toggle btn btn-sm"
-		:class="buttonClass"
+		:class="[buttonClass, floating ? 'theme-toggle-floating' : 'theme-toggle-inline']"
 		:aria-label="ariaLabel"
 		:title="ariaLabel"
 		@click="onToggle"
@@ -14,6 +14,12 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { browserSessionStorage } from "../../infrastructure/storage/browserSessionStorage.js";
+
+const props = withDefaults(defineProps<{
+	floating?: boolean;
+}>(), {
+	floating: true
+});
 import { THEMES, applyNextTheme, getCurrentTheme, type Theme } from "../theme/theme.js";
 
 const theme = ref<Theme>(getCurrentTheme());
@@ -35,11 +41,14 @@ function onToggle(): void {
 </script>
 
 <style>
-.theme-toggle {
+.theme-toggle-floating {
 	position: fixed;
 	right: 1rem;
 	bottom: 1rem;
 	z-index: var(--rock-z-floating-control);
+}
+
+.theme-toggle {
 	width: 2.75rem;
 	height: 2.75rem;
 	min-height: 2.75rem;

@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { GetMyBandsUseCase } from '../../application/band/GetMyBandsUseCase.js';
 import { AxiosBandRepository } from '../../infrastructure/band/AxiosBandRepository.js';
 import { useAuthStore } from '../stores/useAuthStore.js';
 import { useBandStore } from '../stores/useBandStore.js';
 import { useMusicianStore } from '../stores/useMusicianStore.js';
 import bandLogoPlaceholder from '../../assets/band-logo-placeholder.png';
+import LocaleToggle from "../components/LocaleToggle.vue";
+import ThemeToggle from "../components/ThemeToggle.vue";
 
 const router = useRouter();
+const route = useRoute();
 const authStore = useAuthStore();
 const bandStore = useBandStore();
 const musicianStore = useMusicianStore();
@@ -290,7 +293,7 @@ onBeforeUnmount(() => {
           <h5 class="offcanvas-title font-monospace fw-bold m-0" style="font-family: var(--rock-heading-font-family) !important;">Menú</h5>
           <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebarMenu" aria-label="Close"></button>
         </div>
-        <div class="offcanvas-body flex-column p-0 p-md-3">
+        <div class="offcanvas-body d-flex flex-column p-0 p-md-3 h-100">
           <!-- Mobile Band Switcher -->
           <div v-if="bandStore.hasBands" class="d-md-none p-3 border-bottom border-secondary-subtle bg-body-tertiary">
             <span class="d-block text-muted small mb-2 fw-semibold text-uppercase" style="letter-spacing: 0.05em;">Banda Activa</span>
@@ -395,6 +398,18 @@ onBeforeUnmount(() => {
                   </router-link>
                 </li>
               </ul>
+            </div>
+          </div>
+
+          <div class="card dashboard-sidebar-card mx-3 mx-md-0 mt-auto mb-3 mb-md-0 flex-shrink-0">
+            <div class="card-body p-3 d-flex flex-column align-items-center gap-3">
+              <div class="d-flex align-items-center justify-content-center gap-3 w-100">
+                <LocaleToggle :floating="false" />
+                <ThemeToggle :floating="false" />
+              </div>
+              <div class="text-center text-muted lh-sm" style="font-size: 0.7rem;">
+                &copy; {{ new Date().getFullYear() }} My Band Now.<br>Todos los derechos reservados.
+              </div>
             </div>
           </div>
         </div>

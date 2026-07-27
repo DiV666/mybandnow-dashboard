@@ -1,5 +1,5 @@
 <template>
-	<div class="locale-toggle dropup" ref="containerRef">
+	<div class="locale-toggle dropup" :class="floating ? 'locale-toggle-floating' : 'locale-toggle-inline'" ref="containerRef">
 		<button
 			type="button"
 			class="btn btn-sm dropdown-toggle locale-toggle-btn"
@@ -23,6 +23,12 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onBeforeUnmount } from "vue";
 import { useI18n } from "vue-i18n";
+
+const props = withDefaults(defineProps<{
+	floating?: boolean;
+}>(), {
+	floating: true
+});
 import { getCurrentTheme, THEMES } from "../theme/theme.js";
 
 const { locale: currentLocale, availableLocales: locales } = useI18n();
@@ -59,7 +65,7 @@ const buttonClass = computed(() => {
 </script>
 
 <style scoped>
-.locale-toggle {
+.locale-toggle-floating {
 	position: fixed;
 	right: 1rem;
 	bottom: 4.25rem;
