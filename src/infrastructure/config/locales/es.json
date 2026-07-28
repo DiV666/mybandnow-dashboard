@@ -9,6 +9,8 @@
       "password": "Contraseña",
       "passwordHelp": "Acceso seguro",
       "passwordPlaceholder": "••••••••",
+      "showPassword": "Mostrar contraseña",
+      "hidePassword": "Ocultar contraseña",
       "submitLoading": "Entrando...",
       "submit": "Entrar al backstage",
       "errors": {

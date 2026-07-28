@@ -9,6 +9,8 @@
       "password": "Pasahitza",
       "passwordHelp": "Sarbide segurua",
       "passwordPlaceholder": "••••••••",
+      "showPassword": "Pasahitza erakutsi",
+      "hidePassword": "Pasahitza ezkutatu",
       "submitLoading": "Sartzen...",
       "submit": "Sartu backstagera",
       "errors": {

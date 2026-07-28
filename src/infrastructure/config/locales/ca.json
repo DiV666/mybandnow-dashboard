@@ -9,6 +9,8 @@
       "password": "Contrasenya",
       "passwordHelp": "Accés segur",
       "passwordPlaceholder": "••••••••",
+      "showPassword": "Mostra la contrasenya",
+      "hidePassword": "Amaga la contrasenya",
       "submitLoading": "Entrant...",
       "submit": "Entrar al backstage",
       "errors": {

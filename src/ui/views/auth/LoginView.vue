@@ -18,6 +18,7 @@ interface HttpErrorLike {
 const email = ref('');
 const password = ref('');
 const isLoading = ref(false);
+const isPasswordVisible = ref(false);
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -91,15 +92,26 @@ async function handleLogin() {
                     <label for="password" class="form-label fw-semibold mb-0">{{ $t('auth.login.password') }}</label>
                     <small class="text-body-secondary">{{ $t('auth.login.passwordHelp') }}</small>
                   </div>
-                  <input
-                    type="password"
-                    class="form-control login-input"
-                    id="password"
-                    v-model="password"
-                    :placeholder="$t('auth.login.passwordPlaceholder')"
-                    required
-                    autocomplete="current-password"
-                  >
+                  <div class="input-group">
+                    <input
+                      :type="isPasswordVisible ? 'text' : 'password'"
+                      class="form-control login-input"
+                      id="password"
+                      v-model="password"
+                      :placeholder="$t('auth.login.passwordPlaceholder')"
+                      required
+                      autocomplete="current-password"
+                    >
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary login-password-toggle"
+                      @click="isPasswordVisible = !isPasswordVisible"
+                      :aria-label="isPasswordVisible ? $t('auth.login.hidePassword') : $t('auth.login.showPassword')"
+                      :aria-pressed="isPasswordVisible"
+                    >
+                      <i class="bi" :class="isPasswordVisible ? 'bi-eye-slash' : 'bi-eye'" aria-hidden="true"></i>
+                    </button>
+                  </div>
                 </div>
 
                 <button
@@ -147,5 +159,9 @@ async function handleLogin() {
 
 .login-submit {
   border-radius: var(--bs-border-radius-pill);
+}
+
+.login-password-toggle {
+  border-color: var(--bs-border-color);
 }
 </style>

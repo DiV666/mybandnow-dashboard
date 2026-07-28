@@ -9,6 +9,8 @@
       "password": "Contrasinal",
       "passwordHelp": "Acceso seguro",
       "passwordPlaceholder": "••••••••",
+      "showPassword": "Amosar contrasinal",
+      "hidePassword": "Ocultar contrasinal",
       "submitLoading": "Entrando...",
       "submit": "Entrar ao backstage",
       "errors": {
