@@ -146,9 +146,20 @@
 }
 
 html,
-body,
+body {
+	height: 100%;
+	overflow-x: hidden;
+	width: 100%;
+	max-width: 100%;
+}
+
 #app {
 	min-height: 100%;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	max-width: 100%;
+	overflow-x: hidden;
 }
 
 body {
@@ -161,6 +172,8 @@ body {
 	background-attachment: fixed;
 	color: var(--bs-body-color);
 }
+
+
 
 main {
 	width: 100%;
@@ -653,7 +666,6 @@ h6,
 
 .public-layout__content {
 	display: flex;
-	min-height: calc(100vh - var(--rock-navbar-height));
 }
 
 .public-layout__content > * {

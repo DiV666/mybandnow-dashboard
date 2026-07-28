@@ -1,5 +1,5 @@
 <template>
-  <div class="public-layout app-shell-glow">
+  <div class="public-layout app-shell-glow d-flex flex-column flex-grow-1">
     <nav class="navbar navbar-expand-lg public-navbar surface-container border-bottom shadow-sm">
       <div class="container public-navbar__inner">
         <router-link
@@ -89,12 +89,21 @@
       </div>
     </div>
 
-    <main class="public-layout__content">
+    <main class="public-layout__content flex-grow-1 d-flex flex-column">
       <router-view />
     </main>
 
-    <ThemeToggle />
-    <LocaleToggle />
+    <footer class="public-footer mt-auto py-3 border-top border-secondary-subtle">
+      <div class="container d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
+        <div class="text-muted small text-center text-sm-start">
+          &copy; {{ new Date().getFullYear() }} My Band Now. Todos los derechos reservados.
+        </div>
+        <div class="d-flex align-items-center gap-3">
+          <LocaleToggle :floating="false" />
+          <ThemeToggle :floating="false" />
+        </div>
+      </div>
+    </footer>
   </div>
 </template>
 
