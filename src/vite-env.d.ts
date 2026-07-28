@@ -25,4 +25,20 @@ declare module "bootstrap" {
 		dispose(): void;
 		static getOrCreateInstance(element: Element, options?: unknown): Toast;
 	}
+
+	export class Offcanvas {
+		constructor(element: Element, options?: unknown);
+		show(): void;
+		hide(): void;
+		dispose(): void;
+		static getOrCreateInstance(element: Element, options?: unknown): Offcanvas;
+	}
+
+	export class Dropdown {
+		constructor(element: Element, options?: unknown);
+		show(): void;
+		hide(): void;
+		dispose(): void;
+		static getOrCreateInstance(element: Element, options?: unknown): Dropdown;
+	}
 }

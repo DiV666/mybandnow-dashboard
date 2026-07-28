@@ -7,7 +7,9 @@ import App from "./App.vue";
 import { router } from "./ui/router/index.js";
 
 // Bootstrap JS
-import "bootstrap/dist/js/bootstrap.bundle.min.js";
+import * as bootstrap from "bootstrap";
+
+(window as unknown as { bootstrap: typeof bootstrap }).bootstrap = bootstrap;
 
 import { createPinia } from "pinia";
 import { browserSessionStorage } from "./infrastructure/storage/browserSessionStorage.js";

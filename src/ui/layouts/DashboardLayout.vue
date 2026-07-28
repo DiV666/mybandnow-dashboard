@@ -19,6 +19,26 @@ const musicianStore = useMusicianStore();
 const bandRepository = new AxiosBandRepository();
 const getMyBandsUseCase = new GetMyBandsUseCase(bandRepository);
 
+interface BootstrapOffcanvasInstance {
+  hide(): void;
+}
+
+interface BootstrapWindow {
+  bootstrap?: {
+    Offcanvas?: {
+      getOrCreateInstance(element: Element): BootstrapOffcanvasInstance;
+    };
+  };
+}
+
+function closeSidebarOffcanvas(): void {
+  const sidebarElement = document.getElementById('sidebarMenu');
+  const bootstrapApi = (window as Window & BootstrapWindow).bootstrap?.Offcanvas;
+  if (sidebarElement && bootstrapApi) {
+    bootstrapApi.getOrCreateInstance(sidebarElement).hide();
+  }
+}
+
 const isLoading = ref(true);
 const isUserMenuOpen = ref(false);
 const isBandMenuOpen = ref(false);
@@ -366,8 +386,7 @@ onBeforeUnmount(() => {
                     :to="{ name: 'SongsManager' }"
                     class="nav-link d-flex align-items-center gap-2 rounded-0 px-3 py-2 dashboard-sidebar-link"
                     active-class="active fw-semibold dashboard-sidebar-link--active"
-                    data-bs-dismiss="offcanvas"
-                    data-bs-target="#sidebarMenu"
+                    @click="closeSidebarOffcanvas"
                   >
                     <i class="bi bi-music-note-list dashboard-sidebar-link__icon" aria-hidden="true"></i>
                     <span>Canciones</span>
@@ -378,8 +397,7 @@ onBeforeUnmount(() => {
                     :to="{ name: 'MembersManager' }"
                     class="nav-link d-flex align-items-center gap-2 rounded-0 px-3 py-2 dashboard-sidebar-link"
                     active-class="active fw-semibold dashboard-sidebar-link--active"
-                    data-bs-dismiss="offcanvas"
-                    data-bs-target="#sidebarMenu"
+                    @click="closeSidebarOffcanvas"
                   >
                     <i class="bi bi-people dashboard-sidebar-link__icon" aria-hidden="true"></i>
                     <span>Miembros</span>
@@ -390,8 +408,7 @@ onBeforeUnmount(() => {
                     :to="{ name: 'VideoclipsManager' }"
                     class="nav-link d-flex align-items-center gap-2 rounded-0 px-3 py-2 dashboard-sidebar-link"
                     active-class="active fw-semibold dashboard-sidebar-link--active"
-                    data-bs-dismiss="offcanvas"
-                    data-bs-target="#sidebarMenu"
+                    @click="closeSidebarOffcanvas"
                   >
                     <i class="bi bi-camera-video dashboard-sidebar-link__icon" aria-hidden="true"></i>
                     <span>Videoclips</span>

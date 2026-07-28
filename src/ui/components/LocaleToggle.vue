@@ -1,16 +1,16 @@
 <template>
-	<div class="locale-toggle dropup" :class="floating ? 'locale-toggle-floating' : 'locale-toggle-inline'" ref="containerRef">
+	<div class="locale-toggle" :class="floating ? 'locale-toggle-floating dropup' : 'locale-toggle-inline dropdown'">
 		<button
 			type="button"
 			class="btn btn-sm dropdown-toggle locale-toggle-btn"
 			:class="buttonClass"
-			:aria-expanded="isOpen"
+			data-bs-toggle="dropdown"
+			aria-expanded="false"
 			aria-label="Seleccionar idioma"
-			@click="toggleDropdown"
 		>
 			<span aria-hidden="true" class="text-uppercase">{{ currentLocale }}</span>
 		</button>
-		<ul class="dropdown-menu dropdown-menu-end shadow-sm" :class="{ show: isOpen }">
+		<ul class="dropdown-menu shadow-sm">
 			<li v-for="locale in locales" :key="locale">
 				<button class="dropdown-item text-uppercase text-center fw-bold" :class="{ active: currentLocale === locale }" @click="changeLocale(locale)">
 					{{ locale }}
@@ -21,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, onBeforeUnmount } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 
 const props = withDefaults(defineProps<{
@@ -32,31 +32,10 @@ const props = withDefaults(defineProps<{
 import { getCurrentTheme, THEMES } from "../theme/theme.js";
 
 const { locale: currentLocale, availableLocales: locales } = useI18n();
-const isOpen = ref(false);
-const containerRef = ref<HTMLElement | null>(null);
 
 const changeLocale = (newLocale: string) => {
 	currentLocale.value = newLocale;
-	isOpen.value = false;
 };
-
-const toggleDropdown = () => {
-	isOpen.value = !isOpen.value;
-};
-
-const closeDropdown = (event: MouseEvent) => {
-	if (containerRef.value && !containerRef.value.contains(event.target as Node)) {
-		isOpen.value = false;
-	}
-};
-
-onMounted(() => {
-	document.addEventListener('click', closeDropdown);
-});
-
-onBeforeUnmount(() => {
-	document.removeEventListener('click', closeDropdown);
-});
 
 const buttonClass = computed(() => {
 	const isDark = document.documentElement.getAttribute("data-bs-theme") === THEMES.dark;
@@ -104,11 +83,7 @@ const buttonClass = computed(() => {
 	font-weight: bold;
 }
 
-.locale-toggle .dropdown-menu {
-	bottom: 100%;
-	top: auto;
-	right: 0;
-	left: auto;
+.locale-toggle.dropup .dropdown-menu {
 	margin-bottom: 0.5rem;
 }
 
