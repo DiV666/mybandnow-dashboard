@@ -1539,7 +1539,7 @@ onBeforeUnmount(() => {
 									<span
 										v-else-if="autosaveStatuses[track.id]?.state === AUTOSAVE_STATES.error"
 										:data-testid="`autosave-error-${track.id}`"
-										class="text-danger text-end"
+										class="text-danger-emphasis text-end"
 									>
 										{{ autosaveStatuses[track.id]?.message }}
 									</span>

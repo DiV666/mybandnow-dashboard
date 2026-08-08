@@ -241,7 +241,7 @@ onUnmounted(() => {
         <div class="modal-footer bg-body-tertiary justify-content-center p-2">
           <small class="text-body-secondary" style="font-size: 0.75rem;">
             <i18n-t keypath="components.sessionExpired.autoLogoutCountdown" tag="span">
-              <template #seconds><strong class="text-danger">{{ countdown }}</strong></template>
+              <template #seconds><strong class="text-danger-emphasis">{{ countdown }}</strong></template>
             </i18n-t>
           </small>
         </div>
