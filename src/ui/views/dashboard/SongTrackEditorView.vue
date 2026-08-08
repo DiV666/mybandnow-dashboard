@@ -1357,12 +1357,14 @@ onBeforeUnmount(() => {
 										width: '10rem',
 										zIndex: '3',
 									}"
+									@keydown.esc="closeZoomPopover"
 								>
 									<input
 										id="timeline-zoom-input"
 										data-testid="timeline-zoom-input"
 										type="range"
 										class="form-range mb-0"
+										:aria-label="$t('dashboard.trackEditor.zoomVisuallyHidden')"
 										:min="MIN_TIMELINE_ZOOM_PERCENT"
 										:max="MAX_TIMELINE_ZOOM_PERCENT"
 										step="25"
@@ -1572,6 +1574,8 @@ onBeforeUnmount(() => {
 											:data-testid="`track-clip-${track.id}`"
 											:data-start-time-ms="track.startTimeMs"
 											:class="getTrackClipClass(track)"
+											role="button"
+											tabindex="0"
 											:style="{
 												left: `${getTrackOffsetPx(track)}px`,
 												width: `${getTrackWidthPx(track)}px`,
@@ -1585,6 +1589,8 @@ onBeforeUnmount(() => {
 												userSelect: 'none',
 											}"
 											@click.stop="selectTrack(track.id)"
+											@keydown.enter="selectTrack(track.id)"
+											@keydown.space.prevent="selectTrack(track.id)"
 											@pointerdown="startTrackDrag(track.id, $event)"
 											@pointermove="moveTrackDrag(track.id, $event)"
 											@pointerup="endTrackDrag(track.id, $event)"

@@ -12,6 +12,7 @@ import { AxiosBandRepository } from "../../../infrastructure/band/AxiosBandRepos
 import { AxiosMusicianRepository } from "../../../infrastructure/musician/AxiosMusicianRepository.js";
 import { useBandStore } from "../../stores/useBandStore.js";
 import { useToastStore } from "../../stores/useToastStore.js";
+import { useModalFocusTrap } from "../../composables/useModalFocusTrap.js";
 
 interface MemberCardViewModel {
 	id: string;
@@ -47,6 +48,7 @@ const musicianEmail = ref("");
 const errorMsg = ref("");
 const isSubmitting = ref(false);
 const selectedBandId = computed(() => bandStore.selectedBandId);
+const addMemberModalRef = ref<HTMLElement | null>(null);
 
 function isHttpErrorLike(error: unknown): error is HttpErrorLike {
 	return typeof error === "object" && error !== null && "response" in error;
@@ -157,6 +159,8 @@ function closeAddMemberModal(): void {
 	errorMsg.value = "";
 	isSubmitting.value = false;
 }
+
+useModalFocusTrap(addMemberModalRef, isAddMemberModalOpen, { onEscape: closeAddMemberModal });
 
 function mapAddMemberErrorMessage(error: unknown): string {
 	if (isHttpErrorLike(error) && error.response?.status === 400) {
@@ -308,11 +312,20 @@ async function handleAddMember(): Promise<void> {
       </div>
     </section>
 
-    <div v-if="isAddMemberModalOpen" class="modal d-block" tabindex="-1" role="dialog" aria-modal="true" data-testid="add-member-modal">
+    <div
+      v-if="isAddMemberModalOpen"
+      ref="addMemberModalRef"
+      class="modal d-block"
+      tabindex="-1"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="add-member-modal-title"
+      data-testid="add-member-modal"
+    >
       <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
           <div class="modal-header">
-            <h2 class="modal-title h5 mb-0">{{ $t('views.members.modal.title') }}</h2>
+            <h2 id="add-member-modal-title" class="modal-title h5 mb-0">{{ $t('views.members.modal.title') }}</h2>
             <button type="button" class="btn-close" :aria-label="$t('views.members.modal.close')" :disabled="isSubmitting" @click="closeAddMemberModal" />
           </div>
 

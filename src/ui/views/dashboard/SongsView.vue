@@ -41,6 +41,7 @@ import { AxiosSongRepository } from "../../../infrastructure/song/AxiosSongRepos
 import { useBandStore } from "../../stores/useBandStore.js";
 import { useMusicianStore } from "../../stores/useMusicianStore.js";
 import { useToastStore } from "../../stores/useToastStore.js";
+import { useModalFocusTrap } from "../../composables/useModalFocusTrap.js";
 
 interface HttpErrorData {
 	message?: string;
@@ -173,6 +174,11 @@ const availableInstruments = ref<InstrumentResponse[]>([]);
 const catalogInstrumentNames = ref<InstrumentNameMap>({});
 const musicianDisplayNames = ref<MusicianDisplayNameMap>({});
 const songActionTooltipTargets = ref<TooltipTarget[]>([]);
+const createSongModalRef = ref<HTMLElement | null>(null);
+const songInstrumentFormModalRef = ref<HTMLElement | null>(null);
+const editInstrumentModalRef = ref<HTMLElement | null>(null);
+const songInstrumentUploadModalRef = ref<HTMLElement | null>(null);
+const assignMusicianModalRef = ref<HTMLElement | null>(null);
 
 const songRepository = new AxiosSongRepository();
 const bandRepository = new AxiosBandRepository();
@@ -1951,6 +1957,36 @@ function closeEditInstrumentModal(): void {
 	activeEditInstrumentModal.value = null;
 }
 
+useModalFocusTrap(createSongModalRef, isCreateSongModalOpen, {
+	onEscape: closeCreateSongModal,
+});
+useModalFocusTrap(
+	songInstrumentFormModalRef,
+	computed(() => activeSongInstrumentFormSong.value !== null),
+	{
+		onEscape: () => {
+			if (activeSongInstrumentFormSong.value) {
+				closeSongInstrumentForm(activeSongInstrumentFormSong.value.id);
+			}
+		},
+	},
+);
+useModalFocusTrap(
+	songInstrumentUploadModalRef,
+	computed(() => activeSongInstrumentUploadModalContext.value !== null),
+	{ onEscape: closeSongInstrumentUploadModal },
+);
+useModalFocusTrap(
+	assignMusicianModalRef,
+	computed(() => activeAssignMusicianModalContext.value !== null && activeAssignMusicianModal.value !== null),
+	{ onEscape: closeAssignMusicianModal },
+);
+useModalFocusTrap(
+	editInstrumentModalRef,
+	computed(() => activeEditInstrumentModalContext.value !== null && activeEditInstrumentModal.value !== null),
+	{ onEscape: closeEditInstrumentModal },
+);
+
 function handleEditInstrumentNameInput(event: Event): void {
 	const target = event.target;
 	const nextValue =
@@ -2541,6 +2577,7 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
 
     <div
       v-if="activeSongInstrumentFormSong"
+      ref="songInstrumentFormModalRef"
       class="modal d-block"
       tabindex="-1"
       role="dialog"
@@ -2630,6 +2667,7 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
 
     <div
       v-if="activeEditInstrumentModalContext && activeEditInstrumentModal"
+      ref="editInstrumentModalRef"
       class="modal d-block"
       tabindex="-1"
       role="dialog"
@@ -2731,6 +2769,7 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
 
     <div
       v-if="activeSongInstrumentUploadModalContext"
+      ref="songInstrumentUploadModalRef"
       class="modal d-block"
       tabindex="-1"
       role="dialog"
@@ -2831,6 +2870,7 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
 
     <div
       v-if="activeAssignMusicianModalContext && activeAssignMusicianModal"
+      ref="assignMusicianModalRef"
       class="modal d-block"
       tabindex="-1"
       role="dialog"
@@ -2930,6 +2970,7 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
 
     <div
       v-if="isCreateSongModalOpen"
+      ref="createSongModalRef"
       class="modal d-block"
       tabindex="-1"
       role="dialog"

@@ -70,7 +70,7 @@ function handleShowCreateBandForm() {
     <div class="col-md-8 col-lg-6">
       <div class="card shadow-sm border-primary">
         <div class="card-body p-5 text-center">
-          <h2 class="mb-3">{{ $t('views.createFirstBand.title') }}</h2>
+          <h1 class="h2 mb-3">{{ $t('views.createFirstBand.title') }}</h1>
           <p class="text-body-secondary mb-4">
             {{ $t('views.createFirstBand.description') }} <br>
             {{ $t('views.createFirstBand.descriptionLine2') }}

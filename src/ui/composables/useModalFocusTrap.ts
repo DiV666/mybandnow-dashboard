@@ -25,7 +25,11 @@ export function useModalFocusTrap(
   isOpen: Ref<boolean>,
   options: UseModalFocusTrapOptions = {},
 ): void {
-  if (typeof document === 'undefined') {
+  if (
+    typeof document === 'undefined' ||
+    typeof document.addEventListener !== 'function' ||
+    typeof document.removeEventListener !== 'function'
+  ) {
     return;
   }
 
