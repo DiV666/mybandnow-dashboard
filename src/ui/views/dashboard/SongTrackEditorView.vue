@@ -1442,16 +1442,19 @@ onBeforeUnmount(() => {
 								</div>
 								<div class="d-flex align-items-start justify-content-between gap-2">
 									<label class="d-grid gap-1 small text-muted fw-semibold flex-grow-1">
-										<span>Empieza en (ms)</span>
-										<input
-											:data-testid="`track-start-time-input-${track.id}`"
-											type="text"
-											class="form-control form-control-sm"
-											:style="{ minHeight: 'unset', padding: '4px 10px', borderRadius: '0' }"
-											inputmode="numeric"
-											:value="String(track.startTimeMs)"
-											@input="handleTrackStartTimeInput(track.id, String(($event.target as HTMLInputElement).value))"
-										/>
+										<span>Empieza en</span>
+										<div class="input-group input-group-sm">
+											<input
+												:data-testid="`track-start-time-input-${track.id}`"
+												type="text"
+												class="form-control"
+												:style="{ minHeight: 'unset', padding: '4px 10px', borderRadius: '0' }"
+												inputmode="numeric"
+												:value="String(track.startTimeMs)"
+												@input="handleTrackStartTimeInput(track.id, String(($event.target as HTMLInputElement).value))"
+											/>
+											<span class="input-group-text" :style="{ borderRadius: '0' }">ms</span>
+										</div>
 									</label>
 									<div class="d-flex align-items-center gap-1 flex-shrink-0 mt-4">
 										<button

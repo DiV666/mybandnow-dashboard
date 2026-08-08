@@ -386,7 +386,6 @@ async function handleAddMember(): Promise<void> {
 }
 
 .member-card:hover {
-  transform: translateY(-2px);
   box-shadow: var(--bs-box-shadow) !important;
   border-color: rgba(var(--bs-body-color-rgb), 0.16);
 }

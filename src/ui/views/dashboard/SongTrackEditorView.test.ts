@@ -706,7 +706,7 @@ describe("SongTrackEditorView", () => {
 		const firstTrackTitle = findByTestId(view.root, "track-title-instrument-1");
 		const firstTrackStartTimeLabel = findByText(
 			firstTrackMeta,
-			"Empieza en (ms)",
+			"Empieza en",
 		);
 		const firstTrackStartTimeInput = findByTestId(
 			view.root,
@@ -780,7 +780,7 @@ describe("SongTrackEditorView", () => {
 		);
 		expect(firstTrackStartTimeLabel).not.toBeNull();
 		expect(String(firstTrackStartTimeInput.props.class || "")).toContain(
-			"form-control-sm",
+			"form-control",
 		);
 		expect(firstTrackStartTimeInput.props.style).toEqual(
 			expect.objectContaining({
