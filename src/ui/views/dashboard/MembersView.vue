@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { AddBandMemberUseCase } from "../../../application/band/AddBandMemberUseCase.js";
 import { GetBandMembersUseCase } from "../../../application/band/GetBandMembersUseCase.js";
 import { GetMusicianByIdUseCase } from "../../../application/musician/GetMusicianByIdUseCase.js";
@@ -29,6 +30,7 @@ interface HttpErrorLike {
 	response?: HttpErrorResponse;
 }
 
+const { t } = useI18n();
 const bandStore = useBandStore();
 const toastStore = useToastStore();
 const bandRepository = new AxiosBandRepository();
@@ -67,13 +69,13 @@ function getAvatarInitials(name: string): string {
 function mapRole(role: BandMemberRole): Pick<MemberCardViewModel, "role" | "roleClass"> {
 	if (role === bandMemberRoles.ADMIN) {
 		return {
-			role: "Admin",
+			role: t("views.members.roles.admin"),
 			roleClass: "text-bg-warning",
 		};
 	}
 
 	return {
-		role: "Miembro",
+		role: t("views.members.roles.member"),
 		roleClass: "member-role-badge--member",
 	};
 }
@@ -125,7 +127,7 @@ async function loadMembers(bandId: string | null): Promise<void> {
 		const message =
 			error instanceof Error
 				? error.message
-				: "Ocurrió un error inesperado al cargar los miembros.";
+				: t("views.members.errors.loadFailed");
 		members.value = [];
 		membersErrorMsg.value = message;
 		toastStore.error(message);
@@ -158,17 +160,17 @@ function closeAddMemberModal(): void {
 
 function mapAddMemberErrorMessage(error: unknown): string {
 	if (isHttpErrorLike(error) && error.response?.status === 400) {
-		return "No pudimos agregar al músico. Verificá el email e intentá nuevamente.";
+		return t("views.members.errors.addFailed");
 	}
 
 	if (
 		error instanceof Error &&
 		error.message.includes("MusicianEmail must be a valid email")
 	) {
-		return "No pudimos agregar al músico. Verificá el email e intentá nuevamente.";
+		return t("views.members.errors.addFailed");
 	}
 
-	return "Ocurrió un error inesperado al agregar el miembro.";
+	return t("views.members.errors.addUnexpected");
 }
 
 async function handleAddMember(): Promise<void> {
@@ -177,14 +179,14 @@ async function handleAddMember(): Promise<void> {
 	const trimmedEmail = musicianEmail.value.trim();
 
 	if (!bandId) {
-		const message = "Selecciona una banda antes de agregar miembros.";
+		const message = t("views.members.errors.noBandSelected");
 		errorMsg.value = message;
 		toastStore.error(message);
 		return;
 	}
 
 	if (!trimmedEmail) {
-		const message = "Escribí el email del músico antes de confirmar.";
+		const message = t("views.members.errors.emptyEmail");
 		errorMsg.value = message;
 		toastStore.error(message);
 		return;
@@ -196,7 +198,7 @@ async function handleAddMember(): Promise<void> {
 	try {
 		await addBandMemberUseCase.run(bandId, trimmedEmail);
 		await loadMembers(bandId);
-		toastStore.success("Miembro agregado correctamente.");
+		toastStore.success(t("views.members.success.memberAdded"));
 		closeAddMemberModal();
 	} catch (error: unknown) {
 		const message = mapAddMemberErrorMessage(error);
@@ -211,9 +213,9 @@ async function handleAddMember(): Promise<void> {
   <div>
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom gap-3">
       <div>
-        <h1 class="h2 mb-1">Miembros de la banda</h1>
+        <h1 class="h2 mb-1">{{ $t('views.members.title') }}</h1>
         <p class="text-body-secondary mb-0">
-          Gestiona a las personas que forman parte del proyecto.
+          {{ $t('views.members.description') }}
         </p>
       </div>
 
@@ -223,7 +225,7 @@ async function handleAddMember(): Promise<void> {
           class="btn btn-primary members-toolbar-button"
           @click="openAddMemberModal"
         >
-          Agregar miembro
+          {{ $t('views.members.addMember') }}
         </button>
       </div>
     </div>
@@ -232,24 +234,24 @@ async function handleAddMember(): Promise<void> {
       <div class="card-body p-4">
         <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
           <div>
-            <h2 class="h5 mb-1">Equipo actual</h2>
+            <h2 class="h5 mb-1">{{ $t('views.members.currentTeam') }}</h2>
             <p class="text-body-secondary mb-0 small">
-              {{ members.length }} integrante<span v-if="members.length !== 1">s</span> cargado<span v-if="members.length !== 1">s</span>.
+              {{ $t('views.members.memberCount', members.length) }}
             </p>
           </div>
-          <span class="badge bg-body-secondary text-body border members-count-badge">{{ members.length }} miembros</span>
+          <span class="badge bg-body-secondary text-body border members-count-badge">{{ $t('views.members.countBadge', { count: members.length }) }}</span>
         </div>
 
         <p v-if="!selectedBandId" class="text-body-secondary mb-0">
-          Selecciona una banda para ver sus miembros.
+          {{ $t('views.members.selectBand') }}
         </p>
 
         <p v-else-if="isLoadingMembers" class="text-body-secondary mb-0" data-testid="members-loading-state">
-          Cargando miembros...
+          {{ $t('views.members.loading') }}
         </p>
 
         <p v-else-if="membersErrorMsg" class="text-body-secondary mb-0">
-          No pudimos cargar los miembros por ahora.
+          {{ $t('views.members.loadError') }}
         </p>
 
         <div v-else-if="members.length === 0" class="border rounded-4 surface-container p-4 p-md-5 text-center members-empty-state" data-testid="members-empty-state">
@@ -260,16 +262,16 @@ async function handleAddMember(): Promise<void> {
           >
             🎸
           </div>
-          <h3 class="h6 mb-2">Todavía no hay miembros cargados.</h3>
+          <h3 class="h6 mb-2">{{ $t('views.members.emptyTitle') }}</h3>
           <p class="text-body-secondary mb-3">
-            Agrega tu primer integrante para empezar a gestionar roles, ensayos y colaboraciones.
+            {{ $t('views.members.emptyDescription') }}
           </p>
           <button
             type="button"
             class="btn btn-outline-primary empty-state-action"
             @click="openAddMemberModal"
           >
-            Agregar primer miembro
+            {{ $t('views.members.addFirstMember') }}
           </button>
         </div>
 
@@ -278,7 +280,7 @@ async function handleAddMember(): Promise<void> {
             <article class="card h-100 border-0 shadow-sm overflow-hidden member-card">
               <div class="member-card-header border-bottom px-4 py-3 d-flex justify-content-between align-items-center gap-2 flex-wrap">
                 <div>
-                  <p class="text-uppercase text-body-secondary fw-semibold small mb-1">Perfil de músico</p>
+                  <p class="text-uppercase text-body-secondary fw-semibold small mb-1">{{ $t('views.members.profileLabel') }}</p>
                   <h3 class="h6 mb-0">{{ member.name }}</h3>
                 </div>
                 <span class="badge rounded-pill member-role-badge" :class="member.roleClass">{{ member.role }}</span>
@@ -288,14 +290,14 @@ async function handleAddMember(): Promise<void> {
                 <div class="d-flex gap-3 align-items-center">
                   <div
                     class="rounded-circle bg-body-secondary text-secondary fw-semibold d-inline-flex align-items-center justify-content-center flex-shrink-0 border member-avatar"
-                    :aria-label="`Avatar placeholder de ${member.name}`"
+                    :aria-label="$t('views.members.avatarAlt', { name: member.name })"
                   >
                     {{ member.avatarInitials }}
                   </div>
 
                   <div class="min-w-0">
                     <p class="mb-1 fw-semibold text-truncate">{{ member.username }}</p>
-                    <p class="text-body-secondary small mb-0">Integrante activo de la banda</p>
+                    <p class="text-body-secondary small mb-0">{{ $t('views.members.activeMember') }}</p>
                   </div>
                 </div>
 
@@ -310,17 +312,17 @@ async function handleAddMember(): Promise<void> {
       <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
           <div class="modal-header">
-            <h2 class="modal-title h5 mb-0">Agregar miembro</h2>
-            <button type="button" class="btn-close" aria-label="Cerrar" :disabled="isSubmitting" @click="closeAddMemberModal" />
+            <h2 class="modal-title h5 mb-0">{{ $t('views.members.modal.title') }}</h2>
+            <button type="button" class="btn-close" :aria-label="$t('views.members.modal.close')" :disabled="isSubmitting" @click="closeAddMemberModal" />
           </div>
 
           <form data-testid="add-member-form" @submit.prevent="handleAddMember">
             <div class="modal-body">
               <p class="text-body-secondary small">
-                Ingresa el email del músico para sumarlo a la banda como miembro.
+                {{ $t('views.members.modal.description') }}
               </p>
 
-                  <label for="member-email" class="form-label">Email del músico</label>
+                  <label for="member-email" class="form-label">{{ $t('views.members.modal.emailLabel') }}</label>
 
               <input
                 id="member-email"
@@ -336,10 +338,10 @@ async function handleAddMember(): Promise<void> {
 
             <div class="modal-footer">
               <button type="button" class="btn btn-outline-secondary" :disabled="isSubmitting" @click="closeAddMemberModal">
-                Cancelar
+                {{ $t('views.members.modal.cancel') }}
               </button>
               <button type="submit" class="btn btn-primary" :disabled="isSubmitting">
-                {{ isSubmitting ? 'Agregando...' : 'Agregar miembro' }}
+                {{ isSubmitting ? $t('views.members.modal.submitLoading') : $t('views.members.modal.submit') }}
               </button>
             </div>
           </form>

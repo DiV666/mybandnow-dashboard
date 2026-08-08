@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { CreateBandUseCase } from '../../../../application/band/CreateBandUseCase.js';
 import { AxiosBandRepository } from '../../../../infrastructure/band/AxiosBandRepository.js';
@@ -14,6 +15,7 @@ interface HttpErrorLike {
   response?: HttpErrorResponse;
 }
 
+const { t } = useI18n();
 const router = useRouter();
 const bandStore = useBandStore();
 const toastStore = useToastStore();
@@ -30,23 +32,23 @@ function isHttpErrorLike(error: unknown): error is HttpErrorLike {
 
 async function handleCreateBand() {
   if (!bandName.value.trim()) {
-    toastStore.error('El nombre de la banda no puede estar vacío');
+    toastStore.error(t('views.createFirstBand.errors.emptyName'));
     return;
   }
-  
+
   isLoading.value = true;
-  
+
   try {
     const newBandId = crypto.randomUUID();
     await createBandUseCase.run(newBandId, bandName.value);
-    
+
     // The dashboard shell already mounted, so we force a refresh to reload bands.
-    window.location.href = '/dashboard'; 
+    window.location.href = '/dashboard';
   } catch (error: unknown) {
     if (isHttpErrorLike(error) && error.response?.status === 409) {
-      toastStore.error('Hubo un conflicto al crear la banda. Inténtalo de nuevo.');
+      toastStore.error(t('views.createFirstBand.errors.conflict'));
     } else {
-      toastStore.error('Ocurrió un error inesperado al crear tu banda.');
+      toastStore.error(t('views.createFirstBand.errors.unexpected'));
     }
   } finally {
     isLoading.value = false;
@@ -68,10 +70,10 @@ function handleShowCreateBandForm() {
     <div class="col-md-8 col-lg-6">
       <div class="card shadow-sm border-primary">
         <div class="card-body p-5 text-center">
-          <h2 class="mb-3">¡Bienvenido a Mybandnow!</h2>
+          <h2 class="mb-3">{{ $t('views.createFirstBand.title') }}</h2>
           <p class="text-body-secondary mb-4">
-            Parece que aún no formas parte de ninguna banda. <br>
-            Puedes crear tu primer grupo musical ahora o continuar y hacerlo más tarde.
+            {{ $t('views.createFirstBand.description') }} <br>
+            {{ $t('views.createFirstBand.descriptionLine2') }}
           </p>
 
           <div class="d-grid gap-3">
@@ -81,29 +83,29 @@ function handleShowCreateBandForm() {
               class="btn btn-primary"
               @click="handleShowCreateBandForm"
             >
-              Crear una banda
+              {{ $t('views.createFirstBand.createBand') }}
             </button>
 
             <form v-if="showCreateBandForm" @submit.prevent="handleCreateBand">
               <div class="mb-4 text-start">
-                <label for="bandName" class="form-label fw-bold">Nombre de la Banda</label>
-                <input 
-                  type="text" 
-                  class="form-control" 
-                  id="bandName" 
+                <label for="bandName" class="form-label fw-bold">{{ $t('views.createFirstBand.bandNameLabel') }}</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="bandName"
                   v-model="bandName"
-                  placeholder="Ej. The Rolling Stones"
+                  :placeholder="$t('views.createFirstBand.bandNamePlaceholder')"
                   required
                 >
               </div>
-              
-              <button 
-                type="submit" 
-                class="btn btn-primary w-100" 
+
+              <button
+                type="submit"
+                class="btn btn-primary w-100"
                 :disabled="isLoading"
               >
                 <span v-if="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                {{ isLoading ? 'Creando...' : 'Crear mi banda' }}
+                {{ isLoading ? $t('views.createFirstBand.submitLoading') : $t('views.createFirstBand.submit') }}
               </button>
             </form>
 
@@ -113,7 +115,7 @@ function handleShowCreateBandForm() {
               :disabled="isLoading"
               @click="handleSkipForNow"
             >
-              Omitir por ahora
+              {{ $t('views.createFirstBand.skip') }}
             </button>
           </div>
         </div>

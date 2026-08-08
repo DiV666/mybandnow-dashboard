@@ -240,6 +240,7 @@ vi.mock("bootstrap", () => ({
 }));
 
 import SongsView from "./SongsView.vue";
+import { i18n } from "../../../infrastructure/config/i18n.js";
 import { useBandStore } from "../../stores/useBandStore.js";
 import { useMusicianStore } from "../../stores/useMusicianStore.js";
 import { useToastStore } from "../../stores/useToastStore.js";
@@ -442,6 +443,7 @@ function renderSongsView(setup?: () => void) {
 	const root = createRootNode();
 	const app = renderer.createApp(SongsView);
 	app.use(pinia);
+	app.use(i18n);
 	app.mount(root);
 
 	return {

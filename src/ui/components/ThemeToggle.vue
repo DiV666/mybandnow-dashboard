@@ -13,6 +13,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { browserSessionStorage } from "../../infrastructure/storage/browserSessionStorage.js";
 
 const props = withDefaults(defineProps<{
@@ -22,12 +23,13 @@ const props = withDefaults(defineProps<{
 });
 import { THEMES, applyNextTheme, getCurrentTheme, type Theme } from "../theme/theme.js";
 
+const { t } = useI18n();
 const theme = ref<Theme>(getCurrentTheme());
 
 const isDark = computed(() => theme.value === THEMES.dark);
 const icon = computed(() => (isDark.value ? "☀" : "☾"));
 const ariaLabel = computed(() =>
-	isDark.value ? "Switch to light theme" : "Switch to dark theme",
+	isDark.value ? t("common.themeToggle.switchToLight") : t("common.themeToggle.switchToDark"),
 );
 const buttonClass = computed(() =>
 	isDark.value ? "btn-outline-light" : "btn-outline-dark",

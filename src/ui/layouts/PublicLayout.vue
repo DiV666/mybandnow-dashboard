@@ -6,7 +6,7 @@
           class="navbar-brand public-brand fw-bold text-body text-decoration-none"
           :to="{ name: 'Landing' }"
         >
-          Mybandnow
+          {{ $t('layouts.public.brand') }}
         </router-link>
 
         <div class="public-navbar__actions">
@@ -16,7 +16,7 @@
             data-bs-toggle="offcanvas"
             data-bs-target="#publicNavDrawer"
             aria-controls="publicNavDrawer"
-            aria-label="Abrir navegación pública"
+            :aria-label="$t('layouts.public.openNav')"
           >
             <span class="navbar-toggler-icon" aria-hidden="true"></span>
           </button>
@@ -26,14 +26,14 @@
             class="btn btn-outline-primary public-navbar__cta d-none d-md-inline-flex"
             :to="{ name: 'Login' }"
           >
-            Iniciar sesión
+            {{ $t('layouts.public.login') }}
           </router-link>
           <span
             v-else
             class="public-navbar__current d-none d-md-inline-flex"
             aria-current="page"
           >
-            Iniciar sesión
+            {{ $t('layouts.public.login') }}
           </span>
         </div>
       </div>
@@ -53,25 +53,25 @@
           class="navbar-brand public-brand public-offcanvas__brand text-body text-decoration-none mb-0"
           @click="navigateFromDrawer({ name: 'Landing' })"
         >
-          Mybandnow
+          {{ $t('layouts.public.brand') }}
         </button>
         <button
           type="button"
           class="btn-close"
           data-bs-dismiss="offcanvas"
-          aria-label="Cerrar navegación"
+          :aria-label="$t('layouts.public.closeNav')"
         ></button>
       </div>
 
       <div class="offcanvas-body public-offcanvas__body">
-        <nav class="nav flex-column public-offcanvas__nav" aria-label="Navegación pública móvil">
+        <nav class="nav flex-column public-offcanvas__nav" :aria-label="$t('layouts.public.mobileNavLabel')">
           <button
             type="button"
             class="public-offcanvas__link"
             :class="{ 'is-active': route.name === 'Landing' }"
             @click="navigateFromDrawer({ name: 'Landing' })"
           >
-            Inicio
+            {{ $t('layouts.public.home') }}
           </button>
 
           <button
@@ -80,10 +80,10 @@
             class="public-offcanvas__link"
             @click="navigateFromDrawer({ name: 'Login' })"
           >
-            Iniciar sesión
+            {{ $t('layouts.public.login') }}
           </button>
           <span v-else class="public-offcanvas__link is-active" aria-current="page">
-            Iniciar sesión
+            {{ $t('layouts.public.login') }}
           </span>
         </nav>
       </div>
@@ -96,7 +96,7 @@
     <footer class="public-footer mt-auto py-3 border-top border-secondary-subtle">
       <div class="container d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
         <div class="text-muted small text-center text-sm-start">
-          &copy; {{ new Date().getFullYear() }} My Band Now. Todos los derechos reservados.
+          {{ $t('layouts.public.copyright', { year: new Date().getFullYear() }) }}
         </div>
         <div class="d-flex align-items-center gap-3">
           <LocaleToggle :floating="false" />

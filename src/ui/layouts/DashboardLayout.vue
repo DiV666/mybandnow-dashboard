@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { GetMyBandsUseCase } from '../../application/band/GetMyBandsUseCase.js';
 import { AxiosBandRepository } from '../../infrastructure/band/AxiosBandRepository.js';
@@ -10,6 +11,7 @@ import bandLogoPlaceholder from '../../assets/band-logo-placeholder.png';
 import LocaleToggle from "../components/LocaleToggle.vue";
 import ThemeToggle from "../components/ThemeToggle.vue";
 
+const { t } = useI18n();
 const router = useRouter();
 const authStore = useAuthStore();
 const bandStore = useBandStore();
@@ -54,7 +56,7 @@ const shouldShowBandShell = computed(
   () => bandStore.hasBands || Boolean(bandStore.selectedBandId),
 );
 const selectedBandName = computed(
-  () => bandStore.selectedBand?.name.value ?? 'Seleccionar banda',
+  () => bandStore.selectedBand?.name.value ?? t('layouts.dashboard.selectBandFallback'),
 );
 
 type MaybeContainedTarget = EventTarget & {
@@ -189,7 +191,7 @@ onBeforeUnmount(() => {
 <template>
   <div v-if="isLoading" class="dashboard-loading d-flex justify-content-center align-items-center">
     <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">Cargando...</span>
+      <span class="visually-hidden">{{ $t('layouts.dashboard.loading') }}</span>
     </div>
   </div>
 
@@ -205,11 +207,11 @@ onBeforeUnmount(() => {
         >
           <span class="navbar-toggler-icon"></span>
         </button>
-        <a class="navbar-brand dashboard-brand m-0 p-0" href="#">Mybandnow Admin</a>
+        <a class="navbar-brand dashboard-brand m-0 p-0" href="#">{{ $t('layouts.dashboard.brand') }}</a>
       </div>
 
       <!-- Desktop Brand -->
-      <a class="navbar-brand dashboard-brand me-0 px-0 d-none d-md-block" href="#">Mybandnow Admin</a>
+      <a class="navbar-brand dashboard-brand me-0 px-0 d-none d-md-block" href="#">{{ $t('layouts.dashboard.brand') }}</a>
 
       <div
         v-if="bandStore.hasBands"
@@ -217,7 +219,7 @@ onBeforeUnmount(() => {
         class="dashboard-topbar__center d-none d-md-flex"
       >
         <div class="dashboard-band-switcher d-flex align-items-center justify-content-center gap-2 flex-wrap">
-          <span class="dashboard-label text-nowrap mb-0">Banda Activa:</span>
+          <span class="dashboard-label text-nowrap mb-0">{{ $t('layouts.dashboard.activeBand') }}</span>
 
           <div class="dashboard-band-dropdown position-relative">
             <button
@@ -274,7 +276,7 @@ onBeforeUnmount(() => {
             <path d="M8 1a7 7 0 1 1 0 14A7 7 0 0 1 8 1m0 1a6 6 0 1 0 0 12A6 6 0 0 0 8 2" />
             <path d="M8 4.5a.5.5 0 0 1 .5.5v2.5H11a.5.5 0 0 1 0 1H8.5V11a.5.5 0 0 1-1 0V8.5H5a.5.5 0 0 1 0-1h2.5V5a.5.5 0 0 1 .5-.5" />
           </svg>
-          <span>Crear banda</span>
+          <span>{{ $t('layouts.dashboard.createBand') }}</span>
         </button>
       </div>
 
@@ -291,9 +293,9 @@ onBeforeUnmount(() => {
             @click="toggleUserMenu"
           >
             <span v-if="musicianStore.profile">
-              <strong>Bienvenido, </strong>{{ musicianStore.profile.name || musicianStore.profile.username }}
+              <strong>{{ $t('layouts.dashboard.welcome') }}</strong>{{ musicianStore.profile.name || musicianStore.profile.username }}
             </span>
-            <span v-else>Mi cuenta</span>
+            <span v-else>{{ $t('layouts.dashboard.myAccount') }}</span>
             <span aria-hidden="true" class="dashboard-dropdown-icon">▾</span>
           </button>
 
@@ -303,11 +305,11 @@ onBeforeUnmount(() => {
           >
             <button type="button" class="dropdown-item d-flex align-items-center gap-2" @click="goToProfile">
               <i class="bi bi-person" aria-hidden="true"></i>
-              <span>Mi Perfil</span>
+              <span>{{ $t('layouts.dashboard.myProfile') }}</span>
             </button>
             <button type="button" class="dropdown-item d-flex align-items-center gap-2 text-danger-emphasis" @click="logout">
               <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
-              <span>Cerrar sesión</span>
+              <span>{{ $t('layouts.dashboard.logout') }}</span>
             </button>
           </div>
         </div>
@@ -322,8 +324,8 @@ onBeforeUnmount(() => {
         tabindex="-1"
       >
         <div class="offcanvas-header d-md-none border-bottom border-secondary-subtle">
-          <h5 class="offcanvas-title font-monospace fw-bold m-0" style="font-family: var(--rock-heading-font-family) !important;">Menú</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebarMenu" aria-label="Close"></button>
+          <h5 class="offcanvas-title font-monospace fw-bold m-0" style="font-family: var(--rock-heading-font-family) !important;">{{ $t('layouts.dashboard.menu') }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebarMenu" :aria-label="$t('layouts.dashboard.closeMenu')"></button>
         </div>
         <div class="offcanvas-body d-flex flex-column p-0 p-md-3 h-100">
           <!-- Mobile Band Switcher -->
@@ -332,7 +334,7 @@ onBeforeUnmount(() => {
             ref="bandMenuContainerMobile"
             class="dashboard-mobile-section d-md-none position-relative"
           >
-            <span class="d-block text-muted small mb-2 fw-semibold text-uppercase text-center" style="letter-spacing: 0.05em;">Banda Activa</span>
+            <span class="d-block text-muted small mb-2 fw-semibold text-uppercase text-center" style="letter-spacing: 0.05em;">{{ $t('layouts.dashboard.activeBandMobile') }}</span>
             <button
               type="button"
               class="btn dashboard-header-dropdown-toggle w-100 d-flex align-items-center justify-content-between gap-2"
@@ -372,7 +374,7 @@ onBeforeUnmount(() => {
               @click="goToCreateFirstBand"
             >
               <i class="bi bi-plus-circle" aria-hidden="true"></i>
-              <span>Crear banda</span>
+              <span>{{ $t('layouts.dashboard.createBand') }}</span>
             </button>
           </div>
 
@@ -381,7 +383,7 @@ onBeforeUnmount(() => {
               <div class="dashboard-band-logo-wrapper mb-3 mx-auto">
                 <img
                   :src="bandLogoPlaceholder"
-                  alt="Logo de la banda"
+                  :alt="$t('layouts.dashboard.bandLogoAlt')"
                   class="dashboard-band-logo img-fluid rounded-3"
                 >
               </div>
@@ -403,7 +405,7 @@ onBeforeUnmount(() => {
                     @click="closeSidebarOffcanvas"
                   >
                     <i class="bi bi-music-note-list dashboard-sidebar-link__icon" aria-hidden="true"></i>
-                    <span>Canciones</span>
+                    <span>{{ $t('layouts.dashboard.nav.songs') }}</span>
                   </router-link>
                 </li>
                 <li class="nav-item">
@@ -414,7 +416,7 @@ onBeforeUnmount(() => {
                     @click="closeSidebarOffcanvas"
                   >
                     <i class="bi bi-people dashboard-sidebar-link__icon" aria-hidden="true"></i>
-                    <span>Miembros</span>
+                    <span>{{ $t('layouts.dashboard.nav.members') }}</span>
                   </router-link>
                 </li>
                 <li class="nav-item">
@@ -425,7 +427,7 @@ onBeforeUnmount(() => {
                     @click="closeSidebarOffcanvas"
                   >
                     <i class="bi bi-camera-video dashboard-sidebar-link__icon" aria-hidden="true"></i>
-                    <span>Videoclips</span>
+                    <span>{{ $t('layouts.dashboard.nav.videoclips') }}</span>
                   </router-link>
                 </li>
               </ul>
@@ -449,7 +451,7 @@ onBeforeUnmount(() => {
                   <span class="d-flex align-items-center gap-2 text-truncate">
                     <i class="bi bi-person-circle" aria-hidden="true"></i>
                     <span v-if="musicianStore.profile" class="text-truncate">{{ musicianStore.profile.name || musicianStore.profile.username }}</span>
-                    <span v-else>Mi cuenta</span>
+                    <span v-else>{{ $t('layouts.dashboard.myAccount') }}</span>
                   </span>
                   <span aria-hidden="true" class="dashboard-dropdown-icon">▾</span>
                 </button>
@@ -460,11 +462,11 @@ onBeforeUnmount(() => {
                 >
                   <button type="button" class="dropdown-item d-flex align-items-center gap-2" @click="goToProfile">
                     <i class="bi bi-person" aria-hidden="true"></i>
-                    <span>Mi Perfil</span>
+                    <span>{{ $t('layouts.dashboard.myProfile') }}</span>
                   </button>
                   <button type="button" class="dropdown-item d-flex align-items-center gap-2 text-danger-emphasis" @click="logout">
                     <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
-                    <span>Cerrar sesión</span>
+                    <span>{{ $t('layouts.dashboard.logout') }}</span>
                   </button>
                 </div>
               </div>
@@ -474,7 +476,7 @@ onBeforeUnmount(() => {
                 <ThemeToggle :floating="false" />
               </div>
               <div class="text-center text-muted lh-sm" style="font-size: 0.7rem;">
-                &copy; {{ new Date().getFullYear() }} My Band Now.<br>Todos los derechos reservados.
+                {{ $t('layouts.dashboard.copyrightLine1', { year: new Date().getFullYear() }) }}<br>{{ $t('layouts.dashboard.copyrightLine2') }}
               </div>
             </div>
           </div>

@@ -3,6 +3,7 @@ import { createRenderer, createSSRApp } from "vue";
 import { renderToString } from "vue/server-renderer";
 import { createPinia, setActivePinia } from "pinia";
 import BackendUnavailableModal from "./BackendUnavailableModal.vue";
+import { i18n } from "../../infrastructure/config/i18n.js";
 import { useBackendStatusStore } from "../stores/useBackendStatusStore.js";
 
 type TestTextNode = {
@@ -172,6 +173,7 @@ describe("BackendUnavailableModal", () => {
 
 		const app = createSSRApp(BackendUnavailableModal);
 		app.use(pinia);
+		app.use(i18n);
 
 		const markup = await renderToString(app);
 
@@ -195,6 +197,7 @@ describe("BackendUnavailableModal", () => {
 
 		const app = renderer.createApp(BackendUnavailableModal);
 		app.use(pinia);
+		app.use(i18n);
 		app.mount(root);
 
 		const retryButton = findElement(
@@ -223,6 +226,7 @@ describe("BackendUnavailableModal", () => {
 
 		const app = renderer.createApp(BackendUnavailableModal);
 		app.use(pinia);
+		app.use(i18n);
 		app.mount(root);
 
 		const closeButton = findElement(

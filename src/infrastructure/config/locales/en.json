@@ -29,6 +29,350 @@
         "songs": "Songs",
         "videoclips": "Videoclips"
       }
+    },
+    "songs": {
+      "errors": {
+        "loadMembersFailed": "We couldn't load the band members.",
+        "uploadInstrumentNotFound": "We couldn't find the instrument you were trying to upload the video for.",
+        "selectVideoFirst": "Select a video before continuing.",
+        "videoMustBeMp4": "The video must be in MP4 format.",
+        "corruptedMp4": "The file is not a valid MP4 or is corrupted.",
+        "fileTooLarge": "The file exceeds the maximum allowed size.",
+        "uploadTimeout": "The upload took too long. Please try again.",
+        "uploadCanceled": "The upload was canceled before finishing.",
+        "profileRequired": "You need to create your profile before uploading videos.",
+        "notAssignedMusician": "Only the person assigned to this instrument can upload the video.",
+        "noPermissionAssign": "You don't have permission to assign musicians to this instrument.",
+        "instrumentNotFoundForUpdate": "We couldn't find the instrument you were trying to update.",
+        "assignMusicianFailed": "We couldn't assign the selected musician.",
+        "assignMusicianUnexpected": "An error occurred while assigning the musician. Please try again.",
+        "noPermissionInvite": "You don't have permission to invite musicians to this instrument.",
+        "emptyInviteEmail": "Enter an email before sending the invitation.",
+        "invalidInviteEmail": "Enter a valid email before continuing.",
+        "inviteFailed": "We couldn't send the invitation to the given email.",
+        "inviteUnexpected": "An error occurred while inviting the musician. Please try again.",
+        "noPermissionEditInstrument": "You don't have permission to edit this instrument.",
+        "instrumentNotFoundForEdit": "We couldn't find the song's instrument you were trying to edit.",
+        "emptyInstrumentName": "Enter a name before saving.",
+        "selectInstrumentFirst": "Select an instrument before saving.",
+        "updateInstrumentFailed": "We couldn't update the song's instrument.",
+        "updateInstrumentUnexpected": "An error occurred while updating the instrument. Please try again.",
+        "uploadFailedGeneric": "The video upload failed.",
+        "updateVideoStatusFailed": "We couldn't update the video status.",
+        "loadSongsUnexpected": "An unexpected error occurred while loading the songs.",
+        "selectBandBeforeCreate": "Select a band before creating a song.",
+        "songConflict": "A song with that data already exists. Please try again.",
+        "createSongUnexpected": "An unexpected error occurred while creating the song.",
+        "loadInstrumentDetailFailed": "We couldn't load the selected instrument's detail.",
+        "instrumentNotFoundForEditAlt": "We couldn't find the song's instrument you were trying to edit.",
+        "uploadStartFailed": "We couldn't start the video upload.",
+        "profileRequiredForInstrument": "You must complete your musician profile to add instruments.",
+        "instrumentConflict": "An instrument with that data already exists for this song. Please try again.",
+        "noPermissionAddInstrument": "You don't have permission to add instruments to this song.",
+        "addInstrumentUnexpected": "An unexpected error occurred while adding the instrument."
+      },
+      "success": {
+        "songCreated": "Song created successfully.",
+        "musicianAssigned": "Musician assigned successfully.",
+        "invitationSent": "Invitation sent successfully.",
+        "instrumentUpdated": "Instrument updated successfully.",
+        "instrumentAdded": "Instrument added successfully."
+      },
+      "status": {
+        "uploading": "Uploading video to the server...",
+        "pendingValidation": "Upload accepted. Pending validation.",
+        "validating": "Video received. Validating file...",
+        "processing": "Processing and syncing video...",
+        "finalizing": "Finalizing video availability..."
+      },
+      "availability": {
+        "error": "Error",
+        "pendingValidation": "Pending validation",
+        "validating": "Validating file",
+        "processing": "Processing",
+        "finalizing": "Finalizing",
+        "available": "Available",
+        "pending": "Pending"
+      },
+      "submitLabel": {
+        "processing": "Processing...",
+        "retry": "Retry upload",
+        "reupload": "Re-upload video",
+        "upload": "Upload video"
+      },
+      "unassigned": "Unassigned",
+      "pageTitle": "Song Management (Songs / Tracks)",
+      "pageDescription": "Create a song within the selected band.",
+      "listTitle": "Band songs",
+      "songCount": "{count} song | {count} songs",
+      "createSong": "Create song",
+      "selectBandToView": "Select a band to see its songs.",
+      "loadingSongs": "Loading songs...",
+      "loadSongsError": "We couldn't load the songs right now.",
+      "noSongsYet": "This band doesn't have any songs yet.",
+      "originalVideoclip": "Original videoclip",
+      "editTracks": "Edit tracks",
+      "watchOnYoutube": "Watch on YouTube",
+      "instrumentsTitle": "Instruments",
+      "addInstrument": "Add instrument",
+      "noInstrumentsYet": "This song doesn't have any instruments yet.",
+      "table": {
+        "index": "#",
+        "trackTitle": "Track title",
+        "instrument": "Instrument",
+        "musician": "Musician",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "watchVideo": "Watch video",
+      "edit": "Edit",
+      "uploadVideo": "Upload video",
+      "assignMusician": "Assign musician",
+      "close": "Close",
+      "cancel": "Cancel",
+      "select": "Select",
+      "addInstrumentModalTitle": "Add instrument to {songTitle}",
+      "selectInstrumentOption": "Select an instrument",
+      "addingLoading": "Adding...",
+      "saveInstrument": "Save instrument",
+      "editInstrumentModalTitle": "Edit instrument · {name}",
+      "loadingInstrumentDetail": "Loading instrument detail...",
+      "savingLoading": "Saving...",
+      "saveChanges": "Save changes",
+      "uploadModalTitle": "Upload video · {name}",
+      "videoMp4Label": "MP4 video",
+      "uploadProgressAriaLabel": "Upload progress",
+      "assignModalTitle": "Assign musician · {name}",
+      "musicianEmailLabel": "Musician's email",
+      "inviteHint": "If the person isn't part of the band yet, you can invite them by email.",
+      "bandMembersTitle": "Band members",
+      "selectMemberHint": "Select someone from the current team to assign to the instrument.",
+      "loadingMembers": "Loading members...",
+      "noMembersAvailable": "No members available to select.",
+      "selectMemberAriaLabel": "Select {name}",
+      "inviteByEmail": "Invite by email",
+      "titleLabel": "Title",
+      "titlePlaceholder": "E.g. Paint It Black",
+      "originalVideoclipUrlLabel": "Original videoclip URL",
+      "originalVideoclipUrlPlaceholder": "https://www.youtube.com/watch?v=...",
+      "creatingLoading": "Creating...",
+      "inviteMusicianFormAriaLabel": "Invite musician by email"
+    },
+    "trackEditor": {
+      "defaultTitle": "Track editor",
+      "subtitle": "Simple per-track sync editor.",
+      "back": "Back",
+      "loadingTracks": "Loading tracks with video...",
+      "noTracksYet": "There are no videos available to edit for this song yet.",
+      "trackCount": "{count} track | {count} tracks",
+      "zoomBadge": "Zoom {percent}%",
+      "originalVideoBadge": "Original video {time}",
+      "selectedTrackStartsAt": "The selected track starts at {time}.",
+      "playTitle": "Play",
+      "pauseVisuallyHidden": "Pause",
+      "playVisuallyHidden": "Play",
+      "goToStartTitle": "Go to the beginning",
+      "goToStartVisuallyHidden": "Go to start",
+      "rewindTitle": "Rewind 1 second",
+      "rewindVisuallyHidden": "Rewind 1 second",
+      "forward": "Forward 1 second",
+      "zoomTitle": "Zoom",
+      "zoomVisuallyHidden": "Zoom timeline",
+      "startsAtLabel": "Starts at",
+      "soloTooltipActive": "Remove solo",
+      "soloTooltipInactive": "Solo track",
+      "soloLabelInactive": "Solo",
+      "muteTooltipActive": "Unmute",
+      "muteTooltipInactive": "Mute track",
+      "muteLabelInactive": "Mute",
+      "durationLabel": "Duration: {duration}",
+      "pendingSave": "Pending save",
+      "saving": "Saving",
+      "saved": "Saved",
+      "trackStartLabel": "Start: {time}",
+      "errors": {
+        "missingInstrument": "Couldn't save: the catalog instrument is missing.",
+        "saveFailed": "Couldn't save.",
+        "syncSaveFailed": "We couldn't save this track's sync. Check if the backend accepts startTimeMs.",
+        "loadTracksFailed": "We couldn't load the videos available for this song."
+      }
+    }
+  },
+  "common": {
+    "themeToggle": {
+      "switchToLight": "Switch to light theme",
+      "switchToDark": "Switch to dark theme"
+    },
+    "localeToggle": {
+      "ariaLabel": "Select language (current: {name})"
+    },
+    "toast": {
+      "dismiss": "Dismiss notification"
+    }
+  },
+  "components": {
+    "backendUnavailable": {
+      "title": "Server unavailable",
+      "message": "We couldn't connect to the server. Check if the backend is running or try again in a few seconds.",
+      "sessionNotice": "Your session is still active. We won't log you out because of this connection issue.",
+      "close": "Close",
+      "retry": "Retry"
+    },
+    "completeProfile": {
+      "title": "Complete your profile",
+      "description": "To perform this action you need to complete your musician profile. It will only take a few seconds.",
+      "nameLabel": "Name or Stage Name",
+      "namePlaceholder": "E.g.: John Doe",
+      "usernameLabel": "Username (unique)",
+      "usernamePlaceholder": "e.g.: john_doe_music",
+      "usernameHelp": "Lowercase letters, numbers and underscores only.",
+      "submit": "Save and continue",
+      "errors": {
+        "requiredFields": "All fields are required.",
+        "usernameTooShort": "The username must be at least 3 characters long.",
+        "generic": "Error saving profile. The username might already be in use."
+      }
+    },
+    "sessionExpired": {
+      "title": "Session Expired",
+      "description": "For your security, your session has expired. Enter your password again to continue where you left off without losing your data.",
+      "emailLabel": "Email",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "continueLabel": "Continue",
+      "manualLogout": "Log out manually",
+      "autoLogoutCountdown": "You'll be logged out automatically in {seconds} seconds.",
+      "errors": {
+        "missingCredentials": "Missing credentials.",
+        "invalidCredentials": "Invalid credentials",
+        "unexpected": "An unexpected error occurred while validating the session"
+      }
+    }
+  },
+  "views": {
+    "sessionClosed": {
+      "title": "Session closed for security",
+      "description": "We automatically logged you out due to inactivity to protect your data and your musicians' data.",
+      "action": "Back to Login"
+    },
+    "videoclips": {
+      "title": "Videoclip Management",
+      "newVideoclip": "New Videoclip",
+      "comingSoon": "Coming soon: Track mixing and final videoclip preview."
+    },
+    "bands": {
+      "title": "Band Management",
+      "newBand": "New Band",
+      "comingSoon": "Coming soon: Band listing and CRUD orchestrated from the Application layer (Use Cases)."
+    },
+    "createFirstBand": {
+      "title": "Welcome to Mybandnow!",
+      "description": "It looks like you're not part of any band yet.",
+      "descriptionLine2": "You can create your first band now or continue and do it later.",
+      "createBand": "Create a band",
+      "bandNameLabel": "Band Name",
+      "bandNamePlaceholder": "E.g. The Rolling Stones",
+      "submitLoading": "Creating...",
+      "submit": "Create my band",
+      "skip": "Skip for now",
+      "errors": {
+        "emptyName": "The band name cannot be empty",
+        "conflict": "There was a conflict creating the band. Please try again.",
+        "unexpected": "An unexpected error occurred while creating your band."
+      }
+    },
+    "profile": {
+      "title": "My Profile",
+      "description": "Manage the public information of your musician profile.",
+      "loading": "Loading profile...",
+      "activeBadge": "Active profile",
+      "artisticName": "Stage name",
+      "email": "Email",
+      "emailUnavailable": "Not available",
+      "technicalData": "Technical data",
+      "musicianId": "Musician ID",
+      "userId": "User ID",
+      "incomplete": "Complete your profile from the popup to continue."
+    },
+    "members": {
+      "title": "Band members",
+      "description": "Manage the people who are part of the project.",
+      "addMember": "Add member",
+      "currentTeam": "Current team",
+      "countBadge": "{count} members",
+      "memberCount": "{count} member loaded | {count} members loaded",
+      "selectBand": "Select a band to see its members.",
+      "loading": "Loading members...",
+      "loadError": "We couldn't load the members right now.",
+      "emptyTitle": "No members loaded yet.",
+      "emptyDescription": "Add your first member to start managing roles, rehearsals and collaborations.",
+      "addFirstMember": "Add first member",
+      "profileLabel": "Musician profile",
+      "avatarAlt": "Avatar placeholder for {name}",
+      "activeMember": "Active band member",
+      "roles": {
+        "admin": "Admin",
+        "member": "Member"
+      },
+      "modal": {
+        "title": "Add member",
+        "close": "Close",
+        "description": "Enter the musician's email to add them to the band as a member.",
+        "emailLabel": "Musician's email",
+        "cancel": "Cancel",
+        "submitLoading": "Adding...",
+        "submit": "Add member"
+      },
+      "errors": {
+        "loadFailed": "An unexpected error occurred while loading members.",
+        "addFailed": "We couldn't add the musician. Check the email and try again.",
+        "addUnexpected": "An unexpected error occurred while adding the member.",
+        "noBandSelected": "Select a band before adding members.",
+        "emptyEmail": "Enter the musician's email before confirming."
+      },
+      "success": {
+        "memberAdded": "Member added successfully."
+      }
+    }
+  },
+  "public": {
+    "landing": {
+      "title": "Collaborative Videoclip Platform",
+      "description": "Mybandnow lets you create music videoclips remotely. Mix tracks from different musicians and generate a professional final product.",
+      "cta": "Get started"
+    }
+  },
+  "layouts": {
+    "public": {
+      "brand": "Mybandnow",
+      "openNav": "Open public navigation",
+      "closeNav": "Close navigation",
+      "login": "Log in",
+      "home": "Home",
+      "mobileNavLabel": "Public mobile navigation",
+      "copyright": "© {year} My Band Now. All rights reserved."
+    },
+    "dashboard": {
+      "brand": "Mybandnow Admin",
+      "loading": "Loading...",
+      "activeBand": "Active Band:",
+      "activeBandMobile": "Active Band",
+      "createBand": "Create band",
+      "welcome": "Welcome, ",
+      "myAccount": "My account",
+      "myProfile": "My Profile",
+      "logout": "Log out",
+      "menu": "Menu",
+      "closeMenu": "Close",
+      "nav": {
+        "songs": "Songs",
+        "members": "Members",
+        "videoclips": "Videoclips"
+      },
+      "bandLogoAlt": "Band logo",
+      "copyrightLine1": "© {year} My Band Now.",
+      "copyrightLine2": "All rights reserved.",
+      "selectBandFallback": "Select band"
     }
   }
 }

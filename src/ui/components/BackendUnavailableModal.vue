@@ -30,16 +30,16 @@ function retryConnection(): void {
       <div class="modal-content shadow-lg border-warning">
         <div class="modal-header bg-warning-subtle text-warning-emphasis">
           <h5 id="backend-unavailable-title" class="modal-title">
-            <i class="bi bi-wifi-off me-2"></i> Servidor no disponible
+            <i class="bi bi-wifi-off me-2"></i> {{ $t('components.backendUnavailable.title') }}
           </h5>
         </div>
 
         <div class="modal-body p-4">
           <p class="mb-3 text-center">
-            No hemos podido conectar con el servidor. Revisa si el backend está levantado o inténtalo de nuevo en unos segundos.
+            {{ $t('components.backendUnavailable.message') }}
           </p>
           <p class="text-body-secondary small mb-0 text-center">
-            Tu sesión sigue activa. No cerraremos tu sesión por este problema de conexión.
+            {{ $t('components.backendUnavailable.sessionNotice') }}
           </p>
         </div>
 
@@ -50,7 +50,7 @@ function retryConnection(): void {
             data-testid="backend-unavailable-close"
             @click="closeModal"
           >
-            Cerrar
+            {{ $t('components.backendUnavailable.close') }}
           </button>
           <button
             type="button"
@@ -58,7 +58,7 @@ function retryConnection(): void {
             data-testid="backend-unavailable-retry"
             @click="retryConnection"
           >
-            Reintentar
+            {{ $t('components.backendUnavailable.retry') }}
           </button>
         </div>
       </div>

@@ -93,6 +93,7 @@ vi.mock("../../../infrastructure/musician/AxiosMusicianRepository.js", () => ({
 }));
 
 import MembersView from "./MembersView.vue";
+import { i18n } from "../../../infrastructure/config/i18n.js";
 import { MusicianEmail } from "../../../domain/musician/value-object/MusicianEmail.js";
 import { useBandStore } from "../../stores/useBandStore.js";
 import { useToastStore } from "../../stores/useToastStore.js";
@@ -279,6 +280,7 @@ function renderMembersView(setup?: () => void) {
 	const root = createRootNode();
 	const app = renderer.createApp(MembersView);
 	app.use(pinia);
+	app.use(i18n);
 	app.mount(root);
 
 	return {

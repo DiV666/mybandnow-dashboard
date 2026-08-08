@@ -6,7 +6,7 @@
 			:class="buttonClass"
 			data-bs-toggle="dropdown"
 			aria-expanded="false"
-			:aria-label="`Seleccionar idioma (actual: ${localeMeta[currentLocale]?.name})`"
+			:aria-label="t('common.localeToggle.ariaLabel', { name: localeMeta[currentLocale]?.name })"
 		>
 			<span aria-hidden="true" class="locale-flag" v-html="localeMeta[currentLocale]?.flag"></span>
 		</button>
@@ -32,7 +32,7 @@ const props = withDefaults(defineProps<{
 });
 import { getCurrentTheme, THEMES } from "../theme/theme.js";
 
-const { locale: currentLocale, availableLocales: locales } = useI18n();
+const { locale: currentLocale, availableLocales: locales, t } = useI18n();
 
 const changeLocale = (newLocale: string) => {
 	currentLocale.value = newLocale;

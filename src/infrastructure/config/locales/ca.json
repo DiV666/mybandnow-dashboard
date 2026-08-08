@@ -29,6 +29,350 @@
         "songs": "Cançons",
         "videoclips": "Videoclips"
       }
+    },
+    "songs": {
+      "errors": {
+        "loadMembersFailed": "No hem pogut carregar els membres del grup.",
+        "uploadInstrumentNotFound": "No hem trobat l'instrument al qual intentaves pujar el vídeo.",
+        "selectVideoFirst": "Selecciona un vídeo abans de continuar.",
+        "videoMustBeMp4": "El vídeo ha d'estar en format MP4.",
+        "corruptedMp4": "El fitxer no és un MP4 vàlid o està malmès.",
+        "fileTooLarge": "El fitxer supera la mida màxima permesa.",
+        "uploadTimeout": "La pujada ha trigat massa. Torna-ho a provar.",
+        "uploadCanceled": "La pujada s'ha cancel·lat abans d'acabar.",
+        "profileRequired": "Necessites crear el teu perfil abans de pujar vídeos.",
+        "notAssignedMusician": "Només la persona assignada a aquest instrument pot pujar el vídeo.",
+        "noPermissionAssign": "No tens permisos per assignar músics a aquest instrument.",
+        "instrumentNotFoundForUpdate": "No hem trobat l'instrument que intentaves actualitzar.",
+        "assignMusicianFailed": "No hem pogut assignar el músic seleccionat.",
+        "assignMusicianUnexpected": "S'ha produït un error en assignar el músic. Torna-ho a provar.",
+        "noPermissionInvite": "No tens permisos per convidar músics a aquest instrument.",
+        "emptyInviteEmail": "Escriu un correu abans d'enviar la invitació.",
+        "invalidInviteEmail": "Escriu un correu vàlid abans de continuar.",
+        "inviteFailed": "No hem pogut enviar la invitació al correu indicat.",
+        "inviteUnexpected": "S'ha produït un error en convidar el músic. Torna-ho a provar.",
+        "noPermissionEditInstrument": "No tens permisos per editar aquest instrument.",
+        "instrumentNotFoundForEdit": "No hem trobat l'instrument de la cançó que intentaves editar.",
+        "emptyInstrumentName": "Escriu un nom abans de desar.",
+        "selectInstrumentFirst": "Selecciona un instrument abans de desar.",
+        "updateInstrumentFailed": "No hem pogut actualitzar l'instrument de la cançó.",
+        "updateInstrumentUnexpected": "S'ha produït un error en actualitzar l'instrument. Torna-ho a provar.",
+        "uploadFailedGeneric": "La pujada del vídeo ha fallat.",
+        "updateVideoStatusFailed": "No hem pogut actualitzar l'estat del vídeo.",
+        "loadSongsUnexpected": "S'ha produït un error inesperat en carregar les cançons.",
+        "selectBandBeforeCreate": "Selecciona un grup abans de crear una cançó.",
+        "songConflict": "Ja existeix una cançó amb aquestes dades. Torna-ho a provar.",
+        "createSongUnexpected": "S'ha produït un error inesperat en crear la cançó.",
+        "loadInstrumentDetailFailed": "No hem pogut carregar el detall de l'instrument seleccionat.",
+        "instrumentNotFoundForEditAlt": "No hem trobat l'instrument de la cançó que intentaves editar.",
+        "uploadStartFailed": "No s'ha pogut iniciar la pujada del vídeo.",
+        "profileRequiredForInstrument": "Has de completar el teu perfil de músic per afegir instruments.",
+        "instrumentConflict": "Ja existeix un instrument amb aquestes dades per a aquesta cançó. Torna-ho a provar.",
+        "noPermissionAddInstrument": "No tens permisos per afegir instruments a aquesta cançó.",
+        "addInstrumentUnexpected": "S'ha produït un error inesperat en afegir l'instrument."
+      },
+      "success": {
+        "songCreated": "Cançó creada correctament.",
+        "musicianAssigned": "Músic assignat correctament.",
+        "invitationSent": "Invitació enviada correctament.",
+        "instrumentUpdated": "Instrument actualitzat correctament.",
+        "instrumentAdded": "Instrument afegit correctament."
+      },
+      "status": {
+        "uploading": "Pujant el vídeo al servidor...",
+        "pendingValidation": "Pujada acceptada. Pendent de validació.",
+        "validating": "Vídeo rebut. Validant l'arxiu...",
+        "processing": "Processant i sincronitzant el vídeo...",
+        "finalizing": "Finalitzant la disponibilitat del vídeo..."
+      },
+      "availability": {
+        "error": "Error",
+        "pendingValidation": "Pendent de validació",
+        "validating": "Validant l'arxiu",
+        "processing": "Processant",
+        "finalizing": "Finalitzant",
+        "available": "Disponible",
+        "pending": "Pendent"
+      },
+      "submitLabel": {
+        "processing": "Processant...",
+        "retry": "Torna a intentar la pujada",
+        "reupload": "Torna a pujar el vídeo",
+        "upload": "Puja el vídeo"
+      },
+      "unassigned": "Sense assignar",
+      "pageTitle": "Gestió de Cançons (Songs / Tracks)",
+      "pageDescription": "Crea una cançó dins del grup seleccionat.",
+      "listTitle": "Cançons del grup",
+      "songCount": "{count} cançó | {count} cançons",
+      "createSong": "Crea una cançó",
+      "selectBandToView": "Selecciona un grup per veure les seves cançons.",
+      "loadingSongs": "Carregant cançons...",
+      "loadSongsError": "No hem pogut carregar les cançons ara mateix.",
+      "noSongsYet": "Aquest grup encara no té cançons.",
+      "originalVideoclip": "Videoclip original",
+      "editTracks": "Edita les pistes",
+      "watchOnYoutube": "Mira'l a YouTube",
+      "instrumentsTitle": "Instruments",
+      "addInstrument": "Afegeix un instrument",
+      "noInstrumentsYet": "Aquesta cançó encara no té instruments.",
+      "table": {
+        "index": "#",
+        "trackTitle": "Títol de la pista",
+        "instrument": "Instrument",
+        "musician": "Músic",
+        "status": "Estat",
+        "actions": "Accions"
+      },
+      "watchVideo": "Mira el vídeo",
+      "edit": "Edita",
+      "uploadVideo": "Puja el vídeo",
+      "assignMusician": "Assigna un músic",
+      "close": "Tanca",
+      "cancel": "Cancel·la",
+      "select": "Selecciona",
+      "addInstrumentModalTitle": "Afegeix un instrument a {songTitle}",
+      "selectInstrumentOption": "Selecciona un instrument",
+      "addingLoading": "Afegint...",
+      "saveInstrument": "Desa l'instrument",
+      "editInstrumentModalTitle": "Edita l'instrument · {name}",
+      "loadingInstrumentDetail": "Carregant el detall de l'instrument...",
+      "savingLoading": "Desant...",
+      "saveChanges": "Desa els canvis",
+      "uploadModalTitle": "Puja el vídeo · {name}",
+      "videoMp4Label": "Vídeo MP4",
+      "uploadProgressAriaLabel": "Progrés de la pujada",
+      "assignModalTitle": "Assigna un músic · {name}",
+      "musicianEmailLabel": "Correu del músic",
+      "inviteHint": "Si la persona encara no forma part del grup, la pots convidar per correu.",
+      "bandMembersTitle": "Membres del grup",
+      "selectMemberHint": "Selecciona algú de l'equip actual per assignar-lo a l'instrument.",
+      "loadingMembers": "Carregant membres...",
+      "noMembersAvailable": "No hi ha membres disponibles per seleccionar.",
+      "selectMemberAriaLabel": "Selecciona {name}",
+      "inviteByEmail": "Convida per correu",
+      "titleLabel": "Títol",
+      "titlePlaceholder": "Ex. Paint It Black",
+      "originalVideoclipUrlLabel": "URL del videoclip original",
+      "originalVideoclipUrlPlaceholder": "https://www.youtube.com/watch?v=...",
+      "creatingLoading": "Creant...",
+      "inviteMusicianFormAriaLabel": "Convida un músic per correu"
+    },
+    "trackEditor": {
+      "defaultTitle": "Editor de pistes",
+      "subtitle": "Editor senzill de sincronització per pista.",
+      "back": "Torna",
+      "loadingTracks": "Carregant pistes amb vídeo...",
+      "noTracksYet": "Encara no hi ha vídeos disponibles per editar en aquesta cançó.",
+      "trackCount": "{count} pista | {count} pistes",
+      "zoomBadge": "Zoom {percent}%",
+      "originalVideoBadge": "Vídeo original {time}",
+      "selectedTrackStartsAt": "La pista seleccionada comença a {time}.",
+      "playTitle": "Play",
+      "pauseVisuallyHidden": "Pausa",
+      "playVisuallyHidden": "Reprodueix",
+      "goToStartTitle": "Comença des del principi",
+      "goToStartVisuallyHidden": "Ves a l'inici",
+      "rewindTitle": "Retrocedeix 1 segon",
+      "rewindVisuallyHidden": "Retrocedeix 1 segon",
+      "forward": "Avança 1 segon",
+      "zoomTitle": "Zoom",
+      "zoomVisuallyHidden": "Zoom de la línia de temps",
+      "startsAtLabel": "Comença a",
+      "soloTooltipActive": "Treu el solo",
+      "soloTooltipInactive": "Solo de la pista",
+      "soloLabelInactive": "Solo",
+      "muteTooltipActive": "Activa l'àudio",
+      "muteTooltipInactive": "Silencia la pista",
+      "muteLabelInactive": "Silencia",
+      "durationLabel": "Durada: {duration}",
+      "pendingSave": "Pendent de desar",
+      "saving": "Desant",
+      "saved": "Desat",
+      "trackStartLabel": "Inici: {time}",
+      "errors": {
+        "missingInstrument": "No s'ha pogut desar: falta l'instrument del catàleg.",
+        "saveFailed": "No s'ha pogut desar.",
+        "syncSaveFailed": "No hem pogut desar la sincronització d'aquesta pista. Comprova si el backend accepta startTimeMs.",
+        "loadTracksFailed": "No hem pogut carregar les pistes amb vídeo disponible per a aquesta cançó."
+      }
+    }
+  },
+  "common": {
+    "themeToggle": {
+      "switchToLight": "Canvia al tema clar",
+      "switchToDark": "Canvia al tema fosc"
+    },
+    "localeToggle": {
+      "ariaLabel": "Selecciona l'idioma (actual: {name})"
+    },
+    "toast": {
+      "dismiss": "Descarta la notificació"
+    }
+  },
+  "components": {
+    "backendUnavailable": {
+      "title": "Servidor no disponible",
+      "message": "No hem pogut connectar amb el servidor. Comprova si el backend està en marxa o torna-ho a provar en uns segons.",
+      "sessionNotice": "La teva sessió segueix activa. No la tancarem per aquest problema de connexió.",
+      "close": "Tanca",
+      "retry": "Torna-ho a provar"
+    },
+    "completeProfile": {
+      "title": "Completa el teu perfil",
+      "description": "Per fer aquesta acció cal completar el teu perfil de músic. Només trigarà uns segons.",
+      "nameLabel": "Nom o Àlies Artístic",
+      "namePlaceholder": "Ex: John Doe",
+      "usernameLabel": "Nom d'usuari (únic)",
+      "usernamePlaceholder": "ex: john_doe_music",
+      "usernameHelp": "Només minúscules, números i guions baixos.",
+      "submit": "Desa i continua",
+      "errors": {
+        "requiredFields": "Tots els camps són obligatoris.",
+        "usernameTooShort": "El nom d'usuari ha de tenir com a mínim 3 caràcters.",
+        "generic": "Error en desar el perfil. Potser el nom d'usuari ja s'està fent servir."
+      }
+    },
+    "sessionExpired": {
+      "title": "Sessió Caducada",
+      "description": "Per la teva seguretat, la sessió ha caducat. Introdueix la contrasenya de nou per continuar on ho havies deixat sense perdre les teves dades.",
+      "emailLabel": "Correu electrònic",
+      "passwordLabel": "Contrasenya",
+      "passwordPlaceholder": "Introdueix la teva contrasenya",
+      "continueLabel": "Continua",
+      "manualLogout": "Tanca la sessió manualment",
+      "autoLogoutCountdown": "La sessió es tancarà automàticament d'aquí a {seconds} segons.",
+      "errors": {
+        "missingCredentials": "Falten credencials.",
+        "invalidCredentials": "Credencials no vàlides",
+        "unexpected": "S'ha produït un error inesperat en validar la sessió"
+      }
+    }
+  },
+  "views": {
+    "sessionClosed": {
+      "title": "Sessió tancada per seguretat",
+      "description": "Hem tancat la teva sessió automàticament per inactivitat per protegir les teves dades i les dels teus músics.",
+      "action": "Torna a Iniciar Sessió"
+    },
+    "videoclips": {
+      "title": "Gestió de Videoclips",
+      "newVideoclip": "Nou Videoclip",
+      "comingSoon": "Properament: Mescla de pistes i visualització dels videoclips finals."
+    },
+    "bands": {
+      "title": "Gestió de Grups (Bands)",
+      "newBand": "Nou Grup",
+      "comingSoon": "Properament: Llistat i CRUD de Grups orquestrat des de la capa d'Aplicació (Use Cases)."
+    },
+    "createFirstBand": {
+      "title": "Benvingut a Mybandnow!",
+      "description": "Sembla que encara no formes part de cap grup.",
+      "descriptionLine2": "Pots crear el teu primer grup musical ara o continuar i fer-ho més tard.",
+      "createBand": "Crea un grup",
+      "bandNameLabel": "Nom del Grup",
+      "bandNamePlaceholder": "Ex. The Rolling Stones",
+      "submitLoading": "Creant...",
+      "submit": "Crea el meu grup",
+      "skip": "Omet per ara",
+      "errors": {
+        "emptyName": "El nom del grup no pot estar buit",
+        "conflict": "Hi ha hagut un conflicte en crear el grup. Torna-ho a provar.",
+        "unexpected": "S'ha produït un error inesperat en crear el teu grup."
+      }
+    },
+    "profile": {
+      "title": "El Meu Perfil",
+      "description": "Gestiona la informació pública del teu perfil de músic.",
+      "loading": "Carregant perfil...",
+      "activeBadge": "Perfil actiu",
+      "artisticName": "Nom artístic",
+      "email": "Correu electrònic",
+      "emailUnavailable": "No disponible",
+      "technicalData": "Dades tècniques",
+      "musicianId": "ID de músic",
+      "userId": "ID d'usuari",
+      "incomplete": "Completa el teu perfil des de la finestra emergent per continuar."
+    },
+    "members": {
+      "title": "Membres del grup",
+      "description": "Gestiona les persones que formen part del projecte.",
+      "addMember": "Afegeix un membre",
+      "currentTeam": "Equip actual",
+      "countBadge": "{count} membres",
+      "memberCount": "{count} integrant carregat | {count} integrants carregats",
+      "selectBand": "Selecciona un grup per veure'n els membres.",
+      "loading": "Carregant membres...",
+      "loadError": "No hem pogut carregar els membres ara mateix.",
+      "emptyTitle": "Encara no hi ha membres carregats.",
+      "emptyDescription": "Afegeix el teu primer integrant per començar a gestionar rols, assajos i col·laboracions.",
+      "addFirstMember": "Afegeix el primer membre",
+      "profileLabel": "Perfil de músic",
+      "avatarAlt": "Avatar de mostra de {name}",
+      "activeMember": "Integrant actiu del grup",
+      "roles": {
+        "admin": "Admin",
+        "member": "Membre"
+      },
+      "modal": {
+        "title": "Afegeix un membre",
+        "close": "Tanca",
+        "description": "Introdueix el correu del músic per afegir-lo al grup com a membre.",
+        "emailLabel": "Correu del músic",
+        "cancel": "Cancel·la",
+        "submitLoading": "Afegint...",
+        "submit": "Afegeix un membre"
+      },
+      "errors": {
+        "loadFailed": "S'ha produït un error inesperat en carregar els membres.",
+        "addFailed": "No hem pogut afegir el músic. Verifica el correu i torna-ho a provar.",
+        "addUnexpected": "S'ha produït un error inesperat en afegir el membre.",
+        "noBandSelected": "Selecciona un grup abans d'afegir membres.",
+        "emptyEmail": "Escriu el correu del músic abans de confirmar."
+      },
+      "success": {
+        "memberAdded": "Membre afegit correctament."
+      }
+    }
+  },
+  "public": {
+    "landing": {
+      "title": "Plataforma Col·laborativa de Videoclips",
+      "description": "Mybandnow et permet crear videoclips musicals a distància. Mescla pistes de diferents músics i genera un producte final professional.",
+      "cta": "Comença ara"
+    }
+  },
+  "layouts": {
+    "public": {
+      "brand": "Mybandnow",
+      "openNav": "Obre la navegació pública",
+      "closeNav": "Tanca la navegació",
+      "login": "Inicia sessió",
+      "home": "Inici",
+      "mobileNavLabel": "Navegació pública mòbil",
+      "copyright": "© {year} My Band Now. Tots els drets reservats."
+    },
+    "dashboard": {
+      "brand": "Mybandnow Admin",
+      "loading": "Carregant...",
+      "activeBand": "Grup Actiu:",
+      "activeBandMobile": "Grup Actiu",
+      "createBand": "Crea un grup",
+      "welcome": "Benvingut, ",
+      "myAccount": "El meu compte",
+      "myProfile": "El Meu Perfil",
+      "logout": "Tanca la sessió",
+      "menu": "Menú",
+      "closeMenu": "Tanca",
+      "nav": {
+        "songs": "Cançons",
+        "members": "Membres",
+        "videoclips": "Videoclips"
+      },
+      "bandLogoAlt": "Logo del grup",
+      "copyrightLine1": "© {year} My Band Now.",
+      "copyrightLine2": "Tots els drets reservats.",
+      "selectBandFallback": "Selecciona un grup"
     }
   }
 }

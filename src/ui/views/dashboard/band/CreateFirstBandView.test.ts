@@ -37,6 +37,7 @@ vi.mock("../../../../application/band/CreateBandUseCase.js", () => ({
 }));
 
 import CreateFirstBandView from "./CreateFirstBandView.vue";
+import { i18n } from "../../../../infrastructure/config/i18n.js";
 import { useBandStore } from "../../../stores/useBandStore.js";
 
 type TestTextNode = {
@@ -242,6 +243,7 @@ function renderCreateFirstBandView() {
 	const root = createRootNode();
 	const app = renderer.createApp(CreateFirstBandView);
 	app.use(pinia);
+	app.use(i18n);
 	app.mount(root);
 
 	return {

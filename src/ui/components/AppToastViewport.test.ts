@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import { createRenderer, nextTick } from "vue";
+import { i18n } from "../../infrastructure/config/i18n.js";
 import { useToastStore } from "../stores/useToastStore.js";
 
 interface TestEventTarget {
@@ -193,6 +194,7 @@ function mountViewport(): {
 	const root = createRootNode();
 	const app = renderer.createApp(AppToastViewport);
 	app.use(pinia);
+	app.use(i18n);
 	app.mount(root);
 	return { app, root };
 }

@@ -112,7 +112,7 @@ onBeforeUnmount(() => {
           type="button"
           class="btn-close btn-close-white me-2 m-auto"
           data-bs-dismiss="toast"
-          aria-label="Descartar notificación"
+          :aria-label="$t('common.toast.dismiss')"
           @click="dismissToast(toast.id)"
         ></button>
       </div>

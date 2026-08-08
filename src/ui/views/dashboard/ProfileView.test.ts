@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from "pinia";
 import { createRenderer, nextTick } from "vue";
 
 import ProfileView from "./ProfileView.vue";
+import { i18n } from "../../../infrastructure/config/i18n.js";
 import { useAuthStore } from "../../stores/useAuthStore.js";
 import { useMusicianStore } from "../../stores/useMusicianStore.js";
 import { useToastStore } from "../../stores/useToastStore.js";
@@ -225,6 +226,7 @@ function renderProfileView(setup?: () => void) {
 	const root = createRootNode();
 	const app = renderer.createApp(ProfileView);
 	app.use(pinia);
+	app.use(i18n);
 	app.mount(root);
 
 	return {

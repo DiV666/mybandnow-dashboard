@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onUnmounted, nextTick } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/useAuthStore.js';
 import { useBandStore } from '../stores/useBandStore.js';
@@ -17,6 +18,7 @@ interface LoginErrorLike {
   response?: LoginErrorResponse;
 }
 
+const { t } = useI18n();
 const router = useRouter();
 const authStore = useAuthStore();
 const bandStore = useBandStore();
@@ -77,10 +79,10 @@ const handleLogin = async () => {
   const email = getEmailFromToken();
   
   if (!email || !password.value) {
-    toastStore.error('Faltan credenciales.');
+    toastStore.error(t('components.sessionExpired.errors.missingCredentials'));
     return;
   }
-  
+
   isLoading.value = true;
   try {
     const newAuthToken = await loginUseCase.run(email, password.value);
@@ -89,9 +91,9 @@ const handleLogin = async () => {
     password.value = '';
   } catch (error: unknown) {
     if (isLoginErrorLike(error) && error.response?.status === 401) {
-      toastStore.error('Credenciales inválidas');
+      toastStore.error(t('components.sessionExpired.errors.invalidCredentials'));
     } else {
-      toastStore.error('Ocurrió un error inesperado al validar la sesión');
+      toastStore.error(t('components.sessionExpired.errors.unexpected'));
     }
   } finally {
     isLoading.value = false;
@@ -188,50 +190,52 @@ onUnmounted(() => {
       <div class="modal-content shadow-lg border-danger">
         <div class="modal-header bg-danger text-white">
           <h5 class="modal-title">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i> Sesión Caducada
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ $t('components.sessionExpired.title') }}
           </h5>
         </div>
-        
+
         <div class="modal-body p-4">
           <p class="mb-4 text-center">
-            Por tu seguridad, tu sesión ha expirado. Introduce tu contraseña de nuevo para continuar donde lo dejaste sin perder tus datos.
+            {{ $t('components.sessionExpired.description') }}
           </p>
-          
+
           <form @submit.prevent="handleLogin">
             <div class="mb-3">
-              <label class="form-label">Correo electrónico</label>
+              <label class="form-label">{{ $t('components.sessionExpired.emailLabel') }}</label>
               <input type="email" class="form-control" :value="getEmailFromToken()" disabled>
             </div>
-            
+
             <div class="mb-4">
-              <label class="form-label">Contraseña</label>
-              <input 
-                type="password" 
-                class="form-control" 
-                v-model="password" 
-                placeholder="Introduce tu contraseña"
+              <label class="form-label">{{ $t('components.sessionExpired.passwordLabel') }}</label>
+              <input
+                type="password"
+                class="form-control"
+                v-model="password"
+                :placeholder="$t('components.sessionExpired.passwordPlaceholder')"
                 required
                 autofocus
               >
             </div>
-            
+
             <div class="d-grid gap-2">
               <button type="submit" class="btn btn-primary" :disabled="isLoading">
                 <span v-if="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                Continuar
+                {{ $t('components.sessionExpired.continueLabel') }}
               </button>
-              
+
               <button type="button" class="btn btn-outline-secondary" @click="manualLogout" :disabled="isLoading">
-                Cerrar sesión manualmente
+                {{ $t('components.sessionExpired.manualLogout') }}
               </button>
             </div>
           </form>
         </div>
-        
+
         <!-- Pie con la cuenta atrás -->
         <div class="modal-footer bg-body-tertiary justify-content-center p-2">
           <small class="text-body-secondary" style="font-size: 0.75rem;">
-            Se cerrará sesión automáticamente en <strong class="text-danger">{{ countdown }}</strong> segundos.
+            <i18n-t keypath="components.sessionExpired.autoLogoutCountdown" tag="span">
+              <template #seconds><strong class="text-danger">{{ countdown }}</strong></template>
+            </i18n-t>
           </small>
         </div>
       </div>

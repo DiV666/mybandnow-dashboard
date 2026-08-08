@@ -29,6 +29,350 @@
         "songs": "Cancións",
         "videoclips": "Videoclips"
       }
+    },
+    "songs": {
+      "errors": {
+        "loadMembersFailed": "Non puidemos cargar os membros do grupo.",
+        "uploadInstrumentNotFound": "Non atopamos o instrumento ao que intentabas subir o vídeo.",
+        "selectVideoFirst": "Selecciona un vídeo antes de continuar.",
+        "videoMustBeMp4": "O vídeo ten que estar en formato MP4.",
+        "corruptedMp4": "O ficheiro non é un MP4 válido ou está danado.",
+        "fileTooLarge": "O ficheiro supera o tamaño máximo permitido.",
+        "uploadTimeout": "A subida tardou demasiado. Téntao de novo.",
+        "uploadCanceled": "A subida cancelouse antes de rematar.",
+        "profileRequired": "Necesitas crear o teu perfil antes de subir vídeos.",
+        "notAssignedMusician": "Só a persoa asignada a este instrumento pode subir o vídeo.",
+        "noPermissionAssign": "Non tes permisos para asignar músicos a este instrumento.",
+        "instrumentNotFoundForUpdate": "Non atopamos o instrumento que intentabas actualizar.",
+        "assignMusicianFailed": "Non puidemos asignar o músico seleccionado.",
+        "assignMusicianUnexpected": "Produciuse un erro ao asignar o músico. Téntao de novo.",
+        "noPermissionInvite": "Non tes permisos para convidar músicos a este instrumento.",
+        "emptyInviteEmail": "Escribe un correo antes de enviar a invitación.",
+        "invalidInviteEmail": "Escribe un correo válido antes de continuar.",
+        "inviteFailed": "Non puidemos enviar a invitación ao correo indicado.",
+        "inviteUnexpected": "Produciuse un erro ao convidar o músico. Téntao de novo.",
+        "noPermissionEditInstrument": "Non tes permisos para editar este instrumento.",
+        "instrumentNotFoundForEdit": "Non atopamos o instrumento da canción que intentabas editar.",
+        "emptyInstrumentName": "Escribe un nome antes de gardar.",
+        "selectInstrumentFirst": "Selecciona un instrumento antes de gardar.",
+        "updateInstrumentFailed": "Non puidemos actualizar o instrumento da canción.",
+        "updateInstrumentUnexpected": "Produciuse un erro ao actualizar o instrumento. Téntao de novo.",
+        "uploadFailedGeneric": "A subida do vídeo fallou.",
+        "updateVideoStatusFailed": "Non puidemos actualizar o estado do vídeo.",
+        "loadSongsUnexpected": "Produciuse un erro inesperado ao cargar as cancións.",
+        "selectBandBeforeCreate": "Selecciona un grupo antes de crear unha canción.",
+        "songConflict": "Xa existe unha canción con eses datos. Téntao de novo.",
+        "createSongUnexpected": "Produciuse un erro inesperado ao crear a canción.",
+        "loadInstrumentDetailFailed": "Non puidemos cargar o detalle do instrumento seleccionado.",
+        "instrumentNotFoundForEditAlt": "Non atopamos o instrumento da canción que intentabas editar.",
+        "uploadStartFailed": "Non se puido iniciar a subida do vídeo.",
+        "profileRequiredForInstrument": "Debes completar o teu perfil de músico para engadir instrumentos.",
+        "instrumentConflict": "Xa existe un instrumento con eses datos para esta canción. Téntao de novo.",
+        "noPermissionAddInstrument": "Non tes permisos para engadir instrumentos a esta canción.",
+        "addInstrumentUnexpected": "Produciuse un erro inesperado ao engadir o instrumento."
+      },
+      "success": {
+        "songCreated": "Canción creada correctamente.",
+        "musicianAssigned": "Músico asignado correctamente.",
+        "invitationSent": "Invitación enviada correctamente.",
+        "instrumentUpdated": "Instrumento actualizado correctamente.",
+        "instrumentAdded": "Instrumento engadido correctamente."
+      },
+      "status": {
+        "uploading": "Subindo o vídeo ao servidor...",
+        "pendingValidation": "Subida aceptada. Pendente de validación.",
+        "validating": "Vídeo recibido. Validando o ficheiro...",
+        "processing": "Procesando e sincronizando o vídeo...",
+        "finalizing": "Finalizando a dispoñibilidade do vídeo..."
+      },
+      "availability": {
+        "error": "Erro",
+        "pendingValidation": "Pendente de validación",
+        "validating": "Validando o ficheiro",
+        "processing": "Procesando",
+        "finalizing": "Finalizando",
+        "available": "Dispoñible",
+        "pending": "Pendente"
+      },
+      "submitLabel": {
+        "processing": "Procesando...",
+        "retry": "Reintentar a subida",
+        "reupload": "Volver subir o vídeo",
+        "upload": "Subir vídeo"
+      },
+      "unassigned": "Sen asignar",
+      "pageTitle": "Xestión de Cancións (Songs / Tracks)",
+      "pageDescription": "Crea unha canción dentro do grupo seleccionado.",
+      "listTitle": "Cancións do grupo",
+      "songCount": "{count} canción | {count} cancións",
+      "createSong": "Crear canción",
+      "selectBandToView": "Selecciona un grupo para ver as súas cancións.",
+      "loadingSongs": "Cargando cancións...",
+      "loadSongsError": "Non puidemos cargar as cancións agora mesmo.",
+      "noSongsYet": "Este grupo aínda non ten cancións.",
+      "originalVideoclip": "Videoclip orixinal",
+      "editTracks": "Editar pistas",
+      "watchOnYoutube": "Ver en YouTube",
+      "instrumentsTitle": "Instrumentos",
+      "addInstrument": "Engadir instrumento",
+      "noInstrumentsYet": "Esta canción aínda non ten instrumentos.",
+      "table": {
+        "index": "#",
+        "trackTitle": "Título da pista",
+        "instrument": "Instrumento",
+        "musician": "Músico",
+        "status": "Estado",
+        "actions": "Accións"
+      },
+      "watchVideo": "Ver vídeo",
+      "edit": "Editar",
+      "uploadVideo": "Subir vídeo",
+      "assignMusician": "Asignar músico",
+      "close": "Pechar",
+      "cancel": "Cancelar",
+      "select": "Seleccionar",
+      "addInstrumentModalTitle": "Engadir instrumento a {songTitle}",
+      "selectInstrumentOption": "Selecciona un instrumento",
+      "addingLoading": "Engadindo...",
+      "saveInstrument": "Gardar instrumento",
+      "editInstrumentModalTitle": "Editar instrumento · {name}",
+      "loadingInstrumentDetail": "Cargando o detalle do instrumento...",
+      "savingLoading": "Gardando...",
+      "saveChanges": "Gardar cambios",
+      "uploadModalTitle": "Subir vídeo · {name}",
+      "videoMp4Label": "Vídeo MP4",
+      "uploadProgressAriaLabel": "Progreso da subida",
+      "assignModalTitle": "Asignar músico · {name}",
+      "musicianEmailLabel": "Correo do músico",
+      "inviteHint": "Se a persoa aínda non forma parte do grupo, podes convidala por correo.",
+      "bandMembersTitle": "Membros do grupo",
+      "selectMemberHint": "Selecciona alguén do equipo actual para asignalo ao instrumento.",
+      "loadingMembers": "Cargando membros...",
+      "noMembersAvailable": "Non hai membros dispoñibles para seleccionar.",
+      "selectMemberAriaLabel": "Seleccionar a {name}",
+      "inviteByEmail": "Convidar por correo",
+      "titleLabel": "Título",
+      "titlePlaceholder": "Ex. Paint It Black",
+      "originalVideoclipUrlLabel": "URL do videoclip orixinal",
+      "originalVideoclipUrlPlaceholder": "https://www.youtube.com/watch?v=...",
+      "creatingLoading": "Creando...",
+      "inviteMusicianFormAriaLabel": "Convidar músico por correo"
+    },
+    "trackEditor": {
+      "defaultTitle": "Editor de pistas",
+      "subtitle": "Editor sinxelo de sincronización por pista.",
+      "back": "Volver",
+      "loadingTracks": "Cargando pistas con vídeo...",
+      "noTracksYet": "Aínda non hai vídeos dispoñibles para editar nesta canción.",
+      "trackCount": "{count} pista | {count} pistas",
+      "zoomBadge": "Zoom {percent}%",
+      "originalVideoBadge": "Vídeo orixinal {time}",
+      "selectedTrackStartsAt": "A pista seleccionada comeza en {time}.",
+      "playTitle": "Play",
+      "pauseVisuallyHidden": "Pausar",
+      "playVisuallyHidden": "Reproducir",
+      "goToStartTitle": "Comezar dende o principio",
+      "goToStartVisuallyHidden": "Ir ao inicio",
+      "rewindTitle": "Retroceder 1 segundo",
+      "rewindVisuallyHidden": "Retroceder 1 segundo",
+      "forward": "Avanzar 1 segundo",
+      "zoomTitle": "Zoom",
+      "zoomVisuallyHidden": "Zoom da liña de tempo",
+      "startsAtLabel": "Comeza en",
+      "soloTooltipActive": "Quitar o solo",
+      "soloTooltipInactive": "Solo de pista",
+      "soloLabelInactive": "Solo",
+      "muteTooltipActive": "Activar audio",
+      "muteTooltipInactive": "Silenciar pista",
+      "muteLabelInactive": "Silenciar",
+      "durationLabel": "Duración: {duration}",
+      "pendingSave": "Pendente de gardar",
+      "saving": "Gardando",
+      "saved": "Gardado",
+      "trackStartLabel": "Inicio: {time}",
+      "errors": {
+        "missingInstrument": "Non se puido gardar: falta o instrumento do catálogo.",
+        "saveFailed": "Non se puido gardar.",
+        "syncSaveFailed": "Non puidemos gardar a sincronización desta pista. Comproba se o backend acepta startTimeMs.",
+        "loadTracksFailed": "Non puidemos cargar as pistas con vídeo dispoñible para esta canción."
+      }
+    }
+  },
+  "common": {
+    "themeToggle": {
+      "switchToLight": "Cambiar a tema claro",
+      "switchToDark": "Cambiar a tema escuro"
+    },
+    "localeToggle": {
+      "ariaLabel": "Seleccionar idioma (actual: {name})"
+    },
+    "toast": {
+      "dismiss": "Descartar notificación"
+    }
+  },
+  "components": {
+    "backendUnavailable": {
+      "title": "Servidor non dispoñible",
+      "message": "Non puidemos conectar co servidor. Comproba se o backend está en marcha ou téntao de novo nuns segundos.",
+      "sessionNotice": "A túa sesión segue activa. Non a pecharemos por este problema de conexión.",
+      "close": "Pechar",
+      "retry": "Reintentar"
+    },
+    "completeProfile": {
+      "title": "Completa o teu perfil",
+      "description": "Para realizar esta acción necesitas completar o teu perfil de músico. Só levará uns segundos.",
+      "nameLabel": "Nome ou Alcume Artístico",
+      "namePlaceholder": "Ex: John Doe",
+      "usernameLabel": "Nome de usuario (único)",
+      "usernamePlaceholder": "ex: john_doe_music",
+      "usernameHelp": "Só minúsculas, números e guións baixos.",
+      "submit": "Gardar e continuar",
+      "errors": {
+        "requiredFields": "Todos os campos son obrigatorios.",
+        "usernameTooShort": "O nome de usuario debe ter polo menos 3 caracteres.",
+        "generic": "Erro ao gardar o perfil. Quizais o nome de usuario xa estea en uso."
+      }
+    },
+    "sessionExpired": {
+      "title": "Sesión Caducada",
+      "description": "Pola túa seguridade, a túa sesión caducou. Introduce o teu contrasinal de novo para continuar onde o deixaches sen perder os teus datos.",
+      "emailLabel": "Correo electrónico",
+      "passwordLabel": "Contrasinal",
+      "passwordPlaceholder": "Introduce o teu contrasinal",
+      "continueLabel": "Continuar",
+      "manualLogout": "Pechar sesión manualmente",
+      "autoLogoutCountdown": "A sesión pecharase automaticamente en {seconds} segundos.",
+      "errors": {
+        "missingCredentials": "Faltan credenciais.",
+        "invalidCredentials": "Credenciais non válidas",
+        "unexpected": "Produciuse un erro inesperado ao validar a sesión"
+      }
+    }
+  },
+  "views": {
+    "sessionClosed": {
+      "title": "Sesión pechada por seguridade",
+      "description": "Pechamos a túa sesión automaticamente por inactividade para protexer os teus datos e os dos teus músicos.",
+      "action": "Volver Iniciar Sesión"
+    },
+    "videoclips": {
+      "title": "Xestión de Videoclips",
+      "newVideoclip": "Novo Videoclip",
+      "comingSoon": "Proximamente: Mestura de pistas e visualización dos videoclips finais."
+    },
+    "bands": {
+      "title": "Xestión de Grupos (Bands)",
+      "newBand": "Novo Grupo",
+      "comingSoon": "Proximamente: Listaxe e CRUD de Grupos orquestrado desde a capa de Aplicación (Use Cases)."
+    },
+    "createFirstBand": {
+      "title": "Benvido a Mybandnow!",
+      "description": "Parece que aínda non formas parte de ningún grupo.",
+      "descriptionLine2": "Podes crear o teu primeiro grupo musical agora ou continuar e facelo máis tarde.",
+      "createBand": "Crear un grupo",
+      "bandNameLabel": "Nome do Grupo",
+      "bandNamePlaceholder": "Ex. The Rolling Stones",
+      "submitLoading": "Creando...",
+      "submit": "Crear o meu grupo",
+      "skip": "Omitir por agora",
+      "errors": {
+        "emptyName": "O nome do grupo non pode estar baleiro",
+        "conflict": "Houbo un conflito ao crear o grupo. Téntao de novo.",
+        "unexpected": "Produciuse un erro inesperado ao crear o teu grupo."
+      }
+    },
+    "profile": {
+      "title": "O Meu Perfil",
+      "description": "Xestiona a información pública do teu perfil de músico.",
+      "loading": "Cargando perfil...",
+      "activeBadge": "Perfil activo",
+      "artisticName": "Nome artístico",
+      "email": "Correo electrónico",
+      "emailUnavailable": "Non dispoñible",
+      "technicalData": "Datos técnicos",
+      "musicianId": "ID de músico",
+      "userId": "ID de usuario",
+      "incomplete": "Completa o teu perfil desde a xanela emerxente para continuar."
+    },
+    "members": {
+      "title": "Membros do grupo",
+      "description": "Xestiona as persoas que forman parte do proxecto.",
+      "addMember": "Engadir membro",
+      "currentTeam": "Equipo actual",
+      "countBadge": "{count} membros",
+      "memberCount": "{count} integrante cargado | {count} integrantes cargados",
+      "selectBand": "Selecciona un grupo para ver os seus membros.",
+      "loading": "Cargando membros...",
+      "loadError": "Non puidemos cargar os membros agora mesmo.",
+      "emptyTitle": "Aínda non hai membros cargados.",
+      "emptyDescription": "Engade o teu primeiro integrante para comezar a xestionar roles, ensaios e colaboracións.",
+      "addFirstMember": "Engadir primeiro membro",
+      "profileLabel": "Perfil de músico",
+      "avatarAlt": "Avatar de mostra de {name}",
+      "activeMember": "Integrante activo do grupo",
+      "roles": {
+        "admin": "Admin",
+        "member": "Membro"
+      },
+      "modal": {
+        "title": "Engadir membro",
+        "close": "Pechar",
+        "description": "Introduce o correo do músico para engadilo ao grupo como membro.",
+        "emailLabel": "Correo do músico",
+        "cancel": "Cancelar",
+        "submitLoading": "Engadindo...",
+        "submit": "Engadir membro"
+      },
+      "errors": {
+        "loadFailed": "Produciuse un erro inesperado ao cargar os membros.",
+        "addFailed": "Non puidemos engadir o músico. Verifica o correo e téntao de novo.",
+        "addUnexpected": "Produciuse un erro inesperado ao engadir o membro.",
+        "noBandSelected": "Selecciona un grupo antes de engadir membros.",
+        "emptyEmail": "Escribe o correo do músico antes de confirmar."
+      },
+      "success": {
+        "memberAdded": "Membro engadido correctamente."
+      }
+    }
+  },
+  "public": {
+    "landing": {
+      "title": "Plataforma Colaborativa de Videoclips",
+      "description": "Mybandnow permíteche crear videoclips musicais a distancia. Mestura pistas de diferentes músicos e xera un produto final profesional.",
+      "cta": "Comezar agora"
+    }
+  },
+  "layouts": {
+    "public": {
+      "brand": "Mybandnow",
+      "openNav": "Abrir navegación pública",
+      "closeNav": "Pechar navegación",
+      "login": "Iniciar sesión",
+      "home": "Inicio",
+      "mobileNavLabel": "Navegación pública móbil",
+      "copyright": "© {year} My Band Now. Todos os dereitos reservados."
+    },
+    "dashboard": {
+      "brand": "Mybandnow Admin",
+      "loading": "Cargando...",
+      "activeBand": "Grupo Activo:",
+      "activeBandMobile": "Grupo Activo",
+      "createBand": "Crear grupo",
+      "welcome": "Benvido, ",
+      "myAccount": "A miña conta",
+      "myProfile": "O Meu Perfil",
+      "logout": "Pechar sesión",
+      "menu": "Menú",
+      "closeMenu": "Pechar",
+      "nav": {
+        "songs": "Cancións",
+        "members": "Membros",
+        "videoclips": "Videoclips"
+      },
+      "bandLogoAlt": "Logo do grupo",
+      "copyrightLine1": "© {year} My Band Now.",
+      "copyrightLine2": "Todos os dereitos reservados.",
+      "selectBandFallback": "Seleccionar grupo"
     }
   }
 }

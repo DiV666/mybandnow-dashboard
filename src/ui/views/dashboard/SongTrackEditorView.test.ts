@@ -101,6 +101,7 @@ vi.mock("bootstrap", () => ({
 }));
 
 import SongTrackEditorView from "./SongTrackEditorView.vue";
+import { i18n } from "../../../infrastructure/config/i18n.js";
 
 type PointerCaptureLike = {
 	setPointerCapture?: (pointerId: number) => void;
@@ -331,6 +332,7 @@ function renderView() {
 	const root = createRootNode();
 	const app = renderer.createApp(SongTrackEditorView);
 	app.use(pinia);
+	app.use(i18n);
 	app.mount(root);
 	return {
 		root,

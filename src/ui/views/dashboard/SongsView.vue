@@ -10,6 +10,7 @@ import {
 	watch,
 } from "vue";
 import { useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
 import { GetBandMembersUseCase } from "../../../application/band/GetBandMembersUseCase.js";
 import { GetInstrumentByIdUseCase } from "../../../application/instrument/GetInstrumentByIdUseCase.js";
 import { GetInstrumentsUseCase } from "../../../application/instrument/GetInstrumentsUseCase.js";
@@ -147,6 +148,7 @@ type TooltipInstance = {
 const SONG_INSTRUMENT_POLL_INTERVAL_MS = 5000;
 const SONG_INSTRUMENT_PROGRESS_TICK_MS = 400;
 
+const { t } = useI18n();
 const bandStore = useBandStore();
 const musicianStore = useMusicianStore();
 const toastStore = useToastStore();
@@ -468,7 +470,7 @@ async function loadAssignableBandMembers(
 			return;
 		}
 
-		const message = "No pudimos cargar los miembros de la banda.";
+		const message = t('dashboard.songs.errors.loadMembersFailed');
 		const currentModal = activeAssignMusicianModal.value;
 		if (!currentModal) {
 			return;
@@ -790,14 +792,14 @@ function getSongInstrumentMusicianDisplayName(
 		return (
 			resolveMusicianDisplayName(currentProfile.name, currentProfile.username) ||
 			instrument.musicianId ||
-			"Sin asignar"
+			t('dashboard.songs.unassigned')
 		);
 	}
 
 	return (
 		musicianDisplayNames.value[instrument.musicianId] ??
 		instrument.musicianId ??
-		"Sin asignar"
+		t('dashboard.songs.unassigned')
 	);
 }
 
@@ -881,26 +883,26 @@ function mapUploadErrorMessage(
 	const combined = `${code} ${message}`;
 
 	if (combined.includes("songinstrument_not_exists")) {
-		return "No se encontró el instrumento al que intentabas subir el vídeo.";
+		return t('dashboard.songs.errors.uploadInstrumentNotFound');
 	}
 
 	if (combined.includes("no video file provided")) {
-		return "Seleccioná un vídeo antes de continuar.";
+		return t('dashboard.songs.errors.selectVideoFirst');
 	}
 
 	if (combined.includes("content-type must be video/mp4")) {
-		return "El vídeo tiene que estar en formato MP4.";
+		return t('dashboard.songs.errors.videoMustBeMp4');
 	}
 
 	if (
 		combined.includes("invalid file format") ||
 		combined.includes("corrupted header")
 	) {
-		return "El archivo no es un MP4 válido o está dañado.";
+		return t('dashboard.songs.errors.corruptedMp4');
 	}
 
 	if (combined.includes("video file exceeds")) {
-		return "El archivo supera el tamaño máximo permitido.";
+		return t('dashboard.songs.errors.fileTooLarge');
 	}
 
 	if (
@@ -908,7 +910,7 @@ function mapUploadErrorMessage(
 		message.includes("timeout") ||
 		message.includes("exceeded")
 	) {
-		return "La subida tardó demasiado. Inténtalo de nuevo.";
+		return t('dashboard.songs.errors.uploadTimeout');
 	}
 
 	if (
@@ -917,11 +919,11 @@ function mapUploadErrorMessage(
 		code.includes("err_canceled") ||
 		message.includes("canceled")
 	) {
-		return "La subida se canceló antes de terminar.";
+		return t('dashboard.songs.errors.uploadCanceled');
 	}
 
 	if (combined.includes("profile required")) {
-		return "Necesitás crear tu perfil antes de subir vídeos.";
+		return t('dashboard.songs.errors.profileRequired');
 	}
 
 	if (
@@ -929,11 +931,11 @@ function mapUploadErrorMessage(
 			"only the assigned musician can upload for this song instrument",
 		)
 	) {
-		return "Solo la persona asignada a este instrumento puede subir el vídeo.";
+		return t('dashboard.songs.errors.notAssignedMusician');
 	}
 
 	if (details.status === 403) {
-		return "Solo la persona asignada a este instrumento puede subir el vídeo.";
+		return t('dashboard.songs.errors.notAssignedMusician');
 	}
 
 	return fallbackMessage;
@@ -945,18 +947,18 @@ function mapAssignMusicianErrorMessage(details: UploadErrorDetails): string {
 	const combined = `${code} ${message}`;
 
 	if (details.status === 401 || details.status === 403) {
-		return "No tienes permisos para asignar músicos a este instrumento.";
+		return t('dashboard.songs.errors.noPermissionAssign');
 	}
 
 	if (details.status === 404 || combined.includes("songinstrument_not_exists")) {
-		return "No se encontró el instrumento que intentabas actualizar.";
+		return t('dashboard.songs.errors.instrumentNotFoundForUpdate');
 	}
 
 	if (details.status === 400) {
-		return "No pudimos asignar el músico seleccionado.";
+		return t('dashboard.songs.errors.assignMusicianFailed');
 	}
 
-	return "Ocurrió un error al asignar el músico. Inténtalo de nuevo.";
+	return t('dashboard.songs.errors.assignMusicianUnexpected');
 }
 
 function mapInviteMusicianErrorMessage(details: UploadErrorDetails): string {
@@ -965,26 +967,26 @@ function mapInviteMusicianErrorMessage(details: UploadErrorDetails): string {
 	const combined = `${code} ${message}`;
 
 	if (details.status === 401 || details.status === 403) {
-		return "No tienes permisos para invitar músicos a este instrumento.";
+		return t('dashboard.songs.errors.noPermissionInvite');
 	}
 
 	if (details.status === 404 || combined.includes("songinstrument_not_exists")) {
-		return "No se encontró el instrumento que intentabas actualizar.";
+		return t('dashboard.songs.errors.instrumentNotFoundForUpdate');
 	}
 
 	if (combined.includes("musicianemail cannot be empty")) {
-		return "Escribe un email antes de enviar la invitación.";
+		return t('dashboard.songs.errors.emptyInviteEmail');
 	}
 
 	if (combined.includes("musicianemail must be a valid email")) {
-		return "Escribe un email válido antes de continuar.";
+		return t('dashboard.songs.errors.invalidInviteEmail');
 	}
 
 	if (details.status === 400) {
-		return "No pudimos enviar la invitación al email indicado.";
+		return t('dashboard.songs.errors.inviteFailed');
 	}
 
-	return "Ocurrió un error al invitar al músico. Inténtalo de nuevo.";
+	return t('dashboard.songs.errors.inviteUnexpected');
 }
 
 function mapEditInstrumentErrorMessage(details: UploadErrorDetails): string {
@@ -993,26 +995,26 @@ function mapEditInstrumentErrorMessage(details: UploadErrorDetails): string {
 	const combined = `${code} ${message}`;
 
 	if (details.status === 401 || details.status === 403) {
-		return "No tienes permisos para editar este instrumento.";
+		return t('dashboard.songs.errors.noPermissionEditInstrument');
 	}
 
 	if (details.status === 404 || combined.includes("instrument_not_exists")) {
-		return "No se encontró el instrumento de la canción que intentabas editar.";
+		return t('dashboard.songs.errors.instrumentNotFoundForEdit');
 	}
 
 	if (combined.includes("songinstrumentname cannot be empty")) {
-		return "Escribe un nombre antes de guardar.";
+		return t('dashboard.songs.errors.emptyInstrumentName');
 	}
 
 	if (combined.includes("instrumentid cannot be empty")) {
-		return "Selecciona un instrumento antes de guardar.";
+		return t('dashboard.songs.errors.selectInstrumentFirst');
 	}
 
 	if (details.status === 400) {
-		return "No pudimos actualizar el instrumento de la canción.";
+		return t('dashboard.songs.errors.updateInstrumentFailed');
 	}
 
-	return "Ocurrió un error al actualizar el instrumento. Inténtalo de nuevo.";
+	return t('dashboard.songs.errors.updateInstrumentUnexpected');
 }
 
 function getSongInstrumentUploadErrorMessage(
@@ -1030,7 +1032,7 @@ function getSongInstrumentUploadErrorMessage(
 			{
 				message: upload.errorMessage,
 			},
-			"La subida del vídeo falló.",
+			t('dashboard.songs.errors.uploadFailedGeneric'),
 		);
 	}
 
@@ -1057,23 +1059,23 @@ function getSongInstrumentStatusMessage(
 		uploadState.isSubmitting &&
 		uploadState.progressStage === songInstrumentUploadProgressStages.REQUEST
 	) {
-		return "Subiendo video al servidor...";
+		return t('dashboard.songs.status.uploading');
 	}
 
 	if (upload?.status === songInstrumentUploadStatuses.PENDING) {
-		return "Subida aceptada. Pendiente de validación.";
+		return t('dashboard.songs.status.pendingValidation');
 	}
 
 	if (upload?.status === songInstrumentUploadStatuses.READY) {
-		return "Video recibido. Validando archivo...";
+		return t('dashboard.songs.status.validating');
 	}
 
 	if (upload?.status === songInstrumentUploadStatuses.PROCESSING) {
-		return "Procesando y sincronizando video...";
+		return t('dashboard.songs.status.processing');
 	}
 
 	if (upload?.status === songInstrumentUploadStatuses.COMPLETED) {
-		return "Finalizando disponibilidad del video...";
+		return t('dashboard.songs.status.finalizing');
 	}
 
 	return uploadState.successMsg;
@@ -1278,29 +1280,31 @@ function getSongInstrumentAvailabilityLabel(
 	const upload = instrument ? getEffectiveUpload(songId, instrument) : null;
 
 	if (upload?.status === songInstrumentUploadStatuses.FAILED) {
-		return "Error";
+		return t('dashboard.songs.availability.error');
 	}
 
 	if (upload?.status === songInstrumentUploadStatuses.PENDING) {
-		return "Pendiente de validación";
+		return t('dashboard.songs.availability.pendingValidation');
 	}
 
 	if (upload?.status === songInstrumentUploadStatuses.READY) {
-		return "Validando archivo";
+		return t('dashboard.songs.availability.validating');
 	}
 
 	if (upload?.status === songInstrumentUploadStatuses.PROCESSING) {
-		return "Procesando";
+		return t('dashboard.songs.availability.processing');
 	}
 
 	if (
 		upload?.status === songInstrumentUploadStatuses.COMPLETED &&
 		!hasSongInstrumentVideo(songId, instrumentId)
 	) {
-		return "Finalizando";
+		return t('dashboard.songs.availability.finalizing');
 	}
 
-	return hasSongInstrumentVideo(songId, instrumentId) ? "Disponible" : "Pendiente";
+	return hasSongInstrumentVideo(songId, instrumentId)
+		? t('dashboard.songs.availability.available')
+		: t('dashboard.songs.availability.pending');
 }
 
 function getSongInstrumentAvailabilityBadgeClass(
@@ -1342,7 +1346,16 @@ function getSongInstrumentAvailabilityTestId(
 	songId: string,
 	instrumentId: string,
 ): string {
-	return getSongInstrumentAvailabilityLabel(songId, instrumentId) === "Disponible"
+	const instrument = getSongInstrument(songId, instrumentId);
+	const upload = instrument ? getEffectiveUpload(songId, instrument) : null;
+	const isAvailable =
+		upload?.status !== songInstrumentUploadStatuses.FAILED &&
+		upload?.status !== songInstrumentUploadStatuses.PENDING &&
+		upload?.status !== songInstrumentUploadStatuses.READY &&
+		upload?.status !== songInstrumentUploadStatuses.PROCESSING &&
+		hasSongInstrumentVideo(songId, instrumentId);
+
+	return isAvailable
 		? `upload-complete-${songId}-${instrumentId}`
 		: `upload-status-${songId}-${instrumentId}`;
 }
@@ -1381,21 +1394,21 @@ function getSongInstrumentSubmitLabel(
 	instrument: SongInstrumentListItemResponse,
 ): string {
 	if (isSongInstrumentUploadDisabled(songId, instrument)) {
-		return "Procesando...";
+		return t('dashboard.songs.submitLabel.processing');
 	}
 
 	if (
 		getEffectiveUpload(songId, instrument)?.status ===
 		songInstrumentUploadStatuses.FAILED
 	) {
-		return "Reintentar subida";
+		return t('dashboard.songs.submitLabel.retry');
 	}
 
 	if (hasSongInstrumentVideo(songId, instrument.id)) {
-		return "Resubir video";
+		return t('dashboard.songs.submitLabel.reupload');
 	}
 
-	return "Subir video";
+	return t('dashboard.songs.submitLabel.upload');
 }
 
 async function refreshSongInstrumentDetail(
@@ -1481,7 +1494,7 @@ async function runSongInstrumentPoll(
 				{
 					message: detail.upload.errorMessage,
 				},
-				"La subida del vídeo falló.",
+				t('dashboard.songs.errors.uploadFailedGeneric'),
 			);
 			setSongInstrumentUploadState(songId, instrumentId, {
 				isSubmitting: false,
@@ -1520,7 +1533,7 @@ async function runSongInstrumentPoll(
 	} catch (error: unknown) {
 		const message = mapUploadErrorMessage(
 			extractUploadErrorDetails(error),
-			"No pudimos actualizar el estado del video.",
+			t('dashboard.songs.errors.updateVideoStatusFailed'),
 		);
 		cancelSongInstrumentPoll(songId, instrumentId);
 		resetSongInstrumentProgress(songId, instrumentId);
@@ -1647,7 +1660,7 @@ async function loadSongs(bandId: string | null) {
 		const message =
 			error instanceof Error
 				? error.message
-				: "Ocurrió un error inesperado al cargar las canciones.";
+				: t('dashboard.songs.errors.loadSongsUnexpected');
 		songsErrorMsg.value = message;
 		showErrorToast(message);
 	} finally {
@@ -1738,7 +1751,7 @@ async function handleCreateSong() {
 	errorMsg.value = "";
 
 	if (!selectedBand.value) {
-		errorMsg.value = "Selecciona una banda antes de crear una canción.";
+		errorMsg.value = t('dashboard.songs.errors.selectBandBeforeCreate');
 		showErrorToast(errorMsg.value);
 		return;
 	}
@@ -1756,17 +1769,17 @@ async function handleCreateSong() {
 
 		resetCreateSongForm();
 		isCreateSongModalOpen.value = false;
-		showSuccessToast("Canción creada correctamente.");
+		showSuccessToast(t('dashboard.songs.success.songCreated'));
 		if (selectedBand.value?.id.value === bandId) {
 			await loadSongs(bandId);
 		}
 	} catch (error: unknown) {
 		if (isHttpErrorLike(error) && error.response?.status === 409) {
-			errorMsg.value = "Ya existe una canción con esos datos. Inténtalo de nuevo.";
+			errorMsg.value = t('dashboard.songs.errors.songConflict');
 		} else if (error instanceof Error) {
 			errorMsg.value = error.message;
 		} else {
-			errorMsg.value = "Ocurrió un error inesperado al crear la canción.";
+			errorMsg.value = t('dashboard.songs.errors.createSongUnexpected');
 		}
 		showErrorToast(errorMsg.value);
 	} finally {
@@ -1903,7 +1916,7 @@ async function loadEditInstrumentModalDetail(
 			return;
 		}
 
-		const message = "No pudimos cargar el detalle del instrumento seleccionado.";
+		const message = t('dashboard.songs.errors.loadInstrumentDetailFailed');
 		setActiveEditInstrumentModal({
 			isLoading: false,
 			errorMsg: message,
@@ -1999,7 +2012,7 @@ async function assignMusicianById(musicianId: string): Promise<void> {
 		);
 		await refreshSongInstrumentDetail(modalState.songId, modalState.instrumentId);
 		if (isAssignMusicianModalActive(modalState.songId, modalState.instrumentId)) {
-			showSuccessToast("Músico asignado correctamente.");
+			showSuccessToast(t('dashboard.songs.success.musicianAssigned'));
 			closeAssignMusicianModal();
 		}
 	} catch (error: unknown) {
@@ -2039,7 +2052,7 @@ async function handleAssignMusicianSubmit(): Promise<void> {
 		);
 		await refreshSongInstrumentDetail(modalState.songId, modalState.instrumentId);
 		if (isAssignMusicianModalActive(modalState.songId, modalState.instrumentId)) {
-			showSuccessToast("Invitación enviada correctamente.");
+			showSuccessToast(t('dashboard.songs.success.invitationSent'));
 			closeAssignMusicianModal();
 		}
 	} catch (error: unknown) {
@@ -2074,7 +2087,7 @@ async function handleEditInstrumentSubmit(): Promise<void> {
 	const trimmedName = modalState.name.trim();
 
 	if (!modalState.songId || !modalState.instrumentId) {
-		const message = "No encontramos el instrumento de la canción que intentabas editar.";
+		const message = t('dashboard.songs.errors.instrumentNotFoundForEditAlt');
 		setActiveEditInstrumentModal({
 			errorMsg: message,
 		});
@@ -2083,7 +2096,7 @@ async function handleEditInstrumentSubmit(): Promise<void> {
 	}
 
 	if (!modalState.catalogInstrumentId) {
-		const message = "Selecciona un instrumento antes de guardar.";
+		const message = t('dashboard.songs.errors.selectInstrumentFirst');
 		setActiveEditInstrumentModal({
 			errorMsg: message,
 		});
@@ -2092,7 +2105,7 @@ async function handleEditInstrumentSubmit(): Promise<void> {
 	}
 
 	if (!trimmedName) {
-		const message = "Escribe un nombre antes de guardar.";
+		const message = t('dashboard.songs.errors.emptyInstrumentName');
 		setActiveEditInstrumentModal({
 			errorMsg: message,
 		});
@@ -2124,7 +2137,7 @@ async function handleEditInstrumentSubmit(): Promise<void> {
 				// Catalog name resolution must not break the song instrument flow.
 			}
 		}
-		showSuccessToast("Instrumento actualizado correctamente.");
+		showSuccessToast(t('dashboard.songs.success.instrumentUpdated'));
 		closeEditInstrumentModal();
 	} catch (error: unknown) {
 		if (!isEditInstrumentModalActive(modalState.songId, modalState.instrumentId)) {
@@ -2154,7 +2167,7 @@ function handleSongInstrumentVideoSelection(
 			: null;
 
 	if (!selectedFile) {
-		const message = "Seleccioná un vídeo antes de continuar.";
+		const message = t('dashboard.songs.errors.selectVideoFirst');
 		resetSongInstrumentProgress(songId, instrumentId);
 		setSongInstrumentUploadState(songId, instrumentId, {
 			selectedFile: null,
@@ -2166,7 +2179,7 @@ function handleSongInstrumentVideoSelection(
 	}
 
 	if (selectedFile.type !== "video/mp4") {
-		const message = "El vídeo tiene que estar en formato MP4.";
+		const message = t('dashboard.songs.errors.videoMustBeMp4');
 		resetSongInstrumentProgress(songId, instrumentId);
 		setSongInstrumentUploadState(songId, instrumentId, {
 			selectedFile: null,
@@ -2191,7 +2204,7 @@ async function handleUploadSongInstrumentVideo(
 ): Promise<void> {
 	const uploadState = getSongInstrumentUploadState(songId, instrumentId);
 	if (!uploadState.selectedFile) {
-		const message = uploadState.errorMsg || "Seleccioná un vídeo antes de continuar.";
+		const message = uploadState.errorMsg || t('dashboard.songs.errors.selectVideoFirst');
 		setSongInstrumentUploadState(songId, instrumentId, {
 			errorMsg: message,
 			successMsg: "",
@@ -2229,7 +2242,7 @@ async function handleUploadSongInstrumentVideo(
 	} catch (error: unknown) {
 		const message = mapUploadErrorMessage(
 			extractUploadErrorDetails(error),
-			"No se pudo iniciar la subida del vídeo.",
+			t('dashboard.songs.errors.uploadStartFailed'),
 		);
 		resetSongInstrumentProgress(songId, instrumentId);
 		setSongInstrumentUploadState(songId, instrumentId, {
@@ -2245,7 +2258,7 @@ async function handleUploadSongInstrumentVideo(
 async function handleCreateSongInstrument(songId: string): Promise<void> {
 	const musicianProfileId = musicianStore.profile?.id;
 	if (!musicianProfileId) {
-		const message = "Debes completar tu perfil de músico para añadir instrumentos.";
+		const message = t('dashboard.songs.errors.profileRequiredForInstrument');
 		setSongInstrumentForm(songId, {
 			errorMsg: message,
 		});
@@ -2282,11 +2295,11 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
 			instrumentId: "",
 			isSubmitting: false,
 		});
-		showSuccessToast("Instrumento agregado correctamente.");
+		showSuccessToast(t('dashboard.songs.success.instrumentAdded'));
 	} catch (error: unknown) {
 		if (isHttpErrorLike(error) && error.response?.status === 409) {
 			const message =
-				"Ya existe un instrumento con esos datos para esta canción. Inténtalo de nuevo.";
+				t('dashboard.songs.errors.instrumentConflict');
 			setSongInstrumentForm(songId, {
 				errorMsg: message,
 				isSubmitting: false,
@@ -2296,7 +2309,7 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
 		}
 
 		if (isHttpErrorLike(error) && error.response?.status === 403) {
-			const message = "No tienes permisos para añadir instrumentos a esta canción.";
+			const message = t('dashboard.songs.errors.noPermissionAddInstrument');
 			setSongInstrumentForm(songId, {
 				errorMsg: message,
 				isSubmitting: false,
@@ -2308,7 +2321,7 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
 		const message =
 			error instanceof Error
 				? error.message
-				: "Ocurrió un error inesperado al añadir el instrumento.";
+				: t('dashboard.songs.errors.addInstrumentUnexpected');
 		setSongInstrumentForm(songId, {
 			errorMsg: message,
 			isSubmitting: false,
@@ -2328,9 +2341,9 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
   <div>
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
       <div>
-        <h1 class="h2">Gestión de Canciones (Songs / Tracks)</h1>
+        <h1 class="h2">{{ $t('dashboard.songs.pageTitle') }}</h1>
         <p class="text-muted mb-0">
-          Crea una canción dentro de la banda seleccionada.
+          {{ $t('dashboard.songs.pageDescription') }}
         </p>
       </div>
     </div>
@@ -2339,9 +2352,9 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-3 gap-3 flex-wrap">
           <div>
-            <h2 class="h5 mb-0">Canciones de la banda</h2>
+            <h2 class="h5 mb-0">{{ $t('dashboard.songs.listTitle') }}</h2>
             <span v-if="selectedBand && !isLoadingSongs" class="text-muted small">
-              {{ songs.length }} canciones
+              {{ $t('dashboard.songs.songCount', songs.length) }}
             </span>
           </div>
 
@@ -2351,24 +2364,24 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
             :disabled="!canSubmit"
             @click="openCreateSongModal"
           >
-            Crear canción
+            {{ $t('dashboard.songs.createSong') }}
           </button>
         </div>
 
         <p v-if="!selectedBand" class="text-muted mb-0">
-          Selecciona una banda para ver sus canciones.
+          {{ $t('dashboard.songs.selectBandToView') }}
         </p>
 
         <p v-else-if="isLoadingSongs" class="text-muted mb-0">
-          Cargando canciones...
+          {{ $t('dashboard.songs.loadingSongs') }}
         </p>
 
         <p v-else-if="songsErrorMsg" class="text-muted mb-0">
-          No pudimos cargar las canciones por ahora.
+          {{ $t('dashboard.songs.loadSongsError') }}
         </p>
 
         <p v-else-if="songs.length === 0" class="text-muted mb-0">
-          Esta banda todavía no tiene canciones.
+          {{ $t('dashboard.songs.noSongsYet') }}
         </p>
 
         <div v-else data-testid="songs-list" class="d-grid gap-3">
@@ -2383,7 +2396,7 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                   <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-2">
                     <div>
                       <h3 class="h5 mb-1">{{ song.title }}</h3>
-                      <p class="text-muted small mb-0">Videoclip original</p>
+                      <p class="text-muted small mb-0">{{ $t('dashboard.songs.originalVideoclip') }}</p>
                     </div>
                     <div class="d-flex flex-wrap gap-2">
                       <button
@@ -2391,7 +2404,7 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                         class="btn btn-outline-primary btn-sm"
                         @click="openSongTrackEditor(song)"
                       >
-                        Editar pistas
+                        {{ $t('dashboard.songs.editTracks') }}
                       </button>
                       <a
                         :href="song.originalVideoclipUrl"
@@ -2400,7 +2413,7 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                         class="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-2"
                       >
                         <span aria-hidden="true">▶</span>
-                        <span>Ver en YouTube</span>
+                        <span>{{ $t('dashboard.songs.watchOnYoutube') }}</span>
                       </a>
                     </div>
                   </div>
@@ -2410,28 +2423,28 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                   :data-testid="`song-instruments-header-${song.id}`"
                   class="d-flex justify-content-between align-items-center gap-2 mb-3"
                 >
-                  <h4 class="h6 mb-0">Instrumentos</h4>
+                  <h4 class="h6 mb-0">{{ $t('dashboard.songs.instrumentsTitle') }}</h4>
                   <button
                     type="button"
                     class="btn btn-outline-secondary btn-sm py-1 px-2 small"
                     @click="openSongInstrumentForm(song.id)"
                   >
-                    Añadir instrumento
+                    {{ $t('dashboard.songs.addInstrument') }}
                   </button>
                 </div>
                 <p v-if="(songInstruments[song.id] ?? []).length === 0" class="text-muted mb-0 small">
-                  Esta canción todavía no tiene instrumentos.
+                  {{ $t('dashboard.songs.noInstrumentsYet') }}
                 </p>
                 <div v-else class="table-responsive">
                   <table class="table table-sm align-middle mb-0">
                     <thead>
                       <tr>
-                        <th scope="col">#</th>
-                        <th scope="col">Título de la pista</th>
-                        <th scope="col">Instrumento</th>
-                        <th scope="col">Músico</th>
-                        <th scope="col">Estado</th>
-                        <th scope="col">Acciones</th>
+                        <th scope="col">{{ $t('dashboard.songs.table.index') }}</th>
+                        <th scope="col">{{ $t('dashboard.songs.table.trackTitle') }}</th>
+                        <th scope="col">{{ $t('dashboard.songs.table.instrument') }}</th>
+                        <th scope="col">{{ $t('dashboard.songs.table.musician') }}</th>
+                        <th scope="col">{{ $t('dashboard.songs.table.status') }}</th>
+                        <th scope="col">{{ $t('dashboard.songs.table.actions') }}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -2457,8 +2470,8 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                                   rel="noreferrer noopener"
                                   class="d-inline-flex align-items-center justify-content-center text-body-emphasis text-decoration-none"
                                   data-bs-toggle="tooltip"
-                                  data-bs-title="Ver video"
-                                  aria-label="Ver video"
+                                  :data-bs-title="$t('dashboard.songs.watchVideo')"
+                                  :aria-label="$t('dashboard.songs.watchVideo')"
                                 >
                                   <i class="bi bi-eye" aria-hidden="true"></i>
                                 </a>
@@ -2471,13 +2484,13 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                               class="song-instrument-action-wrapper d-inline-flex"
                               tabindex="0"
                               data-bs-toggle="tooltip"
-                              data-bs-title="Editar"
-                              aria-label="Editar"
+                              :data-bs-title="$t('dashboard.songs.edit')"
+                              :aria-label="$t('dashboard.songs.edit')"
                             >
                               <button
                                 type="button"
                                 class="song-instrument-action btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center px-2 rounded-2"
-                                aria-label="Editar"
+                                :aria-label="$t('dashboard.songs.edit')"
                                 :disabled="!song.id || !instrument.id"
                                 @click="openEditInstrumentModal(song.id, instrument.id)"
                               >
@@ -2489,8 +2502,8 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                               type="button"
                               class="song-instrument-action btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center px-2 rounded-2"
                               data-bs-toggle="tooltip"
-                              data-bs-title="Subir vídeo"
-                              aria-label="Subir vídeo"
+                              :data-bs-title="$t('dashboard.songs.uploadVideo')"
+                              :aria-label="$t('dashboard.songs.uploadVideo')"
                               @click="openSongInstrumentUploadModal(song.id, instrument.id)"
                             >
                               <i class="bi bi-upload" aria-hidden="true"></i>
@@ -2500,8 +2513,8 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                               type="button"
                               class="song-instrument-action btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center px-2 rounded-2"
                               data-bs-toggle="tooltip"
-                              data-bs-title="Asignar músico"
-                              aria-label="Asignar músico"
+                              :data-bs-title="$t('dashboard.songs.assignMusician')"
+                              :aria-label="$t('dashboard.songs.assignMusician')"
                               @click="openAssignMusicianModal(song.id, instrument.id)"
                             >
                               <i class="bi bi-person" aria-hidden="true"></i>
@@ -2538,12 +2551,12 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
         <div class="modal-content">
           <div class="modal-header">
             <h4 :id="`createSongInstrumentModalTitle-${activeSongInstrumentFormSong.id}`" class="modal-title h5">
-              Añadir instrumento a {{ activeSongInstrumentFormSong.title }}
+              {{ $t('dashboard.songs.addInstrumentModalTitle', { songTitle: activeSongInstrumentFormSong.title }) }}
             </h4>
             <button
               type="button"
               class="btn-close"
-              aria-label="Cerrar"
+              :aria-label="$t('dashboard.songs.close')"
               :disabled="songInstrumentForms[activeSongInstrumentFormSong.id].isSubmitting"
               @click="closeSongInstrumentForm(activeSongInstrumentFormSong.id)"
             ></button>
@@ -2555,7 +2568,7 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
             <div class="modal-body">
               <div class="row g-2">
                 <div class="col-12">
-                  <label :for="`songInstrumentName-${activeSongInstrumentFormSong.id}`" class="form-label mb-1">Título de la pista</label>
+                  <label :for="`songInstrumentName-${activeSongInstrumentFormSong.id}`" class="form-label mb-1">{{ $t('dashboard.songs.table.trackTitle') }}</label>
                   <input
                     :id="`songInstrumentName-${activeSongInstrumentFormSong.id}`"
                     v-model="songInstrumentForms[activeSongInstrumentFormSong.id].name"
@@ -2566,7 +2579,7 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                   >
                 </div>
                 <div class="col-12">
-                  <label :for="`songInstrumentId-${activeSongInstrumentFormSong.id}`" class="form-label mb-1">Instrumento</label>
+                  <label :for="`songInstrumentId-${activeSongInstrumentFormSong.id}`" class="form-label mb-1">{{ $t('dashboard.songs.table.instrument') }}</label>
                   <select
                     :id="`songInstrumentId-${activeSongInstrumentFormSong.id}`"
                     v-model="songInstrumentForms[activeSongInstrumentFormSong.id].instrumentId"
@@ -2575,7 +2588,7 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                     required
                   >
                     <option value="" disabled>
-                      Selecciona un instrumento
+                      {{ $t('dashboard.songs.selectInstrumentOption') }}
                     </option>
                     <option
                       v-for="instrument in availableInstruments"
@@ -2595,7 +2608,7 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                 :disabled="songInstrumentForms[activeSongInstrumentFormSong.id].isSubmitting"
                 @click="closeSongInstrumentForm(activeSongInstrumentFormSong.id)"
               >
-                Cancelar
+                {{ $t('dashboard.songs.cancel') }}
               </button>
               <button
                 type="submit"
@@ -2607,7 +2620,7 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                   class="spinner-border spinner-border-sm me-2"
                   aria-hidden="true"
                 ></span>
-                {{ songInstrumentForms[activeSongInstrumentFormSong.id].isSubmitting ? 'Añadiendo...' : 'Guardar instrumento' }}
+                {{ songInstrumentForms[activeSongInstrumentFormSong.id].isSubmitting ? $t('dashboard.songs.addingLoading') : $t('dashboard.songs.saveInstrument') }}
               </button>
             </div>
           </form>
@@ -2627,12 +2640,12 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
         <div class="modal-content">
           <div class="modal-header">
             <h4 :id="`editInstrumentModalTitle-${activeEditInstrumentModal.instrumentId}`" class="modal-title h5">
-              Editar instrumento · {{ activeEditInstrumentModal.name || getSongInstrumentDisplayName(activeEditInstrumentModalContext.instrument) }}
+              {{ $t('dashboard.songs.editInstrumentModalTitle', { name: activeEditInstrumentModal.name || getSongInstrumentDisplayName(activeEditInstrumentModalContext.instrument) }) }}
             </h4>
             <button
               type="button"
               class="btn-close"
-              aria-label="Cerrar"
+              :aria-label="$t('dashboard.songs.close')"
               :disabled="activeEditInstrumentModal.isSubmitting"
               @click="closeEditInstrumentModal"
             ></button>
@@ -2649,12 +2662,12 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
 
               <div v-if="activeEditInstrumentModal.isLoading" class="text-muted small d-flex align-items-center gap-2">
                 <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
-                Cargando detalle del instrumento...
+                {{ $t('dashboard.songs.loadingInstrumentDetail') }}
               </div>
 
               <div v-else class="row g-3">
                 <div class="col-12">
-                  <label :for="`editInstrumentName-${activeEditInstrumentModal.instrumentId}`" class="form-label">Título de la pista</label>
+                  <label :for="`editInstrumentName-${activeEditInstrumentModal.instrumentId}`" class="form-label">{{ $t('dashboard.songs.table.trackTitle') }}</label>
                   <input
                     :id="`editInstrumentName-${activeEditInstrumentModal.instrumentId}`"
                     :value="activeEditInstrumentModal.name"
@@ -2666,7 +2679,7 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                   >
                 </div>
                 <div class="col-12">
-<label :for="`editInstrumentCatalogId-${activeEditInstrumentModal.instrumentId}`" class="form-label">Instrumento</label>
+<label :for="`editInstrumentCatalogId-${activeEditInstrumentModal.instrumentId}`" class="form-label">{{ $t('dashboard.songs.table.instrument') }}</label>
                       <select
                         :id="`editInstrumentCatalogId-${activeEditInstrumentModal.instrumentId}`"
                         :value="activeEditInstrumentModal.catalogInstrumentId"
@@ -2676,7 +2689,7 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                         @change="handleEditInstrumentCatalogInput"
                       >
                         <option value="" disabled>
-                          Selecciona un instrumento
+                          {{ $t('dashboard.songs.selectInstrumentOption') }}
                         </option>
                         <option
                           v-for="instrument in availableInstruments"
@@ -2696,7 +2709,7 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                 :disabled="activeEditInstrumentModal.isSubmitting"
                 @click="closeEditInstrumentModal"
               >
-                Cancelar
+                {{ $t('dashboard.songs.cancel') }}
               </button>
               <button
                 type="submit"
@@ -2708,7 +2721,7 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                   class="spinner-border spinner-border-sm me-2"
                   aria-hidden="true"
                 ></span>
-                {{ activeEditInstrumentModal.isSubmitting ? 'Guardando...' : 'Guardar cambios' }}
+                {{ activeEditInstrumentModal.isSubmitting ? $t('dashboard.songs.savingLoading') : $t('dashboard.songs.saveChanges') }}
               </button>
             </div>
           </form>
@@ -2728,12 +2741,12 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
         <div class="modal-content">
           <div class="modal-header">
             <h4 :id="`uploadSongInstrumentModalTitle-${activeSongInstrumentUploadModalContext.instrument.id}`" class="modal-title h5">
-              Subir vídeo · {{ activeSongInstrumentUploadModalContext.instrument.name }}
+              {{ $t('dashboard.songs.uploadModalTitle', { name: activeSongInstrumentUploadModalContext.instrument.name }) }}
             </h4>
             <button
               type="button"
               class="btn-close"
-              aria-label="Cerrar"
+              :aria-label="$t('dashboard.songs.close')"
               @click="closeSongInstrumentUploadModal"
             ></button>
           </div>
@@ -2747,7 +2760,7 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                 <div class="text-muted small">{{ getSongInstrumentDisplayName(activeSongInstrumentUploadModalContext.instrument) }}</div>
               </div>
               <div v-if="shouldShowSongInstrumentUploadForm(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument.id)">
-                <label :for="`songInstrumentVideo-${activeSongInstrumentUploadModalContext.song.id}-${activeSongInstrumentUploadModalContext.instrument.id}`" class="form-label">Video MP4</label>
+                <label :for="`songInstrumentVideo-${activeSongInstrumentUploadModalContext.song.id}-${activeSongInstrumentUploadModalContext.instrument.id}`" class="form-label">{{ $t('dashboard.songs.videoMp4Label') }}</label>
                 <input
                   :id="`songInstrumentVideo-${activeSongInstrumentUploadModalContext.song.id}-${activeSongInstrumentUploadModalContext.instrument.id}`"
                   type="file"
@@ -2764,7 +2777,7 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                   :data-testid="`upload-progress-${activeSongInstrumentUploadModalContext.song.id}-${activeSongInstrumentUploadModalContext.instrument.id}`"
                   class="progress"
                   role="progressbar"
-                  aria-label="Upload progress"
+                  :aria-label="$t('dashboard.songs.uploadProgressAriaLabel')"
                   :aria-valuenow="getSongInstrumentUploadState(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument.id).progress"
                   aria-valuemin="0"
                   aria-valuemax="100"
@@ -2795,7 +2808,7 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-outline-secondary" @click="closeSongInstrumentUploadModal">
-                Cerrar
+                {{ $t('dashboard.songs.close') }}
               </button>
               <button
                 v-if="shouldShowSongInstrumentUploadForm(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument.id)"
@@ -2828,19 +2841,19 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
         <div class="modal-content">
           <div class="modal-header">
             <h4 :id="`assignMusicianModalTitle-${activeAssignMusicianModalContext.instrument.id}`" class="modal-title h5">
-              Asignar músico · {{ activeAssignMusicianModalContext.instrument.name }}
+              {{ $t('dashboard.songs.assignModalTitle', { name: activeAssignMusicianModalContext.instrument.name }) }}
             </h4>
             <button
               type="button"
               class="btn-close"
-              aria-label="Cerrar"
+              :aria-label="$t('dashboard.songs.close')"
               :disabled="activeAssignMusicianModal.isSubmitting"
               @click="closeAssignMusicianModal"
             ></button>
           </div>
-          <form aria-label="Invitar músico por email" @submit.prevent="handleAssignMusicianSubmit">
+          <form :aria-label="$t('dashboard.songs.inviteMusicianFormAriaLabel')" @submit.prevent="handleAssignMusicianSubmit">
             <div class="modal-body">
-              <label :for="`assignMusicianEmail-${activeAssignMusicianModalContext.instrument.id}`" class="form-label">Email del músico</label>
+              <label :for="`assignMusicianEmail-${activeAssignMusicianModalContext.instrument.id}`" class="form-label">{{ $t('dashboard.songs.musicianEmailLabel') }}</label>
               <input
                 :id="`assignMusicianEmail-${activeAssignMusicianModalContext.instrument.id}`"
                 :value="activeAssignMusicianModal.email"
@@ -2851,26 +2864,26 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                 @input="handleAssignMusicianEmailInput"
               >
               <p class="text-muted small mt-2 mb-0">
-                Si la persona todavía no forma parte de la banda, puedes invitarla por email.
+                {{ $t('dashboard.songs.inviteHint') }}
               </p>
 
               <div class="border-top mt-4 pt-3">
                 <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
                   <div>
-                    <h5 class="h6 mb-1">Miembros de la banda</h5>
-                    <p class="text-muted small mb-0">Selecciona a alguien del equipo actual para asignarlo al instrumento.</p>
+                    <h5 class="h6 mb-1">{{ $t('dashboard.songs.bandMembersTitle') }}</h5>
+                    <p class="text-muted small mb-0">{{ $t('dashboard.songs.selectMemberHint') }}</p>
                   </div>
                   <span class="badge text-bg-light border">{{ activeAssignMusicianModal.members.length }}</span>
                 </div>
 
                 <p v-if="activeAssignMusicianModal.isLoadingMembers" class="text-muted small mb-0">
-                  Cargando miembros...
+                  {{ $t('dashboard.songs.loadingMembers') }}
                 </p>
                 <p v-else-if="activeAssignMusicianModal.membersErrorMsg" class="text-muted small mb-0">
                   {{ activeAssignMusicianModal.membersErrorMsg }}
                 </p>
                 <p v-else-if="activeAssignMusicianModal.members.length === 0" class="text-muted small mb-0">
-                  No hay miembros disponibles para seleccionar.
+                  {{ $t('dashboard.songs.noMembersAvailable') }}
                 </p>
                 <ul v-else class="list-group list-group-flush">
                   <li
@@ -2885,11 +2898,11 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                     <button
                       type="button"
                       class="btn btn-sm btn-outline-primary"
-                      :aria-label="`Seleccionar a ${member.name}`"
+                      :aria-label="$t('dashboard.songs.selectMemberAriaLabel', { name: member.name })"
                       :disabled="activeAssignMusicianModal.isSubmitting"
                       @click="handleAssignBandMemberSelection(member)"
                     >
-                      Seleccionar
+                      {{ $t('dashboard.songs.select') }}
                     </button>
                   </li>
                 </ul>
@@ -2897,14 +2910,14 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-outline-secondary" :disabled="activeAssignMusicianModal.isSubmitting" @click="closeAssignMusicianModal">
-                Cancelar
+                {{ $t('dashboard.songs.cancel') }}
               </button>
                   <button
                     type="submit"
                     class="btn btn-primary"
                     :disabled="activeAssignMusicianModal.isSubmitting"
                   >
-                    Invitar por email
+                    {{ $t('dashboard.songs.inviteByEmail') }}
                   </button>
 
             </div>
@@ -2926,11 +2939,11 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
-            <h2 id="createSongModalTitle" class="modal-title h5">Crear canción</h2>
+            <h2 id="createSongModalTitle" class="modal-title h5">{{ $t('dashboard.songs.createSong') }}</h2>
             <button
               type="button"
               class="btn-close"
-              aria-label="Cerrar"
+              :aria-label="$t('dashboard.songs.close')"
               :disabled="isLoading"
               @click="closeCreateSongModal"
             ></button>
@@ -2942,26 +2955,26 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
           >
             <div class="modal-body">
               <div class="mb-3">
-                <label for="songTitle" class="form-label">Título</label>
+                <label for="songTitle" class="form-label">{{ $t('dashboard.songs.titleLabel') }}</label>
                 <input
                   id="songTitle"
                   v-model="title"
                   type="text"
                   class="form-control"
-                  placeholder="Ej. Paint It Black"
+                  :placeholder="$t('dashboard.songs.titlePlaceholder')"
                   :disabled="isLoading"
                   required
                 >
               </div>
 
               <div>
-                <label for="originalVideoclipUrl" class="form-label">URL del videoclip original</label>
+                <label for="originalVideoclipUrl" class="form-label">{{ $t('dashboard.songs.originalVideoclipUrlLabel') }}</label>
                 <input
                   id="originalVideoclipUrl"
                   v-model="originalVideoclipUrl"
                   type="url"
                   class="form-control"
-                  placeholder="https://www.youtube.com/watch?v=..."
+                  :placeholder="$t('dashboard.songs.originalVideoclipUrlPlaceholder')"
                   :disabled="isLoading"
                   required
                 >
@@ -2975,11 +2988,11 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                 :disabled="isLoading"
                 @click="closeCreateSongModal"
               >
-                Cancelar
+                {{ $t('dashboard.songs.cancel') }}
               </button>
               <button type="submit" class="btn btn-primary" :disabled="!canSubmit">
                 <span v-if="isLoading" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
-                {{ isLoading ? 'Creando...' : 'Crear canción' }}
+                {{ isLoading ? $t('dashboard.songs.creatingLoading') : $t('dashboard.songs.createSong') }}
               </button>
             </div>
           </form>

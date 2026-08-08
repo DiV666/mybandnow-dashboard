@@ -29,6 +29,350 @@
         "songs": "Abestiak",
         "videoclips": "Bideoklipak"
       }
+    },
+    "songs": {
+      "errors": {
+        "loadMembersFailed": "Ezin izan ditugu taldeko kideak kargatu.",
+        "uploadInstrumentNotFound": "Ezin izan dugu bideoa igotzen saiatzen ari zinen tresna aurkitu.",
+        "selectVideoFirst": "Aukeratu bideo bat jarraitu aurretik.",
+        "videoMustBeMp4": "Bideoak MP4 formatuan egon behar du.",
+        "corruptedMp4": "Fitxategia ez da baliozko MP4 bat edo hondatuta dago.",
+        "fileTooLarge": "Fitxategiak baimendutako gehienezko tamaina gainditzen du.",
+        "uploadTimeout": "Igoerak luzeegi jo du. Saiatu berriro.",
+        "uploadCanceled": "Igoera bertan behera utzi da amaitu aurretik.",
+        "profileRequired": "Zure profila sortu behar duzu bideoak igo aurretik.",
+        "notAssignedMusician": "Tresna honi esleitutako pertsonak soilik igo dezake bideoa.",
+        "noPermissionAssign": "Ez duzu baimenik musikariak tresna honi esleitzeko.",
+        "instrumentNotFoundForUpdate": "Ezin izan dugu eguneratzen saiatzen ari zinen tresna aurkitu.",
+        "assignMusicianFailed": "Ezin izan dugu aukeratutako musikaria esleitu.",
+        "assignMusicianUnexpected": "Errorea gertatu da musikaria esleitzean. Saiatu berriro.",
+        "noPermissionInvite": "Ez duzu baimenik musikariak tresna honetara gonbidatzeko.",
+        "emptyInviteEmail": "Idatzi helbide elektroniko bat gonbidapena bidali aurretik.",
+        "invalidInviteEmail": "Idatzi baliozko helbide elektroniko bat jarraitu aurretik.",
+        "inviteFailed": "Ezin izan dugu gonbidapena adierazitako helbidera bidali.",
+        "inviteUnexpected": "Errorea gertatu da musikaria gonbidatzean. Saiatu berriro.",
+        "noPermissionEditInstrument": "Ez duzu baimenik tresna hau editatzeko.",
+        "instrumentNotFoundForEdit": "Ezin izan dugu editatzen saiatzen ari zinen abestiaren tresna aurkitu.",
+        "emptyInstrumentName": "Idatzi izen bat gorde aurretik.",
+        "selectInstrumentFirst": "Aukeratu tresna bat gorde aurretik.",
+        "updateInstrumentFailed": "Ezin izan dugu abestiaren tresna eguneratu.",
+        "updateInstrumentUnexpected": "Errorea gertatu da tresna eguneratzean. Saiatu berriro.",
+        "uploadFailedGeneric": "Bideoaren igoerak huts egin du.",
+        "updateVideoStatusFailed": "Ezin izan dugu bideoaren egoera eguneratu.",
+        "loadSongsUnexpected": "Ustekabeko errorea gertatu da abestiak kargatzean.",
+        "selectBandBeforeCreate": "Aukeratu talde bat abesti bat sortu aurretik.",
+        "songConflict": "Dagoeneko badago datu horiekin abesti bat. Saiatu berriro.",
+        "createSongUnexpected": "Ustekabeko errorea gertatu da abestia sortzean.",
+        "loadInstrumentDetailFailed": "Ezin izan dugu aukeratutako tresnaren xehetasuna kargatu.",
+        "instrumentNotFoundForEditAlt": "Ezin izan dugu editatzen saiatzen ari zinen abestiaren tresna aurkitu.",
+        "uploadStartFailed": "Ezin izan da bideoaren igoera hasi.",
+        "profileRequiredForInstrument": "Musikari-profila osatu behar duzu tresnak gehitzeko.",
+        "instrumentConflict": "Dagoeneko badago datu horiekin tresna bat abesti honetarako. Saiatu berriro.",
+        "noPermissionAddInstrument": "Ez duzu baimenik abesti honi tresnak gehitzeko.",
+        "addInstrumentUnexpected": "Ustekabeko errorea gertatu da tresna gehitzean."
+      },
+      "success": {
+        "songCreated": "Abestia ongi sortu da.",
+        "musicianAssigned": "Musikaria ongi esleitu da.",
+        "invitationSent": "Gonbidapena ongi bidali da.",
+        "instrumentUpdated": "Tresna ongi eguneratu da.",
+        "instrumentAdded": "Tresna ongi gehitu da."
+      },
+      "status": {
+        "uploading": "Bideoa zerbitzarira igotzen...",
+        "pendingValidation": "Igoera onartuta. Balidazioaren zain.",
+        "validating": "Bideoa jasota. Fitxategia balidatzen...",
+        "processing": "Bideoa prozesatzen eta sinkronizatzen...",
+        "finalizing": "Bideoaren erabilgarritasuna amaitzen..."
+      },
+      "availability": {
+        "error": "Errorea",
+        "pendingValidation": "Balidazioaren zain",
+        "validating": "Fitxategia balidatzen",
+        "processing": "Prozesatzen",
+        "finalizing": "Amaitzen",
+        "available": "Erabilgarri",
+        "pending": "Zain"
+      },
+      "submitLabel": {
+        "processing": "Prozesatzen...",
+        "retry": "Saiatu igoera berriro",
+        "reupload": "Igo bideoa berriro",
+        "upload": "Igo bideoa"
+      },
+      "unassigned": "Esleitu gabe",
+      "pageTitle": "Abesti Kudeaketa (Songs / Tracks)",
+      "pageDescription": "Sortu abesti bat aukeratutako taldean.",
+      "listTitle": "Taldearen abestiak",
+      "songCount": "abesti {count} | {count} abesti",
+      "createSong": "Sortu abestia",
+      "selectBandToView": "Aukeratu talde bat bere abestiak ikusteko.",
+      "loadingSongs": "Abestiak kargatzen...",
+      "loadSongsError": "Ezin izan ditugu abestiak kargatu momentu honetan.",
+      "noSongsYet": "Talde honek oraindik ez du abestirik.",
+      "originalVideoclip": "Jatorrizko bideoklipa",
+      "editTracks": "Editatu pistak",
+      "watchOnYoutube": "Ikusi YouTuben",
+      "instrumentsTitle": "Tresnak",
+      "addInstrument": "Gehitu tresna",
+      "noInstrumentsYet": "Abesti honek oraindik ez du tresnarik.",
+      "table": {
+        "index": "#",
+        "trackTitle": "Pistaren izenburua",
+        "instrument": "Tresna",
+        "musician": "Musikaria",
+        "status": "Egoera",
+        "actions": "Ekintzak"
+      },
+      "watchVideo": "Ikusi bideoa",
+      "edit": "Editatu",
+      "uploadVideo": "Igo bideoa",
+      "assignMusician": "Esleitu musikaria",
+      "close": "Itxi",
+      "cancel": "Utzi",
+      "select": "Aukeratu",
+      "addInstrumentModalTitle": "Gehitu tresna {songTitle}-ri",
+      "selectInstrumentOption": "Aukeratu tresna bat",
+      "addingLoading": "Gehitzen...",
+      "saveInstrument": "Gorde tresna",
+      "editInstrumentModalTitle": "Editatu tresna · {name}",
+      "loadingInstrumentDetail": "Tresnaren xehetasuna kargatzen...",
+      "savingLoading": "Gordetzen...",
+      "saveChanges": "Gorde aldaketak",
+      "uploadModalTitle": "Igo bideoa · {name}",
+      "videoMp4Label": "MP4 bideoa",
+      "uploadProgressAriaLabel": "Igoeraren aurrerapena",
+      "assignModalTitle": "Esleitu musikaria · {name}",
+      "musicianEmailLabel": "Musikariaren helbide elektronikoa",
+      "inviteHint": "Pertsona hori oraindik taldekoa ez bada, helbide elektronikoz gonbida dezakezu.",
+      "bandMembersTitle": "Taldeko kideak",
+      "selectMemberHint": "Aukeratu uneko taldeko norbait tresnari esleitzeko.",
+      "loadingMembers": "Kideak kargatzen...",
+      "noMembersAvailable": "Ez dago aukeratzeko kide erabilgarririk.",
+      "selectMemberAriaLabel": "Aukeratu {name}",
+      "inviteByEmail": "Gonbidatu helbide elektronikoz",
+      "titleLabel": "Izenburua",
+      "titlePlaceholder": "Adib. Paint It Black",
+      "originalVideoclipUrlLabel": "Jatorrizko bideokliparen URLa",
+      "originalVideoclipUrlPlaceholder": "https://www.youtube.com/watch?v=...",
+      "creatingLoading": "Sortzen...",
+      "inviteMusicianFormAriaLabel": "Gonbidatu musikaria helbide elektronikoz"
+    },
+    "trackEditor": {
+      "defaultTitle": "Pista editorea",
+      "subtitle": "Pistaka sinkronizatzeko editore sinplea.",
+      "back": "Itzuli",
+      "loadingTracks": "Bideodun pistak kargatzen...",
+      "noTracksYet": "Oraindik ez dago abesti honetan editatzeko bideorik.",
+      "trackCount": "pista {count} | {count} pista",
+      "zoomBadge": "Zoom %{percent}",
+      "originalVideoBadge": "Jatorrizko bideoa {time}",
+      "selectedTrackStartsAt": "Aukeratutako pista {time}-tan hasten da.",
+      "playTitle": "Play",
+      "pauseVisuallyHidden": "Pausatu",
+      "playVisuallyHidden": "Erreproduzitu",
+      "goToStartTitle": "Hasieratik hasi",
+      "goToStartVisuallyHidden": "Joan hasierara",
+      "rewindTitle": "Atzeratu segundo 1",
+      "rewindVisuallyHidden": "Atzeratu segundo 1",
+      "forward": "Aurreratu segundo 1",
+      "zoomTitle": "Zoom",
+      "zoomVisuallyHidden": "Denbora-lerroaren zooma",
+      "startsAtLabel": "Hasten da:",
+      "soloTooltipActive": "Kendu soloa",
+      "soloTooltipInactive": "Pistaren soloa",
+      "soloLabelInactive": "Soloa",
+      "muteTooltipActive": "Aktibatu audioa",
+      "muteTooltipInactive": "Isilarazi pista",
+      "muteLabelInactive": "Isilarazi",
+      "durationLabel": "Iraupena: {duration}",
+      "pendingSave": "Gordetzeko zain",
+      "saving": "Gordetzen",
+      "saved": "Gordeta",
+      "trackStartLabel": "Hasiera: {time}",
+      "errors": {
+        "missingInstrument": "Ezin izan da gorde: katalogoko tresna falta da.",
+        "saveFailed": "Ezin izan da gorde.",
+        "syncSaveFailed": "Ezin izan dugu pista honen sinkronizazioa gorde. Egiaztatu backend-ak startTimeMs onartzen duen.",
+        "loadTracksFailed": "Ezin izan ditugu abesti honetarako bideo erabilgarriak kargatu."
+      }
+    }
+  },
+  "common": {
+    "themeToggle": {
+      "switchToLight": "Aldatu gai argira",
+      "switchToDark": "Aldatu gai ilunera"
+    },
+    "localeToggle": {
+      "ariaLabel": "Hizkuntza aukeratu (unekoa: {name})"
+    },
+    "toast": {
+      "dismiss": "Jakinarazpena baztertu"
+    }
+  },
+  "components": {
+    "backendUnavailable": {
+      "title": "Zerbitzaria ez dago erabilgarri",
+      "message": "Ezin izan dugu zerbitzariarekin konektatu. Egiaztatu backend-a martxan dagoen edo saiatu berriro segundo batzuetan.",
+      "sessionNotice": "Zure saioa aktibo jarraitzen du. Ez dugu saioa itxiko konexio-arazo honengatik.",
+      "close": "Itxi",
+      "retry": "Saiatu berriro"
+    },
+    "completeProfile": {
+      "title": "Osatu zure profila",
+      "description": "Ekintza hau egiteko musikari-profila osatu behar duzu. Segundo batzuk baino ez ditu beharko.",
+      "nameLabel": "Izena edo Ezizen Artistikoa",
+      "namePlaceholder": "Adib: John Doe",
+      "usernameLabel": "Erabiltzaile-izena (bakarra)",
+      "usernamePlaceholder": "adib: john_doe_music",
+      "usernameHelp": "Minuskulak, zenbakiak eta azpimarrak soilik.",
+      "submit": "Gorde eta jarraitu",
+      "errors": {
+        "requiredFields": "Eremu guztiak dira derrigorrezkoak.",
+        "usernameTooShort": "Erabiltzaile-izenak gutxienez 3 karaktere izan behar ditu.",
+        "generic": "Errorea profila gordetzean. Baliteke erabiltzaile-izena erabilita egotea."
+      }
+    },
+    "sessionExpired": {
+      "title": "Saioa Iraungita",
+      "description": "Zure segurtasunerako, saioa iraungi da. Sartu zure pasahitza berriro, utzi zenuen tokitik datuak galdu gabe jarraitzeko.",
+      "emailLabel": "Helbide elektronikoa",
+      "passwordLabel": "Pasahitza",
+      "passwordPlaceholder": "Sartu zure pasahitza",
+      "continueLabel": "Jarraitu",
+      "manualLogout": "Itxi saioa eskuz",
+      "autoLogoutCountdown": "Saioa automatikoki itxiko da {seconds} segundotan.",
+      "errors": {
+        "missingCredentials": "Kredentzialak falta dira.",
+        "invalidCredentials": "Kredentzial baliogabeak",
+        "unexpected": "Ustekabeko errorea gertatu da saioa balidatzean"
+      }
+    }
+  },
+  "views": {
+    "sessionClosed": {
+      "title": "Saioa itxita segurtasunagatik",
+      "description": "Zure saioa automatikoki itxi dugu inaktibitateagatik, zure datuak eta zure musikarienak babesteko.",
+      "action": "Itzuli saioa hasteko"
+    },
+    "videoclips": {
+      "title": "Bideoklip Kudeaketa",
+      "newVideoclip": "Bideoklip berria",
+      "comingSoon": "Laster: Pisten nahasketa eta amaierako bideoklipen ikuspegia."
+    },
+    "bands": {
+      "title": "Talde Kudeaketa (Bands)",
+      "newBand": "Talde berria",
+      "comingSoon": "Laster: Taldeen zerrenda eta CRUDa Aplikazio geruzatik (Use Cases) kudeatuta."
+    },
+    "createFirstBand": {
+      "title": "Ongi etorri Mybandnow-era!",
+      "description": "Badirudi oraindik ez zarela talde bateko partaide.",
+      "descriptionLine2": "Zure lehen talde musikala orain sor dezakezu edo jarraitu eta gero egin.",
+      "createBand": "Sortu taldea",
+      "bandNameLabel": "Taldearen izena",
+      "bandNamePlaceholder": "Adib. The Rolling Stones",
+      "submitLoading": "Sortzen...",
+      "submit": "Sortu nire taldea",
+      "skip": "Utzi oraingoz",
+      "errors": {
+        "emptyName": "Taldearen izena ezin da hutsik egon",
+        "conflict": "Gatazka bat izan da taldea sortzean. Saiatu berriro.",
+        "unexpected": "Ustekabeko errorea gertatu da zure taldea sortzean."
+      }
+    },
+    "profile": {
+      "title": "Nire Profila",
+      "description": "Kudeatu zure musikari-profilaren informazio publikoa.",
+      "loading": "Profila kargatzen...",
+      "activeBadge": "Profil aktiboa",
+      "artisticName": "Izen artistikoa",
+      "email": "Helbide elektronikoa",
+      "emailUnavailable": "Ez dago erabilgarri",
+      "technicalData": "Datu teknikoak",
+      "musicianId": "Musikariaren ID-a",
+      "userId": "Erabiltzailearen ID-a",
+      "incomplete": "Osatu zure profila leiho gainerakorretik jarraitzeko."
+    },
+    "members": {
+      "title": "Taldeko kideak",
+      "description": "Kudeatu proiektuko partaide diren pertsonak.",
+      "addMember": "Gehitu kidea",
+      "currentTeam": "Uneko taldea",
+      "countBadge": "{count} kide",
+      "memberCount": "kide {count} kargatuta | {count} kide kargatuta",
+      "selectBand": "Aukeratu talde bat bere kideak ikusteko.",
+      "loading": "Kideak kargatzen...",
+      "loadError": "Ezin izan ditugu kideak kargatu momentu honetan.",
+      "emptyTitle": "Oraindik ez dago kiderik kargatuta.",
+      "emptyDescription": "Gehitu zure lehen kidea rolak, entseguak eta elkarlanak kudeatzen hasteko.",
+      "addFirstMember": "Gehitu lehen kidea",
+      "profileLabel": "Musikariaren profila",
+      "avatarAlt": "{name}(r)en abatar-eredua",
+      "activeMember": "Taldeko kide aktiboa",
+      "roles": {
+        "admin": "Admin",
+        "member": "Kidea"
+      },
+      "modal": {
+        "title": "Gehitu kidea",
+        "close": "Itxi",
+        "description": "Sartu musikariaren helbide elektronikoa taldera kide gisa gehitzeko.",
+        "emailLabel": "Musikariaren helbide elektronikoa",
+        "cancel": "Utzi",
+        "submitLoading": "Gehitzen...",
+        "submit": "Gehitu kidea"
+      },
+      "errors": {
+        "loadFailed": "Ustekabeko errorea gertatu da kideak kargatzean.",
+        "addFailed": "Ezin izan dugu musikaria gehitu. Egiaztatu helbide elektronikoa eta saiatu berriro.",
+        "addUnexpected": "Ustekabeko errorea gertatu da kidea gehitzean.",
+        "noBandSelected": "Aukeratu talde bat kideak gehitu aurretik.",
+        "emptyEmail": "Idatzi musikariaren helbide elektronikoa berretsi aurretik."
+      },
+      "success": {
+        "memberAdded": "Kidea ongi gehitu da."
+      }
+    }
+  },
+  "public": {
+    "landing": {
+      "title": "Bideoklipetarako Lankidetza Plataforma",
+      "description": "Mybandnow-ek urrutitik musika bideoklipak sortzeko aukera ematen dizu. Nahastu musikari desberdinen pistak eta sortu azken produktu profesional bat.",
+      "cta": "Hasi orain"
+    }
+  },
+  "layouts": {
+    "public": {
+      "brand": "Mybandnow",
+      "openNav": "Ireki nabigazio publikoa",
+      "closeNav": "Itxi nabigazioa",
+      "login": "Hasi saioa",
+      "home": "Hasiera",
+      "mobileNavLabel": "Nabigazio publiko mugikorra",
+      "copyright": "© {year} My Band Now. Eskubide guztiak erreserbatuta."
+    },
+    "dashboard": {
+      "brand": "Mybandnow Admin",
+      "loading": "Kargatzen...",
+      "activeBand": "Talde Aktiboa:",
+      "activeBandMobile": "Talde Aktiboa",
+      "createBand": "Sortu taldea",
+      "welcome": "Ongi etorri, ",
+      "myAccount": "Nire kontua",
+      "myProfile": "Nire Profila",
+      "logout": "Itxi saioa",
+      "menu": "Menua",
+      "closeMenu": "Itxi",
+      "nav": {
+        "songs": "Abestiak",
+        "members": "Kideak",
+        "videoclips": "Bideoklipak"
+      },
+      "bandLogoAlt": "Taldearen logoa",
+      "copyrightLine1": "© {year} My Band Now.",
+      "copyrightLine2": "Eskubide guztiak erreserbatuta.",
+      "selectBandFallback": "Aukeratu taldea"
     }
   }
 }

@@ -10,6 +10,7 @@ import {
 	watch,
 } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
 import {
 	GetSongInstrumentDetailUseCase,
 } from "../../../application/song/GetSongInstrumentDetailUseCase.js";
@@ -113,6 +114,7 @@ const MIN_TIMELINE_MARKER_SPACING_PX = 72;
 const TIMELINE_MARKER_STEP_OPTIONS_SEC = [5, 10, 15, 30, 60, 120, 300, 600];
 const TIMELINE_ZOOM_STORAGE_KEY = "song-track-editor-zoom";
 
+const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const toastStore = useToastStore();
@@ -152,7 +154,7 @@ const songTitle = computed(() => {
 	const title = route.query.title;
 	return typeof title === "string" && title.length > 0
 		? title
-		: "Editor de pistas";
+		: t('dashboard.trackEditor.defaultTitle');
 });
 const originalVideoClipDurationMs = computed(() => {
 	const rawDurationSeconds = route.query.originalVideoClipDurationSeconds;
@@ -199,15 +201,14 @@ const selectedTrackStartSec = computed(
 	() => (selectedTrack.value?.startTimeMs ?? 0) / 1000,
 );
 const trackCountLabel = computed(() => {
-	const total = tracks.value.length;
-	return `${total} pista${total === 1 ? "" : "s"}`;
+	return t('dashboard.trackEditor.trackCount', tracks.value.length);
 });
 const originalVideoClipDurationLabel = computed(() => {
 	if (originalVideoClipDurationMs.value === null) {
 		return null;
 	}
 
-	return `Video original ${formatTime(originalVideoClipDurationMs.value / 1000)}`;
+	return t('dashboard.trackEditor.originalVideoBadge', { time: formatTime(originalVideoClipDurationMs.value / 1000) });
 });
 
 function clampTimelineOffsetPx(offsetPx: number): number {
@@ -651,7 +652,7 @@ async function saveTrackStartTime(trackId: string): Promise<void> {
 	if (!track.instrumentId) {
 		setAutosaveStatus(trackId, {
 			state: AUTOSAVE_STATES.error,
-			message: "No se pudo guardar: falta el instrumento del catálogo.",
+			message: t('dashboard.trackEditor.errors.missingInstrument'),
 		});
 		return;
 	}
@@ -684,10 +685,10 @@ async function saveTrackStartTime(trackId: string): Promise<void> {
 	} catch {
 		setAutosaveStatus(trackId, {
 			state: AUTOSAVE_STATES.error,
-			message: "No se pudo guardar.",
+			message: t('dashboard.trackEditor.errors.saveFailed'),
 		});
 		toastStore.error(
-			"No pudimos guardar la sincronización de esta pista. Revisa si el backend acepta startTimeMs.",
+			t('dashboard.trackEditor.errors.syncSaveFailed'),
 		);
 	}
 }
@@ -1079,11 +1080,15 @@ function getTrackToggleButtonStyle(): Record<string, string> {
 }
 
 function getTrackSoloTooltipLabel(track: EditorTrack): string {
-	return track.isSoloed ? "Quitar solo" : "Solo de pista";
+	return track.isSoloed
+		? t('dashboard.trackEditor.soloTooltipActive')
+		: t('dashboard.trackEditor.soloTooltipInactive');
 }
 
 function getTrackMuteTooltipLabel(track: EditorTrack): string {
-	return track.isMuted ? "Activar audio" : "Silenciar pista";
+	return track.isMuted
+		? t('dashboard.trackEditor.muteTooltipActive')
+		: t('dashboard.trackEditor.muteTooltipInactive');
 }
 
 function setTrackControlTooltipTarget(
@@ -1151,8 +1156,7 @@ async function loadTracks(): Promise<void> {
 		selectedPreviewSyncState = null;
 		shouldApplyInitialZoom = tracks.value.length > 0;
 	} catch {
-		errorMessage.value =
-			"No pudimos cargar las pistas con vídeo disponible para esta canción.";
+		errorMessage.value = t('dashboard.trackEditor.errors.loadTracksFailed');
 		toastStore.error(errorMessage.value);
 	} finally {
 		isLoading.value = false;
@@ -1222,21 +1226,21 @@ onBeforeUnmount(() => {
 		<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
 			<div>
 				<h1 class="h2 mb-1">{{ songTitle }}</h1>
-				<p class="text-muted mb-0">Editor simple de sincronización por pista.</p>
+				<p class="text-muted mb-0">{{ $t('dashboard.trackEditor.subtitle') }}</p>
 			</div>
 			<button
 				type="button"
 				class="btn btn-outline-secondary"
 				@click="navigateBack"
 			>
-				Volver
+				{{ $t('dashboard.trackEditor.back') }}
 			</button>
 		</div>
 
 		<div v-if="isLoading" class="card shadow-sm border-0 rounded-4">
 			<div class="card-body py-4 d-flex align-items-center gap-3">
 				<div class="spinner-border text-primary" role="status" aria-hidden="true"></div>
-				<p class="mb-0 text-muted">Cargando pistas con vídeo...</p>
+				<p class="mb-0 text-muted">{{ $t('dashboard.trackEditor.loadingTracks') }}</p>
 			</div>
 		</div>
 
@@ -1247,7 +1251,7 @@ onBeforeUnmount(() => {
 		<div v-else-if="tracks.length === 0" class="card shadow-sm border-0 rounded-4">
 			<div class="card-body py-4">
 				<p class="mb-0 text-muted">
-					Todavía no hay vídeos disponibles para editar en esta canción.
+					{{ $t('dashboard.trackEditor.noTracksYet') }}
 				</p>
 			</div>
 		</div>
@@ -1262,7 +1266,7 @@ onBeforeUnmount(() => {
 						{{ trackCountLabel }}
 					</span>
 					<span class="badge rounded-pill editor-summary-pill px-3 py-2">
-						{{ `Zoom ${timelineZoomPercent}%` }}
+						{{ $t('dashboard.trackEditor.zoomBadge', { percent: timelineZoomPercent }) }}
 					</span>
 					<span
 						v-if="originalVideoClipDurationLabel"
@@ -1298,7 +1302,7 @@ onBeforeUnmount(() => {
 							/>
 						</div>
 						<p class="small text-muted mb-0 mt-2 text-center">
-							La pista seleccionada empieza en {{ formatTime(selectedTrackStartSec) }}.
+							{{ $t('dashboard.trackEditor.selectedTrackStartsAt', { time: formatTime(selectedTrackStartSec) }) }}
 						</p>
 					</div>
 				</section>
@@ -1314,27 +1318,27 @@ onBeforeUnmount(() => {
 					<section data-testid="track-header-left" class="border p-3 bg-body shadow-sm d-flex flex-column gap-2 position-relative">
 						<div class="d-flex align-items-center justify-content-between gap-3">
 							<div class="d-inline-flex align-items-center gap-2 flex-wrap">
-								<button type="button" class="border-0 bg-transparent p-0 text-body d-inline-flex align-items-center justify-content-center" title="Play" :style="{ lineHeight: '1', minHeight: 'unset', transform: 'none', translate: 'none' }" @click="togglePlayback">
+								<button type="button" class="border-0 bg-transparent p-0 text-body d-inline-flex align-items-center justify-content-center" :title="$t('dashboard.trackEditor.playTitle')" :style="{ lineHeight: '1', minHeight: 'unset', transform: 'none', translate: 'none' }" @click="togglePlayback">
 									<i :class="isPlaying ? 'bi bi-pause-fill fs-5' : 'bi bi-play-fill fs-5'" aria-hidden="true"></i>
-									<span class="visually-hidden">{{ isPlaying ? "Pausar" : "Reproducir" }}</span>
+									<span class="visually-hidden">{{ isPlaying ? $t('dashboard.trackEditor.pauseVisuallyHidden') : $t('dashboard.trackEditor.playVisuallyHidden') }}</span>
 								</button>
-								<button type="button" class="border-0 bg-transparent p-0 text-body d-inline-flex align-items-center justify-content-center" title="Empezar desde el principio" :style="{ lineHeight: '1', minHeight: 'unset', transform: 'none', translate: 'none' }" @click="goToStart">
+								<button type="button" class="border-0 bg-transparent p-0 text-body d-inline-flex align-items-center justify-content-center" :title="$t('dashboard.trackEditor.goToStartTitle')" :style="{ lineHeight: '1', minHeight: 'unset', transform: 'none', translate: 'none' }" @click="goToStart">
 									<i class="bi bi-skip-start-fill fs-5" aria-hidden="true"></i>
-									<span class="visually-hidden">Ir al inicio</span>
+									<span class="visually-hidden">{{ $t('dashboard.trackEditor.goToStartVisuallyHidden') }}</span>
 								</button>
-								<button type="button" class="border-0 bg-transparent p-0 text-body d-inline-flex align-items-center justify-content-center" title="Rebobinar 1 segundo" :style="{ lineHeight: '1', minHeight: 'unset', transform: 'none', translate: 'none' }" @click="nudgePlayback(-1)">
+								<button type="button" class="border-0 bg-transparent p-0 text-body d-inline-flex align-items-center justify-content-center" :title="$t('dashboard.trackEditor.rewindTitle')" :style="{ lineHeight: '1', minHeight: 'unset', transform: 'none', translate: 'none' }" @click="nudgePlayback(-1)">
 									<i class="bi bi-rewind-fill fs-5" aria-hidden="true"></i>
-									<span class="visually-hidden">Retroceder 1 segundo</span>
+									<span class="visually-hidden">{{ $t('dashboard.trackEditor.rewindVisuallyHidden') }}</span>
 								</button>
-								<button type="button" class="border-0 bg-transparent p-0 text-body d-inline-flex align-items-center justify-content-center" title="Avanzar 1 segundo" :style="{ lineHeight: '1', minHeight: 'unset', transform: 'none', translate: 'none' }" @click="nudgePlayback(1)">
+								<button type="button" class="border-0 bg-transparent p-0 text-body d-inline-flex align-items-center justify-content-center" :title="$t('dashboard.trackEditor.forward')" :style="{ lineHeight: '1', minHeight: 'unset', transform: 'none', translate: 'none' }" @click="nudgePlayback(1)">
 									<i class="bi bi-fast-forward-fill fs-5" aria-hidden="true"></i>
-									<span class="visually-hidden">Avanzar 1 segundo</span>
+									<span class="visually-hidden">{{ $t('dashboard.trackEditor.forward') }}</span>
 								</button>
 							</div>
 							<div class="position-relative">
-								<button type="button" class="border-0 bg-transparent p-0 text-body d-inline-flex align-items-center justify-content-center" title="Zoom" :style="{ lineHeight: '1', minHeight: 'unset', transform: 'none', translate: 'none' }" @click="toggleZoomPopover">
+								<button type="button" class="border-0 bg-transparent p-0 text-body d-inline-flex align-items-center justify-content-center" :title="$t('dashboard.trackEditor.zoomTitle')" :style="{ lineHeight: '1', minHeight: 'unset', transform: 'none', translate: 'none' }" @click="toggleZoomPopover">
 									<i class="bi bi-zoom-in fs-6" aria-hidden="true"></i>
-									<span class="visually-hidden">Zoom timeline</span>
+									<span class="visually-hidden">{{ $t('dashboard.trackEditor.zoomVisuallyHidden') }}</span>
 								</button>
 								<div
 									v-if="isZoomPopoverOpen"
@@ -1442,7 +1446,7 @@ onBeforeUnmount(() => {
 								</div>
 								<div class="d-flex align-items-start justify-content-between gap-2">
 									<label class="d-grid gap-1 small text-muted fw-semibold flex-grow-1">
-										<span>Empieza en</span>
+										<span>{{ $t('dashboard.trackEditor.startsAtLabel') }}</span>
 										<div class="input-group input-group-sm">
 											<input
 												:data-testid="`track-start-time-input-${track.id}`"
@@ -1469,7 +1473,7 @@ onBeforeUnmount(() => {
 											@click="toggleTrackSolo(track.id)"
 										>
 											<span class="fw-semibold">S</span>
-											<span class="visually-hidden">{{ track.isSoloed ? "Quitar solo" : "Solo" }}</span>
+											<span class="visually-hidden">{{ track.isSoloed ? $t('dashboard.trackEditor.soloTooltipActive') : $t('dashboard.trackEditor.soloLabelInactive') }}</span>
 										</button>
 										<button
 											type="button"
@@ -1486,7 +1490,7 @@ onBeforeUnmount(() => {
 												:class="track.isMuted ? 'bi bi-volume-mute-fill' : 'bi bi-volume-up-fill'"
 												aria-hidden="true"
 											></i>
-											<span class="visually-hidden">{{ track.isMuted ? "Activar audio" : "Silenciar" }}</span>
+											<span class="visually-hidden">{{ track.isMuted ? $t('dashboard.trackEditor.muteTooltipActive') : $t('dashboard.trackEditor.muteLabelInactive') }}</span>
 										</button>
 									</div>
 								</div>
@@ -1495,7 +1499,7 @@ onBeforeUnmount(() => {
 									class="small text-muted"
 									:style="{ paddingRight: '2rem', minHeight: '1.5rem', marginTop: '0', marginBottom: '0' }"
 								>
-									<span>{{ `Duración: ${formatTime(track.video.duration)}` }}</span>
+									<span>{{ $t('dashboard.trackEditor.durationLabel', { duration: formatTime(track.video.duration) }) }}</span>
 								</div>
 								<span
 									v-if="autosaveStatuses[track.id]"
@@ -1518,7 +1522,7 @@ onBeforeUnmount(() => {
 										:class="getAutosaveSpinnerClass(track.id)"
 										:style="getAutosaveSpinnerStyle(track.id)"
 										role="status"
-										:aria-label="autosaveStatuses[track.id]?.state === AUTOSAVE_STATES.pending ? 'Pendiente de guardar' : 'Guardando'"
+										:aria-label="autosaveStatuses[track.id]?.state === AUTOSAVE_STATES.pending ? $t('dashboard.trackEditor.pendingSave') : $t('dashboard.trackEditor.saving')"
 									></i>
 									<i
 										v-else-if="autosaveStatuses[track.id]?.state === AUTOSAVE_STATES.saved"
@@ -1528,7 +1532,7 @@ onBeforeUnmount(() => {
 											opacity: autosaveStatuses[track.id]?.fadingOut ? 0 : 1,
 											transition: `opacity ${AUTOSAVE_SAVED_FADE_MS / 1000}s linear`,
 										}"
-										aria-label="Guardado"
+										:aria-label="$t('dashboard.trackEditor.saved')"
 									></i>
 									<span
 										v-else-if="autosaveStatuses[track.id]?.state === AUTOSAVE_STATES.error"
@@ -1586,7 +1590,7 @@ onBeforeUnmount(() => {
 											@pointerup="endTrackDrag(track.id, $event)"
 											@pointercancel="endTrackDrag(track.id, $event)"
 										>
-											{{ `Inicio: ${formatTime(track.startTimeMs / 1000)}` }}
+											{{ $t('dashboard.trackEditor.trackStartLabel', { time: formatTime(track.startTimeMs / 1000) }) }}
 										</div>
 									</div>
 								</div>
