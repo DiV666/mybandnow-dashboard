@@ -52,6 +52,7 @@ vi.mock("vue-router", () => ({
 }));
 
 import DashboardLayout from "./DashboardLayout.vue";
+import { i18n } from "../../infrastructure/config/i18n.js";
 import { useAuthStore } from "../stores/useAuthStore.js";
 import { useBandStore } from "../stores/useBandStore.js";
 import { useMusicianStore } from "../stores/useMusicianStore.js";
@@ -399,6 +400,7 @@ function renderDashboardLayout(setup?: () => void) {
 	const root = createRootNode();
 	const app = renderer.createApp(DashboardLayout);
 	app.use(pinia);
+	app.use(i18n);
 	app.component("RouterLink", RouterLinkStub);
 	app.component("RouterView", RouterViewStub);
 	app.mount(root);
@@ -437,6 +439,15 @@ describe("DashboardLayout", () => {
 		Object.defineProperty(globalThis, "document", {
 			configurable: true,
 			value: {
+				documentElement: {
+					dataset: {} as Record<string, string>,
+					getAttribute(_name: string) {
+						return null;
+					},
+				},
+				getElementById(_id: string) {
+					return null;
+				},
 				addEventListener(type: string, listener: (event: TestEvent) => void) {
 					const listeners = documentListeners.get(type) ?? new Set();
 					listeners.add(listener);

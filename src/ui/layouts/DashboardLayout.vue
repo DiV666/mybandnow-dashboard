@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { useRouter } from 'vue-router';
 import { GetMyBandsUseCase } from '../../application/band/GetMyBandsUseCase.js';
 import { AxiosBandRepository } from '../../infrastructure/band/AxiosBandRepository.js';
 import { useAuthStore } from '../stores/useAuthStore.js';
@@ -11,7 +11,6 @@ import LocaleToggle from "../components/LocaleToggle.vue";
 import ThemeToggle from "../components/ThemeToggle.vue";
 
 const router = useRouter();
-const route = useRoute();
 const authStore = useAuthStore();
 const bandStore = useBandStore();
 const musicianStore = useMusicianStore();
@@ -33,8 +32,12 @@ interface BootstrapWindow {
 
 function closeSidebarOffcanvas(): void {
   const sidebarElement = document.getElementById('sidebarMenu');
+  if (!sidebarElement) {
+    return;
+  }
+
   const bootstrapApi = (window as Window & BootstrapWindow).bootstrap?.Offcanvas;
-  if (sidebarElement && bootstrapApi) {
+  if (bootstrapApi) {
     bootstrapApi.getOrCreateInstance(sidebarElement).hide();
   }
 }
@@ -43,7 +46,9 @@ const isLoading = ref(true);
 const isUserMenuOpen = ref(false);
 const isBandMenuOpen = ref(false);
 const userMenuContainer = ref<HTMLElement | null>(null);
+const userMenuContainerMobile = ref<HTMLElement | null>(null);
 const bandMenuContainer = ref<HTMLElement | null>(null);
+const bandMenuContainerMobile = ref<HTMLElement | null>(null);
 
 const shouldShowBandShell = computed(
   () => bandStore.hasBands || Boolean(bandStore.selectedBandId),
@@ -87,8 +92,12 @@ const isNodeWithinContainer = (
 };
 
 const handleDocumentClick = (event: MouseEvent) => {
-  const clickedUserMenu = isNodeWithinContainer(event.target, userMenuContainer.value);
-  const clickedBandMenu = isNodeWithinContainer(event.target, bandMenuContainer.value);
+  const clickedUserMenu =
+    isNodeWithinContainer(event.target, userMenuContainer.value) ||
+    isNodeWithinContainer(event.target, userMenuContainerMobile.value);
+  const clickedBandMenu =
+    isNodeWithinContainer(event.target, bandMenuContainer.value) ||
+    isNodeWithinContainer(event.target, bandMenuContainerMobile.value);
 
   if (!clickedUserMenu) {
     isUserMenuOpen.value = false;
@@ -129,16 +138,19 @@ const toggleBandMenu = () => {
 
 const goToProfile = () => {
   isUserMenuOpen.value = false;
+  closeSidebarOffcanvas();
   router.push({ name: 'Profile' });
 };
 
 const selectBand = (bandId: string) => {
   bandStore.selectBand(bandId);
   isBandMenuOpen.value = false;
+  closeSidebarOffcanvas();
 };
 
 const logout = () => {
   isUserMenuOpen.value = false;
+  closeSidebarOffcanvas();
   authStore.logout();
   bandStore.clear();
   musicianStore.clear();
@@ -315,25 +327,43 @@ onBeforeUnmount(() => {
         </div>
         <div class="offcanvas-body d-flex flex-column p-0 p-md-3 h-100">
           <!-- Mobile Band Switcher -->
-          <div v-if="bandStore.hasBands" class="d-md-none p-3 border-bottom border-secondary-subtle bg-body-tertiary">
-            <span class="d-block text-muted small mb-2 fw-semibold text-uppercase" style="letter-spacing: 0.05em;">Banda Activa</span>
-            <div class="d-flex flex-column gap-2">
-                <button
+          <div
+            v-if="bandStore.hasBands"
+            ref="bandMenuContainerMobile"
+            class="dashboard-mobile-section d-md-none position-relative"
+          >
+            <span class="d-block text-muted small mb-2 fw-semibold text-uppercase text-center" style="letter-spacing: 0.05em;">Banda Activa</span>
+            <button
+              type="button"
+              class="btn dashboard-header-dropdown-toggle w-100 d-flex align-items-center justify-content-between gap-2"
+              data-testid="band-switcher-toggle-mobile"
+              :aria-expanded="isBandMenuOpen"
+              aria-haspopup="true"
+              @click="toggleBandMenu"
+            >
+              <span class="dashboard-band-toggle__label text-truncate">{{ selectedBandName }}</span>
+              <span aria-hidden="true" class="dashboard-dropdown-icon">▾</span>
+            </button>
+
+            <div
+              v-if="isBandMenuOpen"
+              class="dropdown-menu show dashboard-header-dropdown-menu dashboard-header-dropdown-panel"
+            >
+              <button
                 v-for="band in bandStore.bands"
                 :key="band.id.value"
                 type="button"
-                class="btn btn-sm text-start fw-medium"
-                :class="band.id.value === bandStore.selectedBandId ? 'btn-primary' : 'btn-outline-secondary'"
-                data-bs-dismiss="offcanvas"
-                data-bs-target="#sidebarMenu"
+                class="dropdown-item dashboard-band-option"
+                data-band-option="true"
+                :class="{ active: band.id.value === bandStore.selectedBandId, 'dashboard-band-option--active': band.id.value === bandStore.selectedBandId }"
                 @click="selectBand(band.id.value)"
               >
-                {{ band.name.value }}
-                <span v-if="band.id.value === bandStore.selectedBandId" class="float-end" aria-hidden="true">✓</span>
+                <span class="text-truncate">{{ band.name.value }}</span>
+                <span v-if="band.id.value === bandStore.selectedBandId" aria-hidden="true">✓</span>
               </button>
             </div>
           </div>
-          <div v-else-if="!shouldShowBandShell" class="d-md-none p-3 border-bottom border-secondary-subtle">
+          <div v-else-if="!shouldShowBandShell" class="dashboard-mobile-section d-md-none">
             <button
               type="button"
               class="btn btn-primary btn-sm w-100 d-inline-flex align-items-center justify-content-center gap-2"
@@ -346,23 +376,7 @@ onBeforeUnmount(() => {
             </button>
           </div>
 
-          <!-- Mobile User Menu -->
-          <div class="d-md-none p-3 border-bottom border-secondary-subtle bg-body-tertiary mb-3">
-            <span class="d-block text-muted small mb-2 fw-semibold text-uppercase" style="letter-spacing: 0.05em;">
-              <span v-if="musicianStore.profile">{{ musicianStore.profile.name || musicianStore.profile.username }}</span>
-              <span v-else>Mi cuenta</span>
-            </span>
-            <div class="d-flex flex-column gap-2">
-              <button type="button" class="btn btn-sm btn-outline-secondary text-start d-flex align-items-center gap-2" data-bs-dismiss="offcanvas" data-bs-target="#sidebarMenu" @click="goToProfile">
-                <i class="bi bi-person" aria-hidden="true"></i> Mi Perfil
-              </button>
-              <button type="button" class="btn btn-sm btn-outline-danger text-start d-flex align-items-center gap-2" data-bs-dismiss="offcanvas" data-bs-target="#sidebarMenu" @click="logout">
-                <i class="bi bi-box-arrow-right" aria-hidden="true"></i> Cerrar sesión
-              </button>
-            </div>
-          </div>
-
-          <div class="card dashboard-sidebar-card overflow-hidden mx-3 mx-md-0">
+          <div class="card dashboard-sidebar-card dashboard-mobile-section overflow-hidden flex-shrink-0 mx-3 mx-md-0">
             <div class="card-body p-3 text-center">
               <div class="dashboard-band-logo-wrapper mb-3 mx-auto">
                 <img
@@ -418,8 +432,43 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <div class="card dashboard-sidebar-card mx-3 mx-md-0 mt-auto mb-3 mb-md-0 flex-shrink-0">
+          <div class="card dashboard-sidebar-card dashboard-mobile-section mx-3 mx-md-0 mt-auto mb-3 mb-md-0 flex-shrink-0">
             <div class="card-body p-3 d-flex flex-column align-items-center gap-3">
+              <!-- Mobile User Menu -->
+              <div
+                ref="userMenuContainerMobile"
+                class="dropup position-relative w-100 d-md-none"
+              >
+                <button
+                  type="button"
+                  class="btn dashboard-header-dropdown-toggle w-100 d-flex align-items-center justify-content-between gap-2"
+                  :aria-expanded="isUserMenuOpen"
+                  aria-haspopup="true"
+                  @click="toggleUserMenu"
+                >
+                  <span class="d-flex align-items-center gap-2 text-truncate">
+                    <i class="bi bi-person-circle" aria-hidden="true"></i>
+                    <span v-if="musicianStore.profile" class="text-truncate">{{ musicianStore.profile.name || musicianStore.profile.username }}</span>
+                    <span v-else>Mi cuenta</span>
+                  </span>
+                  <span aria-hidden="true" class="dashboard-dropdown-icon">▾</span>
+                </button>
+
+                <div
+                  v-if="isUserMenuOpen"
+                  class="dropdown-menu show dashboard-header-dropdown-menu dashboard-header-dropdown-panel dashboard-header-dropdown-panel--up"
+                >
+                  <button type="button" class="dropdown-item d-flex align-items-center gap-2" @click="goToProfile">
+                    <i class="bi bi-person" aria-hidden="true"></i>
+                    <span>Mi Perfil</span>
+                  </button>
+                  <button type="button" class="dropdown-item d-flex align-items-center gap-2 text-danger-emphasis" @click="logout">
+                    <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+                    <span>Cerrar sesión</span>
+                  </button>
+                </div>
+              </div>
+
               <div class="d-flex align-items-center justify-content-center gap-3 w-100">
                 <LocaleToggle :floating="false" />
                 <ThemeToggle :floating="false" />
@@ -565,6 +614,11 @@ onBeforeUnmount(() => {
   padding: 0.4rem;
 }
 
+.dashboard-header-dropdown-panel--up {
+  top: auto;
+  bottom: calc(100% + 0.4rem);
+}
+
 .dashboard-band-option {
   display: flex;
   align-items: center;
@@ -590,10 +644,6 @@ onBeforeUnmount(() => {
   background-color: var(--bs-dropdown-link-active-bg) !important;
   color: var(--bs-dropdown-link-active-color) !important;
   font-weight: 600;
-}
-
-.sidebar {
-  min-height: calc(100vh - 76px);
 }
 
 .dashboard-sidebar {
@@ -756,13 +806,37 @@ onBeforeUnmount(() => {
 
   #sidebarMenu.offcanvas-md .offcanvas-body {
     flex: 1 1 auto !important;
+    min-height: 0;
     overflow-y: auto !important;
     height: 100% !important;
     max-height: calc(100vh - 60px); /* fallback to ensure it never exceeds screen minus header */
+    padding: 0 1.25rem 1.25rem !important;
+  }
+
+  /* Flat, austere mobile menu: no card chrome, just hairline dividers between sections. */
+  #sidebarMenu.offcanvas-md .dashboard-sidebar-card,
+  #sidebarMenu.offcanvas-md .dashboard-mobile-section {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-block: 0.625rem;
+    border: 0;
+    border-top: 1px solid var(--rock-surface-border);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  #sidebarMenu.offcanvas-md .offcanvas-body > .dashboard-mobile-section:first-child {
+    padding-top: 1.5rem;
+    border-top: 0;
   }
 }
 
 @media (min-width: 768px) {
+  .sidebar {
+    min-height: calc(100vh - 76px);
+  }
+
   .dashboard-layout {
     height: 100dvh;
     overflow: hidden;

@@ -1,6 +1,6 @@
 <template>
   <div class="public-layout app-shell-glow d-flex flex-column flex-grow-1">
-    <nav class="navbar navbar-expand-lg public-navbar surface-container border-bottom shadow-sm">
+    <nav class="navbar navbar-expand-md public-navbar surface-container border-bottom shadow-sm">
       <div class="container public-navbar__inner">
         <router-link
           class="navbar-brand public-brand fw-bold text-body text-decoration-none"
@@ -11,7 +11,7 @@
 
         <div class="public-navbar__actions">
           <button
-            class="btn btn-outline-primary public-navbar__menu-toggle d-inline-flex d-lg-none"
+            class="btn btn-outline-primary public-navbar__menu-toggle d-inline-flex d-md-none"
             type="button"
             data-bs-toggle="offcanvas"
             data-bs-target="#publicNavDrawer"
@@ -23,14 +23,14 @@
 
           <router-link
             v-if="!isLoginRoute"
-            class="btn btn-outline-primary public-navbar__cta d-none d-lg-inline-flex"
+            class="btn btn-outline-primary public-navbar__cta d-none d-md-inline-flex"
             :to="{ name: 'Login' }"
           >
             Iniciar sesión
           </router-link>
           <span
             v-else
-            class="public-navbar__current d-none d-lg-inline-flex"
+            class="public-navbar__current d-none d-md-inline-flex"
             aria-current="page"
           >
             Iniciar sesión
