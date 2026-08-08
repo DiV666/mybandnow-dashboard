@@ -3,6 +3,7 @@ import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useMusicianStore } from '../stores/useMusicianStore.js';
 import { useToastStore } from '../stores/useToastStore.js';
+import { useModalFocusTrap } from '../composables/useModalFocusTrap.js';
 
 interface ErrorLike {
   message?: string;
@@ -14,6 +15,10 @@ const toastStore = useToastStore();
 
 const name = ref('');
 const username = ref('');
+const modalRef = ref<HTMLElement | null>(null);
+const isOpen = computed(() => musicianStore.isProfileCompletionPending);
+
+useModalFocusTrap(modalRef, isOpen);
 
 // Validación en tiempo real del username: sin espacios, sin caracteres especiales, minúsculas
 const sanitizedUsername = computed({
@@ -52,16 +57,19 @@ const handleSubmit = async () => {
 <template>
   <div v-if="musicianStore.isProfileCompletionPending" class="complete-profile-modal-backdrop modal-backdrop fade show"></div>
   
-  <div 
+  <div
     v-if="musicianStore.isProfileCompletionPending"
-    class="complete-profile-modal modal fade show d-block" 
-    tabindex="-1" 
+    ref="modalRef"
+    class="complete-profile-modal modal fade show d-block"
+    tabindex="-1"
     role="dialog"
+    aria-modal="true"
+    aria-labelledby="complete-profile-title"
   >
     <div class="modal-dialog modal-dialog-centered" role="document">
       <div class="modal-content shadow-lg border-primary">
         <div class="modal-header bg-primary text-white">
-          <h5 class="modal-title">
+          <h5 id="complete-profile-title" class="modal-title">
             <i class="bi bi-person-badge-fill me-2"></i> {{ $t('components.completeProfile.title') }}
           </h5>
         </div>
@@ -73,8 +81,9 @@ const handleSubmit = async () => {
 
           <form @submit.prevent="handleSubmit">
             <div class="mb-3">
-              <label class="form-label fw-bold">{{ $t('components.completeProfile.nameLabel') }}</label>
+              <label for="complete-profile-name" class="form-label fw-bold">{{ $t('components.completeProfile.nameLabel') }}</label>
               <input
+                id="complete-profile-name"
                 type="text"
                 class="form-control"
                 v-model="name"
@@ -86,10 +95,11 @@ const handleSubmit = async () => {
             </div>
 
             <div class="mb-4">
-              <label class="form-label fw-bold">{{ $t('components.completeProfile.usernameLabel') }}</label>
+              <label for="complete-profile-username" class="form-label fw-bold">{{ $t('components.completeProfile.usernameLabel') }}</label>
               <div class="input-group">
                 <span class="input-group-text bg-body-tertiary text-body-secondary">@</span>
                 <input
+                  id="complete-profile-username"
                   type="text"
                   class="form-control"
                   v-model="sanitizedUsername"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onUnmounted, nextTick } from 'vue';
+import { computed, ref, watch, onUnmounted, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/useAuthStore.js';
@@ -9,6 +9,7 @@ import { useToastStore } from '../stores/useToastStore.js';
 import { AxiosAuthRepository } from '../../infrastructure/auth/AxiosAuthRepository.js';
 import { LoginUseCase } from '../../application/auth/LoginUseCase.js';
 import { AuthToken } from '../../domain/auth/value-object/AuthToken.js';
+import { useModalFocusTrap } from '../composables/useModalFocusTrap.js';
 
 interface LoginErrorResponse {
   status?: number;
@@ -34,6 +35,9 @@ const isLoading = ref(false);
 const countdown = ref(60);
 let countdownInterval: number | null = null;
 const modalRef = ref<HTMLElement | null>(null);
+const isOpen = computed(() => authStore.isSessionExpired);
+
+useModalFocusTrap(modalRef, isOpen);
 
 const getEmailFromToken = (): string => {
   if (!authStore.token) return '';
@@ -182,14 +186,16 @@ onUnmounted(() => {
   <div 
     v-if="authStore.isSessionExpired" 
     ref="modalRef"
-    class="session-expired-modal modal fade show d-block" 
-    tabindex="-1" 
+    class="session-expired-modal modal fade show d-block"
+    tabindex="-1"
     role="dialog"
+    aria-modal="true"
+    aria-labelledby="session-expired-title"
   >
     <div class="modal-dialog modal-dialog-centered" role="document">
       <div class="modal-content shadow-lg border-danger">
         <div class="modal-header bg-danger text-white">
-          <h5 class="modal-title">
+          <h5 id="session-expired-title" class="modal-title">
             <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ $t('components.sessionExpired.title') }}
           </h5>
         </div>
@@ -201,13 +207,14 @@ onUnmounted(() => {
 
           <form @submit.prevent="handleLogin">
             <div class="mb-3">
-              <label class="form-label">{{ $t('components.sessionExpired.emailLabel') }}</label>
-              <input type="email" class="form-control" :value="getEmailFromToken()" disabled>
+              <label for="session-expired-email" class="form-label">{{ $t('components.sessionExpired.emailLabel') }}</label>
+              <input id="session-expired-email" type="email" class="form-control" :value="getEmailFromToken()" disabled>
             </div>
 
             <div class="mb-4">
-              <label class="form-label">{{ $t('components.sessionExpired.passwordLabel') }}</label>
+              <label for="session-expired-password" class="form-label">{{ $t('components.sessionExpired.passwordLabel') }}</label>
               <input
+                id="session-expired-password"
                 type="password"
                 class="form-control"
                 v-model="password"

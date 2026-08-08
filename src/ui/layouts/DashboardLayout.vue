@@ -51,6 +51,10 @@ const userMenuContainer = ref<HTMLElement | null>(null);
 const userMenuContainerMobile = ref<HTMLElement | null>(null);
 const bandMenuContainer = ref<HTMLElement | null>(null);
 const bandMenuContainerMobile = ref<HTMLElement | null>(null);
+const userMenuToggle = ref<HTMLButtonElement | null>(null);
+const userMenuToggleMobile = ref<HTMLButtonElement | null>(null);
+const bandMenuToggle = ref<HTMLButtonElement | null>(null);
+const bandMenuToggleMobile = ref<HTMLButtonElement | null>(null);
 
 const shouldShowBandShell = computed(
   () => bandStore.hasBands || Boolean(bandStore.selectedBandId),
@@ -63,9 +67,41 @@ type MaybeContainedTarget = EventTarget & {
   parentNode?: MaybeContainedTarget | null;
 };
 
-const closeAllMenus = () => {
+const refocusToggleIfFocusWasWithin = (
+  container: HTMLElement | null,
+  toggle: HTMLButtonElement | null,
+): void => {
+  if (!container || !toggle) {
+    return;
+  }
+
+  const active = document.activeElement;
+  if (active && typeof container.contains === 'function' && container.contains(active)) {
+    toggle.focus();
+  }
+};
+
+const closeUserMenu = () => {
+  if (isUserMenuOpen.value) {
+    refocusToggleIfFocusWasWithin(userMenuContainer.value, userMenuToggle.value);
+    refocusToggleIfFocusWasWithin(userMenuContainerMobile.value, userMenuToggleMobile.value);
+  }
+
   isUserMenuOpen.value = false;
+};
+
+const closeBandMenu = () => {
+  if (isBandMenuOpen.value) {
+    refocusToggleIfFocusWasWithin(bandMenuContainer.value, bandMenuToggle.value);
+    refocusToggleIfFocusWasWithin(bandMenuContainerMobile.value, bandMenuToggleMobile.value);
+  }
+
   isBandMenuOpen.value = false;
+};
+
+const closeAllMenus = () => {
+  closeUserMenu();
+  closeBandMenu();
 };
 
 const isNodeWithinContainer = (
@@ -139,19 +175,19 @@ const toggleBandMenu = () => {
 };
 
 const goToProfile = () => {
-  isUserMenuOpen.value = false;
+  closeUserMenu();
   closeSidebarOffcanvas();
   router.push({ name: 'Profile' });
 };
 
 const selectBand = (bandId: string) => {
   bandStore.selectBand(bandId);
-  isBandMenuOpen.value = false;
+  closeBandMenu();
   closeSidebarOffcanvas();
 };
 
 const logout = () => {
-  isUserMenuOpen.value = false;
+  closeUserMenu();
   closeSidebarOffcanvas();
   authStore.logout();
   bandStore.clear();
@@ -196,6 +232,8 @@ onBeforeUnmount(() => {
   </div>
 
   <div v-else class="dashboard-layout container-fluid d-flex flex-column p-0">
+    <a href="#dashboard-main-content" class="visually-hidden-focusable skip-link">{{ $t('common.skipToContent') }}</a>
+
     <header class="navbar dashboard-topbar px-3 py-2 shadow-sm gap-3">
       <!-- Mobile Brand Area -->
       <div class="d-flex w-100 align-items-center justify-content-between d-md-none">
@@ -204,14 +242,16 @@ onBeforeUnmount(() => {
           type="button"
           data-bs-toggle="offcanvas"
           data-bs-target="#sidebarMenu"
+          aria-controls="sidebarMenu"
+          :aria-label="$t('layouts.dashboard.openMenu')"
         >
-          <span class="navbar-toggler-icon"></span>
+          <span class="navbar-toggler-icon" aria-hidden="true"></span>
         </button>
-        <a class="navbar-brand dashboard-brand m-0 p-0" href="#">{{ $t('layouts.dashboard.brand') }}</a>
+        <span class="navbar-brand dashboard-brand m-0 p-0">{{ $t('layouts.dashboard.brand') }}</span>
       </div>
 
       <!-- Desktop Brand -->
-      <a class="navbar-brand dashboard-brand me-0 px-0 d-none d-md-block" href="#">{{ $t('layouts.dashboard.brand') }}</a>
+      <span class="navbar-brand dashboard-brand me-0 px-0 d-none d-md-block">{{ $t('layouts.dashboard.brand') }}</span>
 
       <div
         v-if="bandStore.hasBands"
@@ -223,11 +263,13 @@ onBeforeUnmount(() => {
 
           <div class="dashboard-band-dropdown position-relative">
             <button
+              ref="bandMenuToggle"
               type="button"
               class="btn dashboard-header-dropdown-toggle d-inline-flex align-items-center justify-content-between gap-2"
               data-testid="band-switcher-toggle"
               :aria-expanded="isBandMenuOpen"
               aria-haspopup="true"
+              aria-controls="dashboard-band-menu-desktop"
               @click="toggleBandMenu"
             >
               <span class="dashboard-band-toggle__label text-truncate">{{ selectedBandName }}</span>
@@ -236,6 +278,7 @@ onBeforeUnmount(() => {
 
             <div
               v-if="isBandMenuOpen"
+              id="dashboard-band-menu-desktop"
               class="dropdown-menu show dashboard-header-dropdown-menu dashboard-header-dropdown-panel"
             >
               <button
@@ -286,10 +329,12 @@ onBeforeUnmount(() => {
       >
         <div class="nav-item text-nowrap position-relative dashboard-user-dropdown">
           <button
+            ref="userMenuToggle"
             type="button"
             class="btn nav-link px-3 d-inline-flex align-items-center gap-2 text-decoration-none dashboard-header-dropdown-toggle dashboard-user-toggle"
             :aria-expanded="isUserMenuOpen"
             aria-haspopup="true"
+            aria-controls="dashboard-user-menu-desktop"
             @click="toggleUserMenu"
           >
             <span v-if="musicianStore.profile">
@@ -301,6 +346,7 @@ onBeforeUnmount(() => {
 
           <div
             v-if="isUserMenuOpen"
+            id="dashboard-user-menu-desktop"
             class="dropdown-menu dropdown-menu-end show dashboard-header-dropdown-menu dashboard-header-dropdown-panel dashboard-user-menu"
           >
             <button type="button" class="dropdown-item d-flex align-items-center gap-2" @click="goToProfile">
@@ -322,6 +368,7 @@ onBeforeUnmount(() => {
         id="sidebarMenu"
         class="col-md-3 col-lg-2 d-md-block dashboard-sidebar sidebar offcanvas-md offcanvas-start"
         tabindex="-1"
+        :aria-label="$t('layouts.dashboard.sidebarNavLabel')"
       >
         <div class="offcanvas-header d-md-none border-bottom border-secondary-subtle">
           <h5 class="offcanvas-title font-monospace fw-bold m-0" style="font-family: var(--rock-heading-font-family) !important;">{{ $t('layouts.dashboard.menu') }}</h5>
@@ -336,11 +383,13 @@ onBeforeUnmount(() => {
           >
             <span class="d-block text-muted small mb-2 fw-semibold text-uppercase text-center" style="letter-spacing: 0.05em;">{{ $t('layouts.dashboard.activeBandMobile') }}</span>
             <button
+              ref="bandMenuToggleMobile"
               type="button"
               class="btn dashboard-header-dropdown-toggle w-100 d-flex align-items-center justify-content-between gap-2"
               data-testid="band-switcher-toggle-mobile"
               :aria-expanded="isBandMenuOpen"
               aria-haspopup="true"
+              aria-controls="dashboard-band-menu-mobile"
               @click="toggleBandMenu"
             >
               <span class="dashboard-band-toggle__label text-truncate">{{ selectedBandName }}</span>
@@ -349,6 +398,7 @@ onBeforeUnmount(() => {
 
             <div
               v-if="isBandMenuOpen"
+              id="dashboard-band-menu-mobile"
               class="dropdown-menu show dashboard-header-dropdown-menu dashboard-header-dropdown-panel"
             >
               <button
@@ -442,10 +492,12 @@ onBeforeUnmount(() => {
                 class="dropup position-relative w-100 d-md-none"
               >
                 <button
+                  ref="userMenuToggleMobile"
                   type="button"
                   class="btn dashboard-header-dropdown-toggle w-100 d-flex align-items-center justify-content-between gap-2"
                   :aria-expanded="isUserMenuOpen"
                   aria-haspopup="true"
+                  aria-controls="dashboard-user-menu-mobile"
                   @click="toggleUserMenu"
                 >
                   <span class="d-flex align-items-center gap-2 text-truncate">
@@ -458,6 +510,7 @@ onBeforeUnmount(() => {
 
                 <div
                   v-if="isUserMenuOpen"
+                  id="dashboard-user-menu-mobile"
                   class="dropdown-menu show dashboard-header-dropdown-menu dashboard-header-dropdown-panel dashboard-header-dropdown-panel--up"
                 >
                   <button type="button" class="dropdown-item d-flex align-items-center gap-2" @click="goToProfile">
@@ -484,6 +537,8 @@ onBeforeUnmount(() => {
       </nav>
 
       <main
+        id="dashboard-main-content"
+        tabindex="-1"
         :class="[
           'dashboard-main py-4',
           shouldShowBandShell ? 'col-md-9 ms-sm-auto col-lg-10 px-md-4' : 'col-12 px-4 px-lg-5',

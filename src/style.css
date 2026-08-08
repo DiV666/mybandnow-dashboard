@@ -179,6 +179,18 @@ main {
 	width: 100%;
 }
 
+.skip-link {
+	position: absolute;
+	top: 0.5rem;
+	left: 0.5rem;
+	z-index: 2000;
+	padding: 0.5rem 1rem;
+	border-radius: var(--bs-border-radius);
+	background: var(--bs-body-bg);
+	color: var(--bs-body-color);
+	box-shadow: var(--rock-surface-shadow, 0 0.5rem 1rem rgba(0, 0, 0, 0.2));
+}
+
 p,
 .form-text,
 .table,

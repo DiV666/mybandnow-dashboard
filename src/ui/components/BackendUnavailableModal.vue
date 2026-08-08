@@ -1,7 +1,11 @@
 <script setup lang="ts">
+import { computed, ref } from "vue";
 import { useBackendStatusStore } from "../stores/useBackendStatusStore.js";
+import { useModalFocusTrap } from "../composables/useModalFocusTrap.js";
 
 const backendStatusStore = useBackendStatusStore();
+const modalRef = ref<HTMLElement | null>(null);
+const isOpen = computed(() => backendStatusStore.isBackendUnavailable);
 
 function closeModal(): void {
 	backendStatusStore.clear();
@@ -10,6 +14,8 @@ function closeModal(): void {
 function retryConnection(): void {
 	backendStatusStore.clear();
 }
+
+useModalFocusTrap(modalRef, isOpen, { onEscape: closeModal });
 </script>
 
 <template>
@@ -20,6 +26,7 @@ function retryConnection(): void {
 
   <div
     v-if="backendStatusStore.isBackendUnavailable"
+    ref="modalRef"
     class="backend-unavailable-modal modal fade show d-block"
     tabindex="-1"
     role="dialog"

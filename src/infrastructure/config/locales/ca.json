@@ -208,7 +208,8 @@
     },
     "toast": {
       "dismiss": "Descarta la notificació"
-    }
+    },
+    "skipToContent": "Salta al contingut principal"
   },
   "components": {
     "backendUnavailable": {
@@ -350,7 +351,8 @@
       "login": "Inicia sessió",
       "home": "Inici",
       "mobileNavLabel": "Navegació pública mòbil",
-      "copyright": "© {year} My Band Now. Tots els drets reservats."
+      "copyright": "© {year} My Band Now. Tots els drets reservats.",
+      "primaryNavLabel": "Navegació principal"
     },
     "dashboard": {
       "brand": "Mybandnow Admin",
@@ -372,7 +374,9 @@
       "bandLogoAlt": "Logo del grup",
       "copyrightLine1": "© {year} My Band Now.",
       "copyrightLine2": "Tots els drets reservats.",
-      "selectBandFallback": "Selecciona un grup"
+      "selectBandFallback": "Selecciona un grup",
+      "openMenu": "Obre el menú",
+      "sidebarNavLabel": "Menú del tauler"
     }
   }
 }

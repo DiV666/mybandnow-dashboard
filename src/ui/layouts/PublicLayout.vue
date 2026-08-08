@@ -1,6 +1,11 @@
 <template>
   <div class="public-layout app-shell-glow d-flex flex-column flex-grow-1">
-    <nav class="navbar navbar-expand-md public-navbar surface-container border-bottom shadow-sm">
+    <a href="#public-main-content" class="visually-hidden-focusable skip-link">{{ $t('common.skipToContent') }}</a>
+
+    <nav
+      class="navbar navbar-expand-md public-navbar surface-container border-bottom shadow-sm"
+      :aria-label="$t('layouts.public.primaryNavLabel')"
+    >
       <div class="container public-navbar__inner">
         <router-link
           class="navbar-brand public-brand fw-bold text-body text-decoration-none"
@@ -89,7 +94,7 @@
       </div>
     </div>
 
-    <main class="public-layout__content flex-grow-1 d-flex flex-column">
+    <main id="public-main-content" tabindex="-1" class="public-layout__content flex-grow-1 d-flex flex-column">
       <router-view />
     </main>
 

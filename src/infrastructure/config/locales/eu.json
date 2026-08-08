@@ -208,7 +208,8 @@
     },
     "toast": {
       "dismiss": "Jakinarazpena baztertu"
-    }
+    },
+    "skipToContent": "Joan eduki nagusira"
   },
   "components": {
     "backendUnavailable": {
@@ -350,7 +351,8 @@
       "login": "Hasi saioa",
       "home": "Hasiera",
       "mobileNavLabel": "Nabigazio publiko mugikorra",
-      "copyright": "© {year} My Band Now. Eskubide guztiak erreserbatuta."
+      "copyright": "© {year} My Band Now. Eskubide guztiak erreserbatuta.",
+      "primaryNavLabel": "Nabigazio nagusia"
     },
     "dashboard": {
       "brand": "Mybandnow Admin",
@@ -372,7 +374,9 @@
       "bandLogoAlt": "Taldearen logoa",
       "copyrightLine1": "© {year} My Band Now.",
       "copyrightLine2": "Eskubide guztiak erreserbatuta.",
-      "selectBandFallback": "Aukeratu taldea"
+      "selectBandFallback": "Aukeratu taldea",
+      "openMenu": "Ireki menua",
+      "sidebarNavLabel": "Panelaren menua"
     }
   }
 }

@@ -208,7 +208,8 @@
     },
     "toast": {
       "dismiss": "Descartar notificación"
-    }
+    },
+    "skipToContent": "Saltar ao contido principal"
   },
   "components": {
     "backendUnavailable": {
@@ -350,7 +351,8 @@
       "login": "Iniciar sesión",
       "home": "Inicio",
       "mobileNavLabel": "Navegación pública móbil",
-      "copyright": "© {year} My Band Now. Todos os dereitos reservados."
+      "copyright": "© {year} My Band Now. Todos os dereitos reservados.",
+      "primaryNavLabel": "Navegación principal"
     },
     "dashboard": {
       "brand": "Mybandnow Admin",
@@ -372,7 +374,9 @@
       "bandLogoAlt": "Logo do grupo",
       "copyrightLine1": "© {year} My Band Now.",
       "copyrightLine2": "Todos os dereitos reservados.",
-      "selectBandFallback": "Seleccionar grupo"
+      "selectBandFallback": "Seleccionar grupo",
+      "openMenu": "Abrir menú",
+      "sidebarNavLabel": "Menú do panel"
     }
   }
 }
