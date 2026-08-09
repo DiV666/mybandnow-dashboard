@@ -627,19 +627,6 @@ function queryLinkByLabel(
 	);
 }
 
-function findLinkByLabel(
-	root: TestElementNode,
-	label: string,
-): TestElementNode {
-	const link = queryLinkByLabel(root, label);
-
-	if (!link) {
-		throw new Error(`Link with label '${label}' was not found.`);
-	}
-
-	return link;
-}
-
 function findSongCreationForm(root: TestElementNode): TestElementNode {
 	const form = findElement(
 		root,
@@ -2652,11 +2639,16 @@ describe("SongsView", () => {
 		expect(findButtonByText(view.root, "Resubir video")).not.toBeNull();
 		expect(textContent(view.root)).not.toContain("Ver video");
 
-		const viewVideoLink = findLinkByLabel(view.root, "Ver video");
-		expect(viewVideoLink.type).toBe("a");
-		expect(viewVideoLink.props.href).toBe("https://cdn.example/video-1.mp4");
-		expect(viewVideoLink.props.target).toBe("_blank");
-		expect(viewVideoLink.props.rel).toBe("noreferrer noopener");
+		const viewVideoButton = findButtonByLabel(view.root, "Ver video");
+		expect(viewVideoButton.type).toBe("button");
+		expect(queryByTestId(view.root, "video-preview-player")).toBeNull();
+
+		clickButton(viewVideoButton);
+		await flushView();
+
+		expect(findByTestId(view.root, "video-preview-player").props.src).toBe(
+			"https://cdn.example/video-1.mp4",
+		);
 
 		view.unmount();
 	});
@@ -2949,11 +2941,16 @@ describe("SongsView", () => {
 		expect(textContent(view.root)).not.toContain("Resubir video");
 		expect(textContent(view.root)).not.toContain("Ver video");
 
-		const viewVideoLink = findLinkByLabel(view.root, "Ver video");
-		expect(viewVideoLink.type).toBe("a");
-		expect(viewVideoLink.props.href).toBe("https://cdn.example/video-1.mp4");
-		expect(viewVideoLink.props.target).toBe("_blank");
-		expect(viewVideoLink.props.rel).toBe("noreferrer noopener");
+		const viewVideoButton = findButtonByLabel(view.root, "Ver video");
+		expect(viewVideoButton.type).toBe("button");
+		expect(queryByTestId(view.root, "video-preview-player")).toBeNull();
+
+		clickButton(viewVideoButton);
+		await flushView();
+
+		expect(findByTestId(view.root, "video-preview-player").props.src).toBe(
+			"https://cdn.example/video-1.mp4",
+		);
 		expect(findByText(view.root, "<video")).toBeNull();
 
 		view.unmount();

@@ -156,7 +156,8 @@
       "originalVideoclipUrlLabel": "URL del videoclip original",
       "originalVideoclipUrlPlaceholder": "https://www.youtube.com/watch?v=...",
       "creatingLoading": "Creant...",
-      "inviteMusicianFormAriaLabel": "Convida un músic per correu"
+      "inviteMusicianFormAriaLabel": "Convida un músic per correu",
+      "videoPreviewTitle": "{songTitle} · {instrumentName}"
     },
     "trackEditor": {
       "defaultTitle": "Editor de pistes",

@@ -163,6 +163,7 @@ const activeSongInstrumentUploadModal =
 	ref<ActiveSongInstrumentUploadModalState | null>(null);
 const activeAssignMusicianModal = ref<AssignMusicianModalState | null>(null);
 const activeEditInstrumentModal = ref<EditInstrumentModalState | null>(null);
+const activeVideoPreview = ref<{ url: string; title: string } | null>(null);
 const isLoading = ref(false);
 const isLoadingSongs = ref(false);
 const songs = ref<SongResponse[]>([]);
@@ -179,6 +180,7 @@ const songInstrumentFormModalRef = ref<HTMLElement | null>(null);
 const editInstrumentModalRef = ref<HTMLElement | null>(null);
 const songInstrumentUploadModalRef = ref<HTMLElement | null>(null);
 const assignMusicianModalRef = ref<HTMLElement | null>(null);
+const videoPreviewModalRef = ref<HTMLElement | null>(null);
 
 const songRepository = new AxiosSongRepository();
 const bandRepository = new AxiosBandRepository();
@@ -293,7 +295,8 @@ const isAnyModalOpen = computed(
 		activeSongInstrumentFormSong.value !== null ||
 		activeSongInstrumentUploadModalContext.value !== null ||
 		activeAssignMusicianModalContext.value !== null ||
-		activeEditInstrumentModalContext.value !== null,
+		activeEditInstrumentModalContext.value !== null ||
+		activeVideoPreview.value !== null,
 );
 
 const songInstrumentPollTimeouts = new Map<
@@ -1957,6 +1960,28 @@ function closeEditInstrumentModal(): void {
 	activeEditInstrumentModal.value = null;
 }
 
+function openVideoPreview(
+	song: SongResponse,
+	instrument: SongInstrumentListItemResponse,
+): void {
+	const video = getEffectiveVideo(song.id, instrument.id);
+	if (!video) {
+		return;
+	}
+
+	activeVideoPreview.value = {
+		url: video.url,
+		title: t('dashboard.songs.videoPreviewTitle', {
+			songTitle: song.title,
+			instrumentName: getSongInstrumentDisplayName(instrument),
+		}),
+	};
+}
+
+function closeVideoPreview(): void {
+	activeVideoPreview.value = null;
+}
+
 useModalFocusTrap(createSongModalRef, isCreateSongModalOpen, {
 	onEscape: closeCreateSongModal,
 });
@@ -1985,6 +2010,11 @@ useModalFocusTrap(
 	editInstrumentModalRef,
 	computed(() => activeEditInstrumentModalContext.value !== null && activeEditInstrumentModal.value !== null),
 	{ onEscape: closeEditInstrumentModal },
+);
+useModalFocusTrap(
+	videoPreviewModalRef,
+	computed(() => activeVideoPreview.value !== null),
+	{ onEscape: closeVideoPreview },
 );
 
 function handleEditInstrumentNameInput(event: Event): void {
@@ -2498,19 +2528,18 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                                 >
                                   {{ getSongInstrumentAvailabilityLabel(song.id, instrument.id) }}
                                 </span>
-                                <a
+                                <button
                                   v-if="hasSongInstrumentVideo(song.id, instrument.id)"
                                   ref="songActionTooltipTargets"
-                                  :href="getEffectiveVideo(song.id, instrument.id)?.url"
-                                  target="_blank"
-                                  rel="noreferrer noopener"
-                                  class="d-inline-flex align-items-center justify-content-center text-body-emphasis text-decoration-none"
+                                  type="button"
+                                  class="border-0 bg-transparent p-0 d-inline-flex align-items-center justify-content-center text-body-emphasis"
                                   data-bs-toggle="tooltip"
                                   :data-bs-title="$t('dashboard.songs.watchVideo')"
                                   :aria-label="$t('dashboard.songs.watchVideo')"
+                                  @click="openVideoPreview(song, instrument)"
                                 >
                                   <i class="bi bi-eye" aria-hidden="true"></i>
-                                </a>
+                                </button>
                               </div>
                             </td>
                         <td>
@@ -3041,10 +3070,71 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
       </div>
     </div>
     <div v-if="isCreateSongModalOpen" class="modal-backdrop show"></div>
+
+    <div v-if="activeVideoPreview" class="modal-backdrop show"></div>
+    <div
+      v-if="activeVideoPreview"
+      ref="videoPreviewModalRef"
+      class="modal d-block"
+      tabindex="-1"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="videoPreviewModalTitle"
+      @click.self="closeVideoPreview"
+    >
+      <div class="modal-dialog modal-dialog-centered video-preview-dialog">
+        <div class="modal-content video-preview-content">
+          <div class="modal-header video-preview-header">
+            <h2 id="videoPreviewModalTitle" class="modal-title h6 text-truncate">
+              {{ activeVideoPreview.title }}
+            </h2>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              :aria-label="$t('dashboard.songs.close')"
+              @click="closeVideoPreview"
+            ></button>
+          </div>
+          <div class="modal-body p-0">
+            <video
+              :key="activeVideoPreview.url"
+              data-testid="video-preview-player"
+              :src="activeVideoPreview.url"
+              controls
+              class="video-preview-player"
+            ></video>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
+.video-preview-dialog {
+	width: auto;
+	max-width: min(92vw, 1280px);
+}
+
+.video-preview-content {
+	width: fit-content;
+	max-width: 100%;
+	margin-inline: auto;
+	background: #000;
+}
+
+.video-preview-header {
+	border-bottom-color: rgba(255, 255, 255, 0.15);
+}
+
+.video-preview-player {
+	display: block;
+	max-width: 100%;
+	max-height: 80vh;
+	width: auto;
+	height: auto;
+}
+
 .song-instrument-action-wrapper {
 	line-height: 0;
 }

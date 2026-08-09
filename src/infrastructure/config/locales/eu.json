@@ -156,7 +156,8 @@
       "originalVideoclipUrlLabel": "Jatorrizko bideokliparen URLa",
       "originalVideoclipUrlPlaceholder": "https://www.youtube.com/watch?v=...",
       "creatingLoading": "Sortzen...",
-      "inviteMusicianFormAriaLabel": "Gonbidatu musikaria helbide elektronikoz"
+      "inviteMusicianFormAriaLabel": "Gonbidatu musikaria helbide elektronikoz",
+      "videoPreviewTitle": "{songTitle} · {instrumentName}"
     },
     "trackEditor": {
       "defaultTitle": "Pista editorea",
