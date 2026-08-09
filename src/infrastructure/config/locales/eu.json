@@ -341,7 +341,52 @@
     "landing": {
       "title": "Bideoklipetarako Lankidetza Plataforma",
       "description": "Mybandnow-ek urrutitik musika bideoklipak sortzeko aukera ematen dizu. Nahastu musikari desberdinen pistak eta sortu azken produktu profesional bat.",
-      "cta": "Hasi orain"
+      "cta": "Hasi orain",
+      "heroAlt": "Musikariak urrutitik bideoklip batean elkarlanean",
+      "howItWorks": {
+        "title": "Nola funtzionatzen du",
+        "subtitle": "Ideiatik azken bideoklipera lau urrats errazetan",
+        "step1": {
+          "title": "Grabatu zure pista",
+          "description": "Musikari bakoitzak bere zatia grabatzen du nahi duen lekutik, bere ekipoarekin, leku berean egon beharrik gabe."
+        },
+        "step2": {
+          "title": "Gehitu taldea",
+          "description": "Gonbidatu zure taldekideak saiora eta antolatu nork ekartzen duen instrumentu edo ahots bakoitza."
+        },
+        "step3": {
+          "title": "Nahastu pistak",
+          "description": "Konbinatu grabazio guztiak nahaste sinkronizatu eta orekatu batean, azken bideorako prest."
+        },
+        "step4": {
+          "title": "Sortu bideoklipa",
+          "description": "Mybandnow-ek automatikoki muntatzen du azken bideoa, musikari bakoitzaren audioa eta irudia konbinatuz."
+        }
+      },
+      "benefits": {
+        "title": "Zergatik aukeratu Mybandnow",
+        "subtitle": "Mugarik gabe sortu nahi duten taldeentzat pentsatua",
+        "remote": {
+          "title": "Distantzia-mugarik ez",
+          "description": "Elkarlanean aritu edozein hiri edo herrialdetako musikariekin, estudio berean bildu behar izan gabe."
+        },
+        "quality": {
+          "title": "Kalitate profesionala",
+          "description": "Nahasketa-tresnak, konplikazio teknikorik gabe soinu zaindua lortzeko diseinatuak."
+        },
+        "collaboration": {
+          "title": "Benetako lankidetza",
+          "description": "Taldeko kide bakoitzak parte hartzen du prozesuan, grabaziotik azken emaitzara arte."
+        },
+        "video": {
+          "title": "Bideoklipa barne",
+          "description": "Ez duzu audioa bakarrik jasoko: Mybandnow-ek azken bideoa ere sortzen du, partekatzeko prest."
+        }
+      },
+      "finalCta": {
+        "title": "Zure hurrengo bideoklipa sortzeko prest?",
+        "description": "Sartu Mybandnow-en eta hasi zure taldearekin elkarlanean gaur bertan."
+      }
     }
   },
   "layouts": {

@@ -341,7 +341,52 @@
     "landing": {
       "title": "Plataforma Colaborativa de Videoclips",
       "description": "Mybandnow permíteche crear videoclips musicais a distancia. Mestura pistas de diferentes músicos e xera un produto final profesional.",
-      "cta": "Comezar agora"
+      "cta": "Comezar agora",
+      "heroAlt": "Músicos colaborando a distancia nun videoclip",
+      "howItWorks": {
+        "title": "Como funciona",
+        "subtitle": "Da idea ao videoclip final en catro pasos sinxelos",
+        "step1": {
+          "title": "Grava a túa pista",
+          "description": "Cada músico grava a súa parte onde queira, co seu propio equipo, sen depender de coincidir no mesmo espazo."
+        },
+        "step2": {
+          "title": "Suma a banda",
+          "description": "Invita aos teus compañeiros de banda á sesión e organiza quen achega cada instrumento ou voz."
+        },
+        "step3": {
+          "title": "Mestura as pistas",
+          "description": "Combina todas as gravacións nunha mestura sincronizada e equilibrada, lista para o vídeo final."
+        },
+        "step4": {
+          "title": "Xera o videoclip",
+          "description": "Mybandnow monta automaticamente o vídeo final combinando audio e imaxe de cada músico."
+        }
+      },
+      "benefits": {
+        "title": "Por que escoller Mybandnow",
+        "subtitle": "Pensado para bandas que queren crear sen fronteiras",
+        "remote": {
+          "title": "Sen límites de distancia",
+          "description": "Colabora con músicos de calquera cidade ou país sen necesidade de reunirse nun estudio."
+        },
+        "quality": {
+          "title": "Calidade profesional",
+          "description": "Ferramentas de mestura pensadas para lograr un son coidado sen complicacións técnicas."
+        },
+        "collaboration": {
+          "title": "Colaboración real",
+          "description": "Cada membro da banda participa no proceso, desde a gravación ata o resultado final."
+        },
+        "video": {
+          "title": "Videoclip incluído",
+          "description": "Non só obtés o audio: Mybandnow xera tamén o vídeo final listo para compartir."
+        }
+      },
+      "finalCta": {
+        "title": "Preparado para crear o teu próximo videoclip?",
+        "description": "Únete a Mybandnow e comeza a colaborar coa túa banda hoxe mesmo."
+      }
     }
   },
   "layouts": {
