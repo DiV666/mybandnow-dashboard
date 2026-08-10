@@ -26,6 +26,7 @@ import { useMusicianStore } from "../../stores/useMusicianStore.js";
 import { useToastStore } from "../../stores/useToastStore.js";
 import { useModalFocusTrap } from "../../composables/useModalFocusTrap.js";
 import { useSongInstrumentCatalog } from "../../composables/useSongInstrumentCatalog.js";
+import { useMusicianDisplayNames } from "../../composables/useMusicianDisplayNames.js";
 import { isHttpErrorLike, type HttpErrorLike } from "../../utils/httpError.js";
 
 interface SongInstrumentFormState {
@@ -106,7 +107,6 @@ type SongInstrumentMap = Record<string, SongInstrumentListItemResponse[]>;
 type SongInstrumentFormMap = Record<string, SongInstrumentFormState>;
 type SongInstrumentUploadMap = Record<string, SongInstrumentUploadState>;
 type SongInstrumentDetailMap = Record<string, SongInstrumentDetailResponse>;
-type MusicianDisplayNameMap = Record<string, string>;
 type TooltipTarget = Element;
 type TooltipInstance = {
 	dispose: () => void;
@@ -137,7 +137,6 @@ const songInstruments = ref<SongInstrumentMap>({});
 const songInstrumentForms = ref<SongInstrumentFormMap>({});
 const songInstrumentUploads = ref<SongInstrumentUploadMap>({});
 const songInstrumentDetails = ref<SongInstrumentDetailMap>({});
-const musicianDisplayNames = ref<MusicianDisplayNameMap>({});
 const songActionTooltipTargets = ref<TooltipTarget[]>([]);
 const createSongModalRef = ref<HTMLElement | null>(null);
 const songInstrumentFormModalRef = ref<HTMLElement | null>(null);
@@ -171,6 +170,13 @@ const {
 	getCatalogInstrumentName,
 	getSongInstrumentCatalogId,
 } = useSongInstrumentCatalog({ getInstrumentsUseCase, getInstrumentByIdUseCase });
+
+const {
+	musicianDisplayNames,
+	resolveMusicianDisplayName,
+	ensureMusicianDisplayNameLoaded,
+	preloadMusicianDisplayNames,
+} = useMusicianDisplayNames({ getMusicianByIdUseCase });
 
 const selectedBand = computed(() => bandStore.selectedBand);
 const selectedBandId = computed(() => bandStore.selectedBandId);
@@ -274,7 +280,6 @@ const songInstrumentProgressTimeouts = new Map<
 	ReturnType<typeof setTimeout>
 >();
 const songInstrumentPollVersions = new Map<string, number>();
-const musicianDetailRequests = new Map<string, Promise<void>>();
 let songActionTooltips: TooltipInstance[] = [];
 let isViewMounted = true;
 let lastSongsRequestId = 0;
@@ -305,27 +310,6 @@ async function syncSongActionTooltips(): Promise<void> {
 	songActionTooltips = songActionTooltipTargets.value.map((target) =>
 		Tooltip.getOrCreateInstance(target) as TooltipInstance,
 	);
-}
-
-function setMusicianDisplayName(musicianId: string, displayName: string): void {
-	musicianDisplayNames.value = {
-		...musicianDisplayNames.value,
-		[musicianId]: displayName,
-	};
-}
-
-function resolveMusicianDisplayName(name: string, username: string): string {
-	const trimmedName = name.trim();
-	if (trimmedName.length > 0) {
-		return trimmedName;
-	}
-
-	const trimmedUsername = username.trim();
-	if (trimmedUsername.length > 0) {
-		return `@${trimmedUsername}`;
-	}
-
-	return "";
 }
 
 function isAssignMusicianModalActive(songId: string, instrumentId: string): boolean {
@@ -432,56 +416,6 @@ async function loadAssignableBandMembers(
 		};
 		showErrorToast(message);
 	}
-}
-
-async function ensureMusicianDisplayNameLoaded(musicianId: string): Promise<void> {
-	if (!musicianId || musicianDisplayNames.value[musicianId]) {
-		return;
-	}
-
-	const currentRequest = musicianDetailRequests.get(musicianId);
-	if (currentRequest) {
-		return currentRequest;
-	}
-
-	const request = (async () => {
-		const musician = await getMusicianByIdUseCase.run(musicianId);
-		if (!isViewMounted || !musician) {
-			return;
-		}
-
-		const displayName = resolveMusicianDisplayName(
-			musician.name,
-			musician.username,
-		);
-		if (!displayName) {
-			return;
-		}
-
-		setMusicianDisplayName(musician.id, displayName);
-	})().finally(() => {
-		musicianDetailRequests.delete(musicianId);
-	});
-
-	musicianDetailRequests.set(musicianId, request);
-	return request;
-}
-
-async function preloadMusicianDisplayNames(
-	instruments: SongInstrumentListItemResponse[],
-): Promise<void> {
-	const uniqueMusicianIds = [...new Set(instruments.map((instrument) => instrument.musicianId))]
-		.filter((musicianId) => musicianId.length > 0);
-
-	await Promise.all(
-		uniqueMusicianIds.map(async (musicianId) => {
-			try {
-				await ensureMusicianDisplayNameLoaded(musicianId);
-			} catch {
-				// Keep the raw musician id visible when the profile lookup fails.
-			}
-		}),
-	);
 }
 
 function getSongInstrumentForm(songId: string): SongInstrumentFormState {
