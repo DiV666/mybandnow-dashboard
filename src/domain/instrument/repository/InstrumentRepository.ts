@@ -1,6 +1,6 @@
-import type { InstrumentResponse } from "../InstrumentResponse.js";
+import type { Instrument } from "../Instrument.js";
 
 export interface InstrumentRepository {
-	getAll(): Promise<InstrumentResponse[]>;
-	getById(instrumentId: string): Promise<InstrumentResponse>;
+	getAll(): Promise<Instrument[]>;
+	getById(instrumentId: string): Promise<Instrument>;
 }

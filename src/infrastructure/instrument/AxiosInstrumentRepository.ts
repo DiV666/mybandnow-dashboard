@@ -1,23 +1,25 @@
 import { httpClient } from "../http/httpClient.js";
-import type {
-	InstrumentCollectionResponse,
-	InstrumentResponse,
-} from "../../domain/instrument/InstrumentResponse.js";
+import {
+	Instrument,
+	type InstrumentPrimitives,
+} from "../../domain/instrument/Instrument.js";
 import type { InstrumentRepository } from "../../domain/instrument/repository/InstrumentRepository.js";
 
 export class AxiosInstrumentRepository implements InstrumentRepository {
-	async getAll(): Promise<InstrumentResponse[]> {
-		const response =
-			await httpClient.get<InstrumentCollectionResponse>("/v1/instruments");
+	async getAll(): Promise<Instrument[]> {
+		const response = await httpClient.get<{
+			items: InstrumentPrimitives[];
+			total: number;
+		}>("/v1/instruments");
 
-		return response.data.items;
+		return response.data.items.map(Instrument.fromPrimitives);
 	}
 
-	async getById(instrumentId: string): Promise<InstrumentResponse> {
-		const response = await httpClient.get<InstrumentResponse>(
+	async getById(instrumentId: string): Promise<Instrument> {
+		const response = await httpClient.get<InstrumentPrimitives>(
 			`/v1/instruments/${instrumentId}`,
 		);
 
-		return response.data;
+		return Instrument.fromPrimitives(response.data);
 	}
 }

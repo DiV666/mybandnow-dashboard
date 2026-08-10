@@ -1,4 +1,4 @@
-import type { InstrumentResponse } from "../../domain/instrument/InstrumentResponse.js";
+import type { Instrument } from "../../domain/instrument/Instrument.js";
 import type { InstrumentRepository } from "../../domain/instrument/repository/InstrumentRepository.js";
 
 export class GetInstrumentByIdUseCase {
@@ -8,7 +8,7 @@ export class GetInstrumentByIdUseCase {
 		this.repository = repository;
 	}
 
-	async run(instrumentId: string): Promise<InstrumentResponse> {
+	async run(instrumentId: string): Promise<Instrument> {
 		return this.repository.getById(instrumentId);
 	}
 }

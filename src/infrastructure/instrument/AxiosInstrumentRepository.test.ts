@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AxiosInstrumentRepository } from "./AxiosInstrumentRepository.js";
 import { httpClient } from "../http/httpClient.js";
+import { Instrument } from "../../domain/instrument/Instrument.js";
 
 describe("AxiosInstrumentRepository", () => {
 	const repository = new AxiosInstrumentRepository();
@@ -28,12 +29,12 @@ describe("AxiosInstrumentRepository", () => {
 
 		expect(getSpy).toHaveBeenCalledWith("/v1/instruments");
 		expect(instruments).toEqual([
-			{
+			Instrument.fromPrimitives({
 				id: "catalog-1",
 				name: "Electric Guitar",
 				description: "Amplified guitar",
 				createdAt: "2026-07-15T10:00:00.000Z",
-			},
+			}),
 		]);
 	});
 
@@ -50,11 +51,13 @@ describe("AxiosInstrumentRepository", () => {
 		const instrument = await repository.getById("catalog-1");
 
 		expect(getSpy).toHaveBeenCalledWith("/v1/instruments/catalog-1");
-		expect(instrument).toEqual({
-			id: "catalog-1",
-			name: "Electric Guitar",
-			description: "Amplified guitar",
-			createdAt: "2026-07-15T10:00:00.000Z",
-		});
+		expect(instrument).toEqual(
+			Instrument.fromPrimitives({
+				id: "catalog-1",
+				name: "Electric Guitar",
+				description: "Amplified guitar",
+				createdAt: "2026-07-15T10:00:00.000Z",
+			}),
+		);
 	});
 });
