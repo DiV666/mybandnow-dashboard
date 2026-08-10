@@ -29,15 +29,8 @@ import { useSongInstrumentCatalog } from "../../composables/useSongInstrumentCat
 import { useMusicianDisplayNames } from "../../composables/useMusicianDisplayNames.js";
 import { useCreateSong } from "../../composables/useCreateSong.js";
 import { useVideoPreview } from "../../composables/useVideoPreview.js";
+import { useAddSongInstrument } from "../../composables/useAddSongInstrument.js";
 import { isHttpErrorLike, type HttpErrorLike } from "../../utils/httpError.js";
-
-interface SongInstrumentFormState {
-	isVisible: boolean;
-	name: string;
-	instrumentId: string;
-	isSubmitting: boolean;
-	errorMsg: string;
-}
 
 const songInstrumentUploadProgressStages = {
 	IDLE: "IDLE",
@@ -106,7 +99,6 @@ interface UploadErrorDetails {
 }
 
 type SongInstrumentMap = Record<string, SongInstrumentListItemResponse[]>;
-type SongInstrumentFormMap = Record<string, SongInstrumentFormState>;
 type SongInstrumentUploadMap = Record<string, SongInstrumentUploadState>;
 type SongInstrumentDetailMap = Record<string, SongInstrumentDetailResponse>;
 type TooltipTarget = Element;
@@ -130,12 +122,10 @@ const activeEditInstrumentModal = ref<EditInstrumentModalState | null>(null);
 const isLoadingSongs = ref(false);
 const songs = ref<SongResponse[]>([]);
 const songInstruments = ref<SongInstrumentMap>({});
-const songInstrumentForms = ref<SongInstrumentFormMap>({});
 const songInstrumentUploads = ref<SongInstrumentUploadMap>({});
 const songInstrumentDetails = ref<SongInstrumentDetailMap>({});
 const songActionTooltipTargets = ref<TooltipTarget[]>([]);
 const createSongModalRef = ref<HTMLElement | null>(null);
-const songInstrumentFormModalRef = ref<HTMLElement | null>(null);
 const editInstrumentModalRef = ref<HTMLElement | null>(null);
 const songInstrumentUploadModalRef = ref<HTMLElement | null>(null);
 const assignMusicianModalRef = ref<HTMLElement | null>(null);
@@ -192,9 +182,24 @@ const {
 const { activeVideoPreview, videoPreviewModalRef, openVideoPreview, closeVideoPreview } =
 	useVideoPreview({ getEffectiveVideo, getSongInstrumentDisplayName });
 
-const activeSongInstrumentFormSong = computed(() =>
-	songs.value.find((song) => songInstrumentForms.value[song.id]?.isVisible) ?? null,
-);
+const {
+	songInstrumentForms,
+	songInstrumentFormModalRef,
+	activeSongInstrumentFormSong,
+	getSongInstrumentForm,
+	openSongInstrumentForm,
+	closeSongInstrumentForm,
+	handleCreateSongInstrument,
+} = useAddSongInstrument({
+	createSongInstrumentUseCase,
+	getSongInstrumentsUseCase,
+	songs,
+	songInstruments,
+	ensureAvailableInstrumentsLoaded,
+	preloadCatalogInstrumentNames,
+	syncSongInstrumentAsyncState,
+});
+
 const activeSongInstrumentUploadModalContext = computed(() => {
 	if (!activeSongInstrumentUploadModal.value) {
 		return null;
@@ -427,30 +432,6 @@ async function loadAssignableBandMembers(
 	}
 }
 
-function getSongInstrumentForm(songId: string): SongInstrumentFormState {
-	const current = songInstrumentForms.value[songId];
-	if (current) {
-		return current;
-	}
-
-	const nextState: SongInstrumentFormState = {
-		isVisible: false,
-		name: "",
-		instrumentId: "",
-		isSubmitting: false,
-		errorMsg: "",
-	};
-	songInstrumentForms.value = {
-		...songInstrumentForms.value,
-		[songId]: nextState,
-	};
-	return nextState;
-}
-
-function hasSongInstrumentForm(songId: string): boolean {
-	return songId in songInstrumentForms.value;
-}
-
 function getSongInstrumentUploadKey(songId: string, instrumentId: string): string {
 	return `${songId}:${instrumentId}`;
 }
@@ -490,20 +471,6 @@ function setSongInstrumentUploadState(
 	songInstrumentUploads.value = {
 		...songInstrumentUploads.value,
 		[key]: {
-			...current,
-			...updates,
-		},
-	};
-}
-
-function setSongInstrumentForm(
-	songId: string,
-	updates: Partial<SongInstrumentFormState>,
-): void {
-	const current = getSongInstrumentForm(songId);
-	songInstrumentForms.value = {
-		...songInstrumentForms.value,
-		[songId]: {
 			...current,
 			...updates,
 		},
@@ -1583,34 +1550,6 @@ async function focusSongAnchorFromLocation(): Promise<void> {
 	target.focus({ preventScroll: true });
 }
 
-function openSongInstrumentForm(songId: string): void {
-	void ensureAvailableInstrumentsLoaded();
-	songInstrumentForms.value = Object.fromEntries(
-		Object.entries(songInstrumentForms.value).map(([currentSongId, formState]) => [
-			currentSongId,
-			{
-				...formState,
-				isVisible: currentSongId === songId,
-				errorMsg: currentSongId === songId ? "" : formState.errorMsg,
-			},
-		]),
-	) as SongInstrumentFormMap;
-
-	if (!songInstrumentForms.value[songId]) {
-		setSongInstrumentForm(songId, {
-			isVisible: true,
-			errorMsg: "",
-		});
-	}
-}
-
-function closeSongInstrumentForm(songId: string): void {
-	setSongInstrumentForm(songId, {
-		isVisible: false,
-		errorMsg: "",
-	});
-}
-
 function openSongInstrumentUploadModal(songId: string, instrumentId: string): void {
 	activeSongInstrumentUploadModal.value = {
 		songId,
@@ -2049,86 +1988,6 @@ async function handleUploadSongInstrumentVideo(
 	}
 }
 
-async function handleCreateSongInstrument(songId: string): Promise<void> {
-	const musicianProfileId = musicianStore.profile?.id;
-	if (!musicianProfileId) {
-		const message = t('dashboard.songs.errors.profileRequiredForInstrument');
-		setSongInstrumentForm(songId, {
-			errorMsg: message,
-		});
-		showErrorToast(message);
-		return;
-	}
-
-	const form = getSongInstrumentForm(songId);
-	setSongInstrumentForm(songId, {
-		isSubmitting: true,
-		errorMsg: "",
-	});
-
-	try {
-		await createSongInstrumentUseCase.run(
-			songId,
-			crypto.randomUUID(),
-			form.name,
-			form.instrumentId,
-			musicianProfileId,
-		);
-		const instruments = await getSongInstrumentsUseCase.run(songId);
-		songInstruments.value = {
-			...songInstruments.value,
-			[songId]: instruments,
-		};
-		await preloadCatalogInstrumentNames(instruments);
-		await Promise.all(
-			instruments.map((instrument) => syncSongInstrumentAsyncState(songId, instrument)),
-		);
-		setSongInstrumentForm(songId, {
-			isVisible: false,
-			name: "",
-			instrumentId: "",
-			isSubmitting: false,
-		});
-		showSuccessToast(t('dashboard.songs.success.instrumentAdded'));
-	} catch (error: unknown) {
-		if (isHttpErrorLike(error) && error.response?.status === 409) {
-			const message =
-				t('dashboard.songs.errors.instrumentConflict');
-			setSongInstrumentForm(songId, {
-				errorMsg: message,
-				isSubmitting: false,
-			});
-			showErrorToast(message);
-			return;
-		}
-
-		if (isHttpErrorLike(error) && error.response?.status === 403) {
-			const message = t('dashboard.songs.errors.noPermissionAddInstrument');
-			setSongInstrumentForm(songId, {
-				errorMsg: message,
-				isSubmitting: false,
-			});
-			showErrorToast(message);
-			return;
-		}
-
-		const message =
-			error instanceof Error
-				? error.message
-				: t('dashboard.songs.errors.addInstrumentUnexpected');
-		setSongInstrumentForm(songId, {
-			errorMsg: message,
-			isSubmitting: false,
-		});
-		showErrorToast(message);
-	} finally {
-		if (hasSongInstrumentForm(songId) && getSongInstrumentForm(songId).isSubmitting) {
-			setSongInstrumentForm(songId, {
-				isSubmitting: false,
-			});
-		}
-	}
-}
 </script>
 
 <template>
