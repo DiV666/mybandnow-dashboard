@@ -11,21 +11,8 @@ import {
 } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { GetBandMembersUseCase } from "../../../application/band/GetBandMembersUseCase.js";
-import { GetInstrumentByIdUseCase } from "../../../application/instrument/GetInstrumentByIdUseCase.js";
-import { GetInstrumentsUseCase } from "../../../application/instrument/GetInstrumentsUseCase.js";
-import { GetMusicianByIdUseCase } from "../../../application/musician/GetMusicianByIdUseCase.js";
-import { AssignSongInstrumentMusicianUseCase } from "../../../application/song/AssignSongInstrumentMusicianUseCase.js";
-import { CreateSongInstrumentUseCase } from "../../../application/song/CreateSongInstrumentUseCase.js";
-import { CreateSongUseCase } from "../../../application/song/CreateSongUseCase.js";
-import { GetBandSongsUseCase } from "../../../application/song/GetBandSongsUseCase.js";
-import { GetSongInstrumentDetailUseCase } from "../../../application/song/GetSongInstrumentDetailUseCase.js";
-import { GetSongInstrumentsUseCase } from "../../../application/song/GetSongInstrumentsUseCase.js";
-import { InviteSongInstrumentMusicianUseCase } from "../../../application/song/InviteSongInstrumentMusicianUseCase.js";
-import { UpdateSongInstrumentUseCase } from "../../../application/song/UpdateSongInstrumentUseCase.js";
-import { UploadSongInstrumentVideoUseCase } from "../../../application/song/UploadSongInstrumentVideoUseCase.js";
 import type { BandMemberResponse } from "../../../domain/band/BandMemberResponse.js";
-import type { InstrumentResponse } from "../../../domain/instrument/InstrumentResponse.js";
+import type { Instrument } from "../../../domain/instrument/Instrument.js";
 import {
 	songInstrumentUploadStatuses,
 	type SongInstrumentDetailResponse,
@@ -34,32 +21,12 @@ import {
 	type SongInstrumentVideoResponse,
 } from "../../../domain/song/SongInstrumentResponse.js";
 import type { SongResponse } from "../../../domain/song/SongResponse.js";
-import { AxiosBandRepository } from "../../../infrastructure/band/AxiosBandRepository.js";
-import { AxiosInstrumentRepository } from "../../../infrastructure/instrument/AxiosInstrumentRepository.js";
-import { AxiosMusicianRepository } from "../../../infrastructure/musician/AxiosMusicianRepository.js";
-import { AxiosSongRepository } from "../../../infrastructure/song/AxiosSongRepository.js";
+import { container } from "../../bootstrap/container.js";
 import { useBandStore } from "../../stores/useBandStore.js";
 import { useMusicianStore } from "../../stores/useMusicianStore.js";
 import { useToastStore } from "../../stores/useToastStore.js";
 import { useModalFocusTrap } from "../../composables/useModalFocusTrap.js";
-
-interface HttpErrorData {
-	message?: string;
-	errorMessage?: string;
-	code?: string;
-}
-
-interface HttpErrorResponse {
-	status?: number;
-	data?: HttpErrorData;
-}
-
-interface HttpErrorLike {
-	response?: HttpErrorResponse;
-	message?: string;
-	name?: string;
-	code?: string;
-}
+import { isHttpErrorLike, type HttpErrorLike } from "../../utils/httpError.js";
 
 interface SongInstrumentFormState {
 	isVisible: boolean;
@@ -171,7 +138,7 @@ const songInstruments = ref<SongInstrumentMap>({});
 const songInstrumentForms = ref<SongInstrumentFormMap>({});
 const songInstrumentUploads = ref<SongInstrumentUploadMap>({});
 const songInstrumentDetails = ref<SongInstrumentDetailMap>({});
-const availableInstruments = ref<InstrumentResponse[]>([]);
+const availableInstruments = ref<Instrument[]>([]);
 const catalogInstrumentNames = ref<InstrumentNameMap>({});
 const musicianDisplayNames = ref<MusicianDisplayNameMap>({});
 const songActionTooltipTargets = ref<TooltipTarget[]>([]);
@@ -182,29 +149,21 @@ const songInstrumentUploadModalRef = ref<HTMLElement | null>(null);
 const assignMusicianModalRef = ref<HTMLElement | null>(null);
 const videoPreviewModalRef = ref<HTMLElement | null>(null);
 
-const songRepository = new AxiosSongRepository();
-const bandRepository = new AxiosBandRepository();
-const instrumentRepository = new AxiosInstrumentRepository();
-const musicianRepository = new AxiosMusicianRepository();
-const createSongUseCase = new CreateSongUseCase(songRepository);
-const getBandMembersUseCase = new GetBandMembersUseCase(bandRepository);
-const getBandSongsUseCase = new GetBandSongsUseCase(songRepository);
-const createSongInstrumentUseCase = new CreateSongInstrumentUseCase(songRepository);
-const getSongInstrumentsUseCase = new GetSongInstrumentsUseCase(songRepository);
-const getSongInstrumentDetailUseCase = new GetSongInstrumentDetailUseCase(
-	songRepository,
-);
-const getInstrumentsUseCase = new GetInstrumentsUseCase(instrumentRepository);
-const getInstrumentByIdUseCase = new GetInstrumentByIdUseCase(instrumentRepository);
-const getMusicianByIdUseCase = new GetMusicianByIdUseCase(musicianRepository);
-const assignSongInstrumentMusicianUseCase = new AssignSongInstrumentMusicianUseCase(
-	songRepository,
-);
-const inviteSongInstrumentMusicianUseCase = new InviteSongInstrumentMusicianUseCase(
-	songRepository,
-);
-const updateSongInstrumentUseCase = new UpdateSongInstrumentUseCase(songRepository);
-const uploadSongInstrumentVideoUseCase = new UploadSongInstrumentVideoUseCase(songRepository);
+const {
+	createSongUseCase,
+	getBandMembersUseCase,
+	getBandSongsUseCase,
+	createSongInstrumentUseCase,
+	getSongInstrumentsUseCase,
+	getSongInstrumentDetailUseCase,
+	getInstrumentsUseCase,
+	getInstrumentByIdUseCase,
+	getMusicianByIdUseCase,
+	assignSongInstrumentMusicianUseCase,
+	inviteSongInstrumentMusicianUseCase,
+	updateSongInstrumentUseCase,
+	uploadSongInstrumentVideoUseCase,
+} = container.useCases;
 
 const selectedBand = computed(() => bandStore.selectedBand);
 const selectedBandId = computed(() => bandStore.selectedBandId);
@@ -343,10 +302,6 @@ async function syncSongActionTooltips(): Promise<void> {
 	);
 }
 
-function isHttpErrorLike(error: unknown): error is HttpErrorLike {
-	return typeof error === "object" && error !== null;
-}
-
 function getSongInstrumentCatalogId(
 	instrument: SongInstrumentListItemResponse | SongInstrumentDetailResponse,
 ): string {
@@ -363,7 +318,8 @@ function setCatalogInstrumentName(instrumentId: string, name: string): void {
 function getCatalogInstrumentName(instrumentId: string): string {
 	return (
 		catalogInstrumentNames.value[instrumentId] ??
-		availableInstruments.value.find((instrument) => instrument.id === instrumentId)?.name ??
+		availableInstruments.value.find((instrument) => instrument.id.value === instrumentId)?.name
+			.value ??
 		instrumentId
 	);
 }
@@ -540,7 +496,7 @@ async function ensureCatalogInstrumentNameLoaded(instrumentId: string): Promise<
 			return;
 		}
 
-		setCatalogInstrumentName(instrument.id, instrument.name);
+		setCatalogInstrumentName(instrument.id.value, instrument.name.value);
 	})().finally(() => {
 		instrumentDetailRequests.delete(instrumentId);
 	});
@@ -2658,10 +2614,10 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                     </option>
                     <option
                       v-for="instrument in availableInstruments"
-                      :key="instrument.id"
-                      :value="instrument.id"
+                      :key="instrument.id.value"
+                      :value="instrument.id.value"
                     >
-                      {{ instrument.name }}
+                      {{ instrument.name.value }}
                     </option>
                   </select>
                 </div>
@@ -2760,10 +2716,10 @@ async function handleCreateSongInstrument(songId: string): Promise<void> {
                         </option>
                         <option
                           v-for="instrument in availableInstruments"
-                          :key="instrument.id"
-                          :value="instrument.id"
+                          :key="instrument.id.value"
+                          :value="instrument.id.value"
                         >
-                          {{ instrument.name }}
+                          {{ instrument.name.value }}
                         </option>
                       </select>
                 </div>

@@ -4,16 +4,8 @@ import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '../../stores/useAuthStore.js';
 import { useToastStore } from '../../stores/useToastStore.js';
-import { LoginUseCase } from '../../../application/auth/LoginUseCase.js';
-import { AxiosAuthRepository } from '../../../infrastructure/auth/AxiosAuthRepository.js';
-
-interface HttpErrorResponse {
-  status?: number;
-}
-
-interface HttpErrorLike {
-  response?: HttpErrorResponse;
-}
+import { container } from '../../bootstrap/container.js';
+import { isHttpErrorLike, type HttpErrorLike } from '../../utils/httpError.js';
 
 const email = ref('');
 const password = ref('');
@@ -25,13 +17,7 @@ const authStore = useAuthStore();
 const toastStore = useToastStore();
 const { t } = useI18n();
 
-// Manual Dependency Injection for now
-const authRepository = new AxiosAuthRepository();
-const loginUseCase = new LoginUseCase(authRepository);
-
-function isHttpErrorLike(error: unknown): error is HttpErrorLike {
-  return typeof error === 'object' && error !== null && 'response' in error;
-}
+const { loginUseCase } = container.useCases;
 
 async function handleLogin() {
   if (!email.value || !password.value) {

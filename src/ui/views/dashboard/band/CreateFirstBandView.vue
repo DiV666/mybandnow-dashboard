@@ -2,18 +2,10 @@
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
-import { CreateBandUseCase } from '../../../../application/band/CreateBandUseCase.js';
-import { AxiosBandRepository } from '../../../../infrastructure/band/AxiosBandRepository.js';
+import { container } from '../../../bootstrap/container.js';
 import { useBandStore } from '../../../stores/useBandStore.js';
 import { useToastStore } from '../../../stores/useToastStore.js';
-
-interface HttpErrorResponse {
-  status?: number;
-}
-
-interface HttpErrorLike {
-  response?: HttpErrorResponse;
-}
+import { isHttpErrorLike, type HttpErrorLike } from '../../../utils/httpError.js';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -23,12 +15,7 @@ const bandName = ref('');
 const isLoading = ref(false);
 const showCreateBandForm = ref(false);
 
-const bandRepository = new AxiosBandRepository();
-const createBandUseCase = new CreateBandUseCase(bandRepository);
-
-function isHttpErrorLike(error: unknown): error is HttpErrorLike {
-  return typeof error === 'object' && error !== null && 'response' in error;
-}
+const { createBandUseCase } = container.useCases;
 
 async function handleCreateBand() {
   if (!bandName.value.trim()) {

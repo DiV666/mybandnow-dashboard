@@ -1,18 +1,15 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { AddBandMemberUseCase } from "../../../application/band/AddBandMemberUseCase.js";
-import { GetBandMembersUseCase } from "../../../application/band/GetBandMembersUseCase.js";
-import { GetMusicianByIdUseCase } from "../../../application/musician/GetMusicianByIdUseCase.js";
 import {
 	bandMemberRoles,
 	type BandMemberRole,
 } from "../../../domain/band/BandMemberResponse.js";
-import { AxiosBandRepository } from "../../../infrastructure/band/AxiosBandRepository.js";
-import { AxiosMusicianRepository } from "../../../infrastructure/musician/AxiosMusicianRepository.js";
+import { container } from "../../bootstrap/container.js";
 import { useBandStore } from "../../stores/useBandStore.js";
 import { useToastStore } from "../../stores/useToastStore.js";
 import { useModalFocusTrap } from "../../composables/useModalFocusTrap.js";
+import { isHttpErrorLike, type HttpErrorLike } from "../../utils/httpError.js";
 
 interface MemberCardViewModel {
 	id: string;
@@ -23,22 +20,11 @@ interface MemberCardViewModel {
 	avatarInitials: string;
 }
 
-interface HttpErrorResponse {
-	status?: number;
-}
-
-interface HttpErrorLike {
-	response?: HttpErrorResponse;
-}
-
 const { t } = useI18n();
 const bandStore = useBandStore();
 const toastStore = useToastStore();
-const bandRepository = new AxiosBandRepository();
-const musicianRepository = new AxiosMusicianRepository();
-const addBandMemberUseCase = new AddBandMemberUseCase(bandRepository);
-const getBandMembersUseCase = new GetBandMembersUseCase(bandRepository);
-const getMusicianByIdUseCase = new GetMusicianByIdUseCase(musicianRepository);
+const { addBandMemberUseCase, getBandMembersUseCase, getMusicianByIdUseCase } =
+	container.useCases;
 
 const members = ref<MemberCardViewModel[]>([]);
 const isLoadingMembers = ref(false);
@@ -49,10 +35,6 @@ const errorMsg = ref("");
 const isSubmitting = ref(false);
 const selectedBandId = computed(() => bandStore.selectedBandId);
 const addMemberModalRef = ref<HTMLElement | null>(null);
-
-function isHttpErrorLike(error: unknown): error is HttpErrorLike {
-	return typeof error === "object" && error !== null && "response" in error;
-}
 
 function getAvatarInitials(name: string): string {
 	const parts = name

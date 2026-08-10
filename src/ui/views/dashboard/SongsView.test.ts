@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import { createRenderer, nextTick } from "vue";
 import { Band } from "@/domain/band/Band.js";
+import { Instrument } from "@/domain/instrument/Instrument.js";
 import { MusicianEmail } from "@/domain/musician/value-object/MusicianEmail.js";
 import { MusicianId } from "@/domain/musician/value-object/MusicianId.js";
 import type { Song } from "@/domain/song/Song.js";
@@ -949,12 +950,12 @@ describe("SongsView", () => {
 				createdAt: "2026-07-15T10:00:00.000Z",
 			},
 		]);
-		instrumentRepositoryGetByIdMock.mockResolvedValueOnce({
+		instrumentRepositoryGetByIdMock.mockResolvedValueOnce(Instrument.fromPrimitives({
 			id: "catalog-1",
 			name: "Electric Guitar",
 			description: "Amplified guitar",
 			createdAt: "2026-07-15T09:55:00.000Z",
-		});
+		}));
 		musicianRepositoryGetByIdMock.mockResolvedValueOnce({
 			id: "musician-1",
 			name: "Keith Richards",
@@ -1135,25 +1136,25 @@ describe("SongsView", () => {
 			},
 		]);
 		instrumentRepositoryGetAllMock.mockResolvedValueOnce([
-			{
+			Instrument.fromPrimitives({
 				id: "catalog-1",
 				name: "Electric Guitar",
 				description: "Amplified guitar",
 				createdAt: "2026-07-15T09:55:00.000Z",
-			},
-			{
+			}),
+			Instrument.fromPrimitives({
 				id: "catalog-2",
 				name: "Drums",
 				description: "Acoustic drum kit",
 				createdAt: "2026-07-15T09:56:00.000Z",
-			},
+			}),
 		]);
-		instrumentRepositoryGetByIdMock.mockResolvedValueOnce({
+		instrumentRepositoryGetByIdMock.mockResolvedValueOnce(Instrument.fromPrimitives({
 			id: "catalog-1",
 			name: "Electric Guitar",
 			description: "Amplified guitar",
 			createdAt: "2026-07-15T09:55:00.000Z",
-		});
+		}));
 		repositoryUpdateInstrumentMock.mockResolvedValueOnce({
 			id: "instrument-1",
 			name: "Guitarra eléctrica",
@@ -1281,12 +1282,12 @@ describe("SongsView", () => {
 				createdAt: "2026-07-15T10:01:00.000Z",
 			},
 		]);
-		instrumentRepositoryGetByIdMock.mockResolvedValueOnce({
+		instrumentRepositoryGetByIdMock.mockResolvedValueOnce(Instrument.fromPrimitives({
 			id: "catalog-1",
 			name: "Electric Guitar",
 			description: "Amplified guitar",
 			createdAt: "2026-07-15T09:55:00.000Z",
-		});
+		}));
 		musicianRepositoryGetByIdMock.mockResolvedValueOnce({
 			id: "musician-2",
 			name: "",
@@ -1324,18 +1325,18 @@ describe("SongsView", () => {
 			},
 		]);
 		instrumentRepositoryGetAllMock.mockResolvedValueOnce([
-			{
+			Instrument.fromPrimitives({
 				id: "catalog-1",
 				name: "Electric Guitar",
 				description: "Amplified guitar",
 				createdAt: "2026-07-15T09:55:00.000Z",
-			},
-			{
+			}),
+			Instrument.fromPrimitives({
 				id: "catalog-2",
 				name: "Drums",
 				description: "Acoustic drum kit",
 				createdAt: "2026-07-15T09:56:00.000Z",
-			},
+			}),
 		]);
 		repositoryGetInstrumentsBySongIdMock
 			.mockResolvedValueOnce([
@@ -1359,18 +1360,18 @@ describe("SongsView", () => {
 				},
 			]);
 		instrumentRepositoryGetByIdMock
-			.mockResolvedValueOnce({
+			.mockResolvedValueOnce(Instrument.fromPrimitives({
 				id: "catalog-1",
 				name: "Electric Guitar",
 				description: "Amplified guitar",
 				createdAt: "2026-07-15T09:55:00.000Z",
-			})
-			.mockResolvedValueOnce({
+			}))
+			.mockResolvedValueOnce(Instrument.fromPrimitives({
 				id: "catalog-2",
 				name: "Drums",
 				description: "Acoustic drum kit",
 				createdAt: "2026-07-15T09:56:00.000Z",
-			});
+			}));
 		const view = renderSongsView(() => {
 			const store = useBandStore();
 			store.setBands([createBand("band-1", "The Stones")]);
@@ -1414,12 +1415,12 @@ describe("SongsView", () => {
 			},
 		]);
 		instrumentRepositoryGetAllMock.mockResolvedValueOnce([
-			{
+			Instrument.fromPrimitives({
 				id: "catalog-1",
 				name: "Electric Guitar",
 				description: "Amplified guitar",
 				createdAt: "2026-07-15T09:55:00.000Z",
-			},
+			}),
 		]);
 		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
 			{
@@ -1439,12 +1440,12 @@ describe("SongsView", () => {
 				createdAt: "2026-07-15T10:01:00.000Z",
 			},
 		]);
-		instrumentRepositoryGetByIdMock.mockResolvedValueOnce({
+		instrumentRepositoryGetByIdMock.mockResolvedValueOnce(Instrument.fromPrimitives({
 			id: "catalog-1",
 			name: "Electric Guitar",
 			description: "Amplified guitar",
 			createdAt: "2026-07-15T09:55:00.000Z",
-		});
+		}));
 		const view = renderSongsView(() => {
 			const store = useBandStore();
 			store.setBands([createBand("band-1", "The Stones")]);
@@ -1794,7 +1795,6 @@ describe("SongsView", () => {
 		await submitForm(findSongCreationForm(view.root));
 		await flushView();
 
-		expect(repositoryCtor).toHaveBeenCalledOnce();
 		expect(repositorySaveMock).toHaveBeenCalledOnce();
 		const [savedBandId, savedSong] = repositorySaveMock.mock.calls[0];
 		expect(savedBandId).toBe("band-1");
@@ -2050,12 +2050,12 @@ describe("SongsView", () => {
 			},
 		]);
 		instrumentRepositoryGetAllMock.mockResolvedValueOnce([
-			{
+			Instrument.fromPrimitives({
 				id: "catalog-1",
 				name: "Electric Guitar",
 				description: "Amplified guitar",
 				createdAt: "2026-07-15T09:55:00.000Z",
-			},
+			}),
 		]);
 		repositoryGetInstrumentsBySongIdMock
 			.mockResolvedValueOnce([])
@@ -2070,12 +2070,12 @@ describe("SongsView", () => {
 				},
 			]);
 		repositorySaveInstrumentMock.mockResolvedValueOnce(undefined);
-		instrumentRepositoryGetByIdMock.mockResolvedValueOnce({
+		instrumentRepositoryGetByIdMock.mockResolvedValueOnce(Instrument.fromPrimitives({
 			id: "catalog-1",
 			name: "Electric Guitar",
 			description: "Amplified guitar",
 			createdAt: "2026-07-15T09:55:00.000Z",
-		});
+		}));
 		const view = renderSongsView(() => {
 			const bandStore = useBandStore();
 			bandStore.setBands([createBand("band-1", "The Stones")]);
@@ -2171,12 +2171,12 @@ describe("SongsView", () => {
 				createdAt: "2026-07-15T10:00:00.000Z",
 			},
 		]);
-		instrumentRepositoryGetByIdMock.mockResolvedValueOnce({
+		instrumentRepositoryGetByIdMock.mockResolvedValueOnce(Instrument.fromPrimitives({
 			id: "catalog-1",
 			name: "Electric Guitar",
 			description: "Amplified guitar",
 			createdAt: "2026-07-15T09:55:00.000Z",
-		});
+		}));
 		bandRepositoryGetMembersMock.mockResolvedValueOnce([
 			{ musicianId: "musician-2", role: "MEMBER" },
 		]);
@@ -2276,12 +2276,12 @@ describe("SongsView", () => {
 				createdAt: "2026-07-15T10:00:00.000Z",
 			},
 		]);
-		instrumentRepositoryGetByIdMock.mockResolvedValueOnce({
+		instrumentRepositoryGetByIdMock.mockResolvedValueOnce(Instrument.fromPrimitives({
 			id: "catalog-1",
 			name: "Electric Guitar",
 			description: "Amplified guitar",
 			createdAt: "2026-07-15T09:55:00.000Z",
-		});
+		}));
 		bandRepositoryGetMembersMock.mockResolvedValueOnce([
 			{ musicianId: "musician-2", role: "MEMBER" },
 		]);
@@ -2365,12 +2365,12 @@ describe("SongsView", () => {
 				createdAt: "2026-07-15T10:00:00.000Z",
 			},
 		]);
-		instrumentRepositoryGetByIdMock.mockResolvedValueOnce({
+		instrumentRepositoryGetByIdMock.mockResolvedValueOnce(Instrument.fromPrimitives({
 			id: "catalog-1",
 			name: "Electric Guitar",
 			description: "Amplified guitar",
 			createdAt: "2026-07-15T09:55:00.000Z",
-		});
+		}));
 		bandRepositoryGetMembersMock.mockResolvedValueOnce([
 			{ musicianId: "musician-2", role: "MEMBER" },
 		]);
@@ -2425,12 +2425,12 @@ describe("SongsView", () => {
 				createdAt: "2026-07-15T10:00:00.000Z",
 			},
 		]);
-		instrumentRepositoryGetByIdMock.mockResolvedValueOnce({
+		instrumentRepositoryGetByIdMock.mockResolvedValueOnce(Instrument.fromPrimitives({
 			id: "catalog-1",
 			name: "Electric Guitar",
 			description: "Amplified guitar",
 			createdAt: "2026-07-15T09:55:00.000Z",
-		});
+		}));
 		bandRepositoryGetMembersMock.mockResolvedValueOnce([
 			{ musicianId: "musician-2", role: "MEMBER" },
 		]);
@@ -2512,12 +2512,12 @@ describe("SongsView", () => {
 				createdAt: "2026-07-15T10:00:00.000Z",
 			},
 		]);
-		instrumentRepositoryGetByIdMock.mockResolvedValueOnce({
+		instrumentRepositoryGetByIdMock.mockResolvedValueOnce(Instrument.fromPrimitives({
 			id: "catalog-1",
 			name: "Electric Guitar",
 			description: "Amplified guitar",
 			createdAt: "2026-07-15T09:55:00.000Z",
-		});
+		}));
 		bandRepositoryGetMembersMock.mockResolvedValueOnce([
 			{ musicianId: "musician-2", role: "MEMBER" },
 		]);
@@ -3733,12 +3733,12 @@ describe("SongsView", () => {
 			},
 		]);
 		instrumentRepositoryGetAllMock.mockResolvedValueOnce([
-			{
+			Instrument.fromPrimitives({
 				id: "catalog-1",
 				name: "Electric Guitar",
 				description: "Amplified guitar",
 				createdAt: "2026-07-15T09:55:00.000Z",
-			},
+			}),
 		]);
 		const view = renderSongsView(() => {
 			const store = useBandStore();
