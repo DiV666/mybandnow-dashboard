@@ -12,7 +12,6 @@ import {
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import type { BandMemberResponse } from "../../../domain/band/BandMemberResponse.js";
-import type { Instrument } from "../../../domain/instrument/Instrument.js";
 import {
 	songInstrumentUploadStatuses,
 	type SongInstrumentDetailResponse,
@@ -26,6 +25,7 @@ import { useBandStore } from "../../stores/useBandStore.js";
 import { useMusicianStore } from "../../stores/useMusicianStore.js";
 import { useToastStore } from "../../stores/useToastStore.js";
 import { useModalFocusTrap } from "../../composables/useModalFocusTrap.js";
+import { useSongInstrumentCatalog } from "../../composables/useSongInstrumentCatalog.js";
 import { isHttpErrorLike, type HttpErrorLike } from "../../utils/httpError.js";
 
 interface SongInstrumentFormState {
@@ -106,7 +106,6 @@ type SongInstrumentMap = Record<string, SongInstrumentListItemResponse[]>;
 type SongInstrumentFormMap = Record<string, SongInstrumentFormState>;
 type SongInstrumentUploadMap = Record<string, SongInstrumentUploadState>;
 type SongInstrumentDetailMap = Record<string, SongInstrumentDetailResponse>;
-type InstrumentNameMap = Record<string, string>;
 type MusicianDisplayNameMap = Record<string, string>;
 type TooltipTarget = Element;
 type TooltipInstance = {
@@ -138,8 +137,6 @@ const songInstruments = ref<SongInstrumentMap>({});
 const songInstrumentForms = ref<SongInstrumentFormMap>({});
 const songInstrumentUploads = ref<SongInstrumentUploadMap>({});
 const songInstrumentDetails = ref<SongInstrumentDetailMap>({});
-const availableInstruments = ref<Instrument[]>([]);
-const catalogInstrumentNames = ref<InstrumentNameMap>({});
 const musicianDisplayNames = ref<MusicianDisplayNameMap>({});
 const songActionTooltipTargets = ref<TooltipTarget[]>([]);
 const createSongModalRef = ref<HTMLElement | null>(null);
@@ -164,6 +161,16 @@ const {
 	updateSongInstrumentUseCase,
 	uploadSongInstrumentVideoUseCase,
 } = container.useCases;
+
+const {
+	availableInstruments,
+	catalogInstrumentNames,
+	ensureAvailableInstrumentsLoaded,
+	ensureCatalogInstrumentNameLoaded,
+	preloadCatalogInstrumentNames,
+	getCatalogInstrumentName,
+	getSongInstrumentCatalogId,
+} = useSongInstrumentCatalog({ getInstrumentsUseCase, getInstrumentByIdUseCase });
 
 const selectedBand = computed(() => bandStore.selectedBand);
 const selectedBandId = computed(() => bandStore.selectedBandId);
@@ -267,9 +274,7 @@ const songInstrumentProgressTimeouts = new Map<
 	ReturnType<typeof setTimeout>
 >();
 const songInstrumentPollVersions = new Map<string, number>();
-const instrumentDetailRequests = new Map<string, Promise<void>>();
 const musicianDetailRequests = new Map<string, Promise<void>>();
-let availableInstrumentsRequest: Promise<void> | null = null;
 let songActionTooltips: TooltipInstance[] = [];
 let isViewMounted = true;
 let lastSongsRequestId = 0;
@@ -299,28 +304,6 @@ async function syncSongActionTooltips(): Promise<void> {
 	disposeSongActionTooltips();
 	songActionTooltips = songActionTooltipTargets.value.map((target) =>
 		Tooltip.getOrCreateInstance(target) as TooltipInstance,
-	);
-}
-
-function getSongInstrumentCatalogId(
-	instrument: SongInstrumentListItemResponse | SongInstrumentDetailResponse,
-): string {
-	return instrument.instrumentId ?? instrument.instrumentType ?? "";
-}
-
-function setCatalogInstrumentName(instrumentId: string, name: string): void {
-	catalogInstrumentNames.value = {
-		...catalogInstrumentNames.value,
-		[instrumentId]: name,
-	};
-}
-
-function getCatalogInstrumentName(instrumentId: string): string {
-	return (
-		catalogInstrumentNames.value[instrumentId] ??
-		availableInstruments.value.find((instrument) => instrument.id.value === instrumentId)?.name
-			.value ??
-		instrumentId
 	);
 }
 
@@ -449,78 +432,6 @@ async function loadAssignableBandMembers(
 		};
 		showErrorToast(message);
 	}
-}
-
-async function ensureAvailableInstrumentsLoaded(): Promise<void> {
-	if (availableInstruments.value.length > 0) {
-		return;
-	}
-
-	if (availableInstrumentsRequest) {
-		return availableInstrumentsRequest;
-	}
-
-	availableInstrumentsRequest = (async () => {
-		try {
-			const instruments = await getInstrumentsUseCase.run();
-			if (!isViewMounted) {
-				return;
-			}
-
-			availableInstruments.value = instruments;
-		} catch {
-			if (isViewMounted) {
-				availableInstruments.value = [];
-			}
-		} finally {
-			availableInstrumentsRequest = null;
-		}
-	})();
-
-	return availableInstrumentsRequest;
-}
-
-async function ensureCatalogInstrumentNameLoaded(instrumentId: string): Promise<void> {
-	if (!instrumentId || catalogInstrumentNames.value[instrumentId]) {
-		return;
-	}
-
-	const currentRequest = instrumentDetailRequests.get(instrumentId);
-	if (currentRequest) {
-		return currentRequest;
-	}
-
-	const request = (async () => {
-		const instrument = await getInstrumentByIdUseCase.run(instrumentId);
-		if (!isViewMounted) {
-			return;
-		}
-
-		setCatalogInstrumentName(instrument.id.value, instrument.name.value);
-	})().finally(() => {
-		instrumentDetailRequests.delete(instrumentId);
-	});
-
-	instrumentDetailRequests.set(instrumentId, request);
-	return request;
-}
-
-async function preloadCatalogInstrumentNames(
-	instruments: SongInstrumentListItemResponse[],
-): Promise<void> {
-	const uniqueInstrumentIds = [...new Set(instruments.map(getSongInstrumentCatalogId))].filter(
-		(instrumentId) => instrumentId.length > 0,
-	);
-
-	await Promise.all(
-		uniqueInstrumentIds.map(async (instrumentId) => {
-			try {
-				await ensureCatalogInstrumentNameLoaded(instrumentId);
-			} catch {
-				// Keep the fallback name when the catalog detail cannot be resolved.
-			}
-		}),
-	);
 }
 
 async function ensureMusicianDisplayNameLoaded(musicianId: string): Promise<void> {
