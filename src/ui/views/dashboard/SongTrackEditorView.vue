@@ -12,8 +12,6 @@ import {
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import type { SongInstrumentDetailResponse } from "../../../domain/song/SongInstrumentResponse.js";
-import { SongId } from "../../../domain/song/value-object/SongId.js";
-import { SongInstrumentId } from "../../../domain/song/value-object/SongInstrumentId.js";
 import { container } from "../../bootstrap/container.js";
 import { useToastStore } from "../../stores/useToastStore.js";
 
@@ -114,9 +112,11 @@ const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const toastStore = useToastStore();
-const { songRepository } = container.repositories;
-const { getSongInstrumentsUseCase, getSongInstrumentDetailUseCase } =
-	container.useCases;
+const {
+	getSongInstrumentsUseCase,
+	getSongInstrumentDetailUseCase,
+	updateSongInstrumentVideoStartTimeUseCase,
+} = container.useCases;
 
 const isLoading = ref(true);
 const errorMessage = ref("");
@@ -668,12 +668,10 @@ async function saveTrackStartTime(trackId: string): Promise<void> {
 	});
 
 	try {
-		await songRepository.updateInstrumentVideoStartTime(
-			new SongId(songId.value),
-			new SongInstrumentId(track.id),
-			{
-				startTimeMs,
-			},
+		await updateSongInstrumentVideoStartTimeUseCase.run(
+			songId.value,
+			track.id,
+			startTimeMs,
 		);
 		setSavedAutosaveStatus(trackId);
 	} catch {

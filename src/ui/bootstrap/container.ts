@@ -16,6 +16,7 @@ import { GetSongInstrumentDetailUseCase } from "../../application/song/GetSongIn
 import { GetSongInstrumentsUseCase } from "../../application/song/GetSongInstrumentsUseCase.js";
 import { InviteSongInstrumentMusicianUseCase } from "../../application/song/InviteSongInstrumentMusicianUseCase.js";
 import { UpdateSongInstrumentUseCase } from "../../application/song/UpdateSongInstrumentUseCase.js";
+import { UpdateSongInstrumentVideoStartTimeUseCase } from "../../application/song/UpdateSongInstrumentVideoStartTimeUseCase.js";
 import { UploadSongInstrumentVideoUseCase } from "../../application/song/UploadSongInstrumentVideoUseCase.js";
 import { AxiosAuthRepository } from "../../infrastructure/auth/AxiosAuthRepository.js";
 import { AxiosBandRepository } from "../../infrastructure/band/AxiosBandRepository.js";
@@ -53,6 +54,9 @@ const inviteSongInstrumentMusicianUseCase = new InviteSongInstrumentMusicianUseC
 );
 const loginUseCase = new LoginUseCase(authRepository);
 const updateSongInstrumentUseCase = new UpdateSongInstrumentUseCase(songRepository);
+const updateSongInstrumentVideoStartTimeUseCase = new UpdateSongInstrumentVideoStartTimeUseCase(
+	songRepository,
+);
 const uploadSongInstrumentVideoUseCase = new UploadSongInstrumentVideoUseCase(
 	songRepository,
 );
@@ -84,6 +88,7 @@ export const container = {
 		inviteSongInstrumentMusicianUseCase,
 		loginUseCase,
 		updateSongInstrumentUseCase,
+		updateSongInstrumentVideoStartTimeUseCase,
 		uploadSongInstrumentVideoUseCase,
 	},
 };
