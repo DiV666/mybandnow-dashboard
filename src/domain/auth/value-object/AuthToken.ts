@@ -1,3 +1,5 @@
+import { ValidationError } from "../../shared/ValidationError.js";
+
 type JwtPayload = {
 	exp?: number;
 	[key: string]: unknown;
@@ -11,7 +13,7 @@ export class AuthToken {
 	readonly value: string;
 
 	constructor(value: string) {
-		if (!value) throw new Error("AuthToken cannot be empty");
+		if (!value) throw new ValidationError("AuthToken cannot be empty");
 		this.value = value;
 	}
 

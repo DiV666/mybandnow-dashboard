@@ -1,9 +1,11 @@
+import { ValidationError } from "../../shared/ValidationError.js";
+
 export class MusicianId {
 	readonly value: string;
 
 	constructor(value: string) {
 		if (!value) {
-			throw new Error("MusicianId cannot be empty");
+			throw new ValidationError("MusicianId cannot be empty");
 		}
 
 		this.value = value;
