@@ -6,8 +6,7 @@ import { useAuthStore } from '../stores/useAuthStore.js';
 import { useBandStore } from '../stores/useBandStore.js';
 import { useMusicianStore } from '../stores/useMusicianStore.js';
 import { useToastStore } from '../stores/useToastStore.js';
-import { AxiosAuthRepository } from '../../infrastructure/auth/AxiosAuthRepository.js';
-import { LoginUseCase } from '../../application/auth/LoginUseCase.js';
+import { container } from '../bootstrap/container.js';
 import { AuthToken } from '../../domain/auth/value-object/AuthToken.js';
 import { useModalFocusTrap } from '../composables/useModalFocusTrap.js';
 
@@ -26,8 +25,7 @@ const bandStore = useBandStore();
 const musicianStore = useMusicianStore();
 const toastStore = useToastStore();
 
-const authRepository = new AxiosAuthRepository();
-const loginUseCase = new LoginUseCase(authRepository);
+const { loginUseCase } = container.useCases;
 
 const password = ref('');
 const isLoading = ref(false);

@@ -1,18 +1,14 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import type { MusicianPrimitives } from "../../domain/musician/Musician.js";
-import { AxiosMusicianRepository } from "../../infrastructure/musician/AxiosMusicianRepository.js";
-import { GetMyProfileUseCase } from "../../application/musician/GetMyProfileUseCase.js";
-import { CreateProfileUseCase } from "../../application/musician/CreateProfileUseCase.js";
+import type { MusicianPrimitives } from "../../application/musician/GetMyProfileUseCase.js";
+import { container } from "../bootstrap/container.js";
 
 export const useMusicianStore = defineStore("musician", () => {
 	const profile = ref<MusicianPrimitives | null>(null);
 	const isLoading = ref(false);
 	const error = ref<string | null>(null);
 
-	const musicianRepository = new AxiosMusicianRepository();
-	const getMyProfileUseCase = new GetMyProfileUseCase(musicianRepository);
-	const createProfileUseCase = new CreateProfileUseCase(musicianRepository);
+	const { getMyProfileUseCase, createProfileUseCase } = container.useCases;
 
 	const hasProfile = computed(() => profile.value !== null);
 
@@ -20,10 +16,7 @@ export const useMusicianStore = defineStore("musician", () => {
 	let profileCompletionResolver: (() => void) | null = null;
 
 	const getErrorMessage = (error: unknown, fallback: string): string => {
-		if (error instanceof Error && error.message) {
-			return error.message;
-		}
-
+		console.error(error);
 		return fallback;
 	};
 

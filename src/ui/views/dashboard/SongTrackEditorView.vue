@@ -11,14 +11,10 @@ import {
 } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import {
-	GetSongInstrumentDetailUseCase,
-} from "../../../application/song/GetSongInstrumentDetailUseCase.js";
-import { GetSongInstrumentsUseCase } from "../../../application/song/GetSongInstrumentsUseCase.js";
 import type { SongInstrumentDetailResponse } from "../../../domain/song/SongInstrumentResponse.js";
 import { SongId } from "../../../domain/song/value-object/SongId.js";
 import { SongInstrumentId } from "../../../domain/song/value-object/SongInstrumentId.js";
-import { AxiosSongRepository } from "../../../infrastructure/song/AxiosSongRepository.js";
+import { container } from "../../bootstrap/container.js";
 import { useToastStore } from "../../stores/useToastStore.js";
 
 interface EditorTrack {
@@ -118,11 +114,9 @@ const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const toastStore = useToastStore();
-const songRepository = new AxiosSongRepository();
-const getSongInstrumentsUseCase = new GetSongInstrumentsUseCase(songRepository);
-const getSongInstrumentDetailUseCase = new GetSongInstrumentDetailUseCase(
-	songRepository,
-);
+const { songRepository } = container.repositories;
+const { getSongInstrumentsUseCase, getSongInstrumentDetailUseCase } =
+	container.useCases;
 
 const isLoading = ref(true);
 const errorMessage = ref("");

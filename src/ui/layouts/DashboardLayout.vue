@@ -2,8 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
-import { GetMyBandsUseCase } from '../../application/band/GetMyBandsUseCase.js';
-import { AxiosBandRepository } from '../../infrastructure/band/AxiosBandRepository.js';
+import { container } from '../bootstrap/container.js';
 import { useAuthStore } from '../stores/useAuthStore.js';
 import { useBandStore } from '../stores/useBandStore.js';
 import { useMusicianStore } from '../stores/useMusicianStore.js';
@@ -17,8 +16,7 @@ const authStore = useAuthStore();
 const bandStore = useBandStore();
 const musicianStore = useMusicianStore();
 
-const bandRepository = new AxiosBandRepository();
-const getMyBandsUseCase = new GetMyBandsUseCase(bandRepository);
+const { getMyBandsUseCase } = container.useCases;
 
 interface BootstrapOffcanvasInstance {
   hide(): void;
