@@ -28,6 +28,7 @@ import { useModalFocusTrap } from "../../composables/useModalFocusTrap.js";
 import { useSongInstrumentCatalog } from "../../composables/useSongInstrumentCatalog.js";
 import { useMusicianDisplayNames } from "../../composables/useMusicianDisplayNames.js";
 import { useCreateSong } from "../../composables/useCreateSong.js";
+import { useVideoPreview } from "../../composables/useVideoPreview.js";
 import { isHttpErrorLike, type HttpErrorLike } from "../../utils/httpError.js";
 
 interface SongInstrumentFormState {
@@ -126,7 +127,6 @@ const activeSongInstrumentUploadModal =
 	ref<ActiveSongInstrumentUploadModalState | null>(null);
 const activeAssignMusicianModal = ref<AssignMusicianModalState | null>(null);
 const activeEditInstrumentModal = ref<EditInstrumentModalState | null>(null);
-const activeVideoPreview = ref<{ url: string; title: string } | null>(null);
 const isLoadingSongs = ref(false);
 const songs = ref<SongResponse[]>([]);
 const songInstruments = ref<SongInstrumentMap>({});
@@ -139,7 +139,6 @@ const songInstrumentFormModalRef = ref<HTMLElement | null>(null);
 const editInstrumentModalRef = ref<HTMLElement | null>(null);
 const songInstrumentUploadModalRef = ref<HTMLElement | null>(null);
 const assignMusicianModalRef = ref<HTMLElement | null>(null);
-const videoPreviewModalRef = ref<HTMLElement | null>(null);
 
 const {
 	createSongUseCase,
@@ -189,6 +188,9 @@ const {
 	closeCreateSongModal,
 	handleCreateSong,
 } = useCreateSong({ createSongUseCase, selectedBand, onCreated: loadSongs });
+
+const { activeVideoPreview, videoPreviewModalRef, openVideoPreview, closeVideoPreview } =
+	useVideoPreview({ getEffectiveVideo, getSongInstrumentDisplayName });
 
 const activeSongInstrumentFormSong = computed(() =>
 	songs.value.find((song) => songInstrumentForms.value[song.id]?.isVisible) ?? null,
@@ -1706,28 +1708,6 @@ function openEditInstrumentModal(songId: string, instrumentId: string): void {
 
 function closeEditInstrumentModal(): void {
 	activeEditInstrumentModal.value = null;
-}
-
-function openVideoPreview(
-	song: SongResponse,
-	instrument: SongInstrumentListItemResponse,
-): void {
-	const video = getEffectiveVideo(song.id, instrument.id);
-	if (!video) {
-		return;
-	}
-
-	activeVideoPreview.value = {
-		url: video.url,
-		title: t('dashboard.songs.videoPreviewTitle', {
-			songTitle: song.title,
-			instrumentName: getSongInstrumentDisplayName(instrument),
-		}),
-	};
-}
-
-function closeVideoPreview(): void {
-	activeVideoPreview.value = null;
 }
 
 useModalFocusTrap(createSongModalRef, isCreateSongModalOpen, {
