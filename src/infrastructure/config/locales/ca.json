@@ -210,7 +210,10 @@
     "toast": {
       "dismiss": "Descarta la notificació"
     },
-    "skipToContent": "Salta al contingut principal"
+    "skipToContent": "Salta al contingut principal",
+    "errors": {
+      "unexpected": "S'ha produït un error inesperat."
+    }
   },
   "components": {
     "backendUnavailable": {

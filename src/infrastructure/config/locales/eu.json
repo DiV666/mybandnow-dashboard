@@ -210,7 +210,10 @@
     "toast": {
       "dismiss": "Jakinarazpena baztertu"
     },
-    "skipToContent": "Joan eduki nagusira"
+    "skipToContent": "Joan eduki nagusira",
+    "errors": {
+      "unexpected": "Ustekabeko errorea gertatu da."
+    }
   },
   "components": {
     "backendUnavailable": {

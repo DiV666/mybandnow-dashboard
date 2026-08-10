@@ -210,7 +210,10 @@
     "toast": {
       "dismiss": "Dismiss notification"
     },
-    "skipToContent": "Skip to main content"
+    "skipToContent": "Skip to main content",
+    "errors": {
+      "unexpected": "An unexpected error occurred."
+    }
   },
   "components": {
     "backendUnavailable": {

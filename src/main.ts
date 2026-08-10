@@ -13,6 +13,7 @@ import * as bootstrap from "bootstrap";
 
 import { createPinia } from "pinia";
 import { browserSessionStorage } from "./infrastructure/storage/browserSessionStorage.js";
+import { configureErrorHandler } from "./ui/bootstrap/configureErrorHandler.js";
 import { configureHttpClient } from "./ui/bootstrap/configureHttpClient.js";
 import { applyTheme, resolveInitialTheme } from "./ui/theme/theme.js";
 
@@ -32,6 +33,7 @@ app.use(i18n);
 const pinia = createPinia();
 app.use(pinia);
 
+configureErrorHandler(app);
 configureHttpClient();
 
 // Register the Vue router

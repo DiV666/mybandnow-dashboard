@@ -210,7 +210,10 @@
     "toast": {
       "dismiss": "Descartar notificación"
     },
-    "skipToContent": "Saltar al contenido principal"
+    "skipToContent": "Saltar al contenido principal",
+    "errors": {
+      "unexpected": "Ocurrió un error inesperado."
+    }
   },
   "components": {
     "backendUnavailable": {
