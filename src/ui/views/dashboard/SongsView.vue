@@ -27,6 +27,7 @@ import { useToastStore } from "../../stores/useToastStore.js";
 import { useModalFocusTrap } from "../../composables/useModalFocusTrap.js";
 import { useSongInstrumentCatalog } from "../../composables/useSongInstrumentCatalog.js";
 import { useMusicianDisplayNames } from "../../composables/useMusicianDisplayNames.js";
+import { useCreateSong } from "../../composables/useCreateSong.js";
 import { isHttpErrorLike, type HttpErrorLike } from "../../utils/httpError.js";
 
 interface SongInstrumentFormState {
@@ -120,17 +121,12 @@ const bandStore = useBandStore();
 const musicianStore = useMusicianStore();
 const toastStore = useToastStore();
 const router = useRouter();
-const title = ref("");
-const originalVideoclipUrl = ref("");
-const errorMsg = ref("");
 const songsErrorMsg = ref("");
-const isCreateSongModalOpen = ref(false);
 const activeSongInstrumentUploadModal =
 	ref<ActiveSongInstrumentUploadModalState | null>(null);
 const activeAssignMusicianModal = ref<AssignMusicianModalState | null>(null);
 const activeEditInstrumentModal = ref<EditInstrumentModalState | null>(null);
 const activeVideoPreview = ref<{ url: string; title: string } | null>(null);
-const isLoading = ref(false);
 const isLoadingSongs = ref(false);
 const songs = ref<SongResponse[]>([]);
 const songInstruments = ref<SongInstrumentMap>({});
@@ -180,9 +176,20 @@ const {
 
 const selectedBand = computed(() => bandStore.selectedBand);
 const selectedBandId = computed(() => bandStore.selectedBandId);
-const canSubmit = computed(
-	() => !isLoading.value && selectedBand.value !== null,
-);
+
+const {
+	title,
+	originalVideoclipUrl,
+	errorMsg,
+	isCreateSongModalOpen,
+	isLoading,
+	canSubmit,
+	resetCreateSongForm,
+	openCreateSongModal,
+	closeCreateSongModal,
+	handleCreateSong,
+} = useCreateSong({ createSongUseCase, selectedBand, onCreated: loadSongs });
+
 const activeSongInstrumentFormSong = computed(() =>
 	songs.value.find((song) => songInstrumentForms.value[song.id]?.isVisible) ?? null,
 );
@@ -1536,66 +1543,6 @@ onBeforeUnmount(() => {
 		previousBodyOverflow = null;
 	}
 });
-
-function resetCreateSongForm(): void {
-	title.value = "";
-	originalVideoclipUrl.value = "";
-	errorMsg.value = "";
-}
-
-function openCreateSongModal(): void {
-	if (!selectedBand.value || isLoading.value) {
-		return;
-	}
-
-	errorMsg.value = "";
-	isCreateSongModalOpen.value = true;
-}
-
-function closeCreateSongModal(): void {
-	isCreateSongModalOpen.value = false;
-	resetCreateSongForm();
-}
-
-async function handleCreateSong() {
-	errorMsg.value = "";
-
-	if (!selectedBand.value) {
-		errorMsg.value = t('dashboard.songs.errors.selectBandBeforeCreate');
-		showErrorToast(errorMsg.value);
-		return;
-	}
-
-	isLoading.value = true;
-
-	try {
-		const bandId = selectedBand.value.id.value;
-		await createSongUseCase.run(
-			bandId,
-			crypto.randomUUID(),
-			title.value,
-			originalVideoclipUrl.value,
-		);
-
-		resetCreateSongForm();
-		isCreateSongModalOpen.value = false;
-		showSuccessToast(t('dashboard.songs.success.songCreated'));
-		if (selectedBand.value?.id.value === bandId) {
-			await loadSongs(bandId);
-		}
-	} catch (error: unknown) {
-		if (isHttpErrorLike(error) && error.response?.status === 409) {
-			errorMsg.value = t('dashboard.songs.errors.songConflict');
-		} else if (error instanceof Error) {
-			errorMsg.value = error.message;
-		} else {
-			errorMsg.value = t('dashboard.songs.errors.createSongUnexpected');
-		}
-		showErrorToast(errorMsg.value);
-	} finally {
-		isLoading.value = false;
-	}
-}
 
 function openSongTrackEditor(song: SongResponse): void {
 	void router.push({

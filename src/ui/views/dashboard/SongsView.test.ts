@@ -3930,7 +3930,7 @@ describe("SongsView", () => {
 		expect(useToastStore().toasts).toEqual([
 			expect.objectContaining({
 				variant: "error",
-				message: "No se pudo crear la canción.",
+				message: "Ocurrió un error inesperado al crear la canción.",
 			}),
 		]);
 
