@@ -24,25 +24,9 @@ import { useCreateSong } from "../../composables/useCreateSong.js";
 import { useSongInstrumentDetails } from "../../composables/useSongInstrumentDetails.js";
 import { useVideoPreview } from "../../composables/useVideoPreview.js";
 import { useAddSongInstrument } from "../../composables/useAddSongInstrument.js";
-import {
-	useSongInstrumentUpload,
-	type UploadErrorDetails,
-} from "../../composables/useSongInstrumentUpload.js";
+import { useSongInstrumentUpload } from "../../composables/useSongInstrumentUpload.js";
 import { useAssignMusician } from "../../composables/useAssignMusician.js";
-
-interface EditInstrumentModalState {
-	songId: string;
-	instrumentId: string;
-	name: string;
-	catalogInstrumentId: string;
-	isLoading: boolean;
-	isSubmitting: boolean;
-	errorMsg: string;
-}
-
-interface TextInputLike {
-	value?: string;
-}
+import { useEditSongInstrument } from "../../composables/useEditSongInstrument.js";
 
 type SongInstrumentMap = Record<string, SongInstrumentListItemResponse[]>;
 type TooltipTarget = Element;
@@ -56,13 +40,11 @@ const musicianStore = useMusicianStore();
 const toastStore = useToastStore();
 const router = useRouter();
 const songsErrorMsg = ref("");
-const activeEditInstrumentModal = ref<EditInstrumentModalState | null>(null);
 const isLoadingSongs = ref(false);
 const songs = ref<SongResponse[]>([]);
 const songInstruments = ref<SongInstrumentMap>({});
 const songActionTooltipTargets = ref<TooltipTarget[]>([]);
 const createSongModalRef = ref<HTMLElement | null>(null);
-const editInstrumentModalRef = ref<HTMLElement | null>(null);
 
 const {
 	createSongUseCase,
@@ -214,31 +196,27 @@ const {
 	extractUploadErrorDetails,
 });
 
-const activeEditInstrumentModalContext = computed(() => {
-	if (!activeEditInstrumentModal.value) {
-		return null;
-	}
-
-	const song = songs.value.find(
-		(candidate) => candidate.id === activeEditInstrumentModal.value?.songId,
-	);
-	if (!song) {
-		return null;
-	}
-
-	const instrument = getSongInstrument(
-		activeEditInstrumentModal.value.songId,
-		activeEditInstrumentModal.value.instrumentId,
-	);
-	if (!instrument) {
-		return null;
-	}
-
-	return {
-		song,
-		instrument,
-	};
+const {
+	activeEditInstrumentModal,
+	editInstrumentModalRef,
+	activeEditInstrumentModalContext,
+	openEditInstrumentModal,
+	closeEditInstrumentModal,
+	handleEditInstrumentNameInput,
+	handleEditInstrumentCatalogInput,
+	handleEditInstrumentSubmit,
+} = useEditSongInstrument({
+	getSongInstrumentDetailUseCase,
+	updateSongInstrumentUseCase,
+	songs,
+	getSongInstrument,
+	setSongInstrumentDetail,
+	getSongInstrumentCatalogId,
+	ensureCatalogInstrumentNameLoaded,
+	ensureAvailableInstrumentsLoaded,
+	extractUploadErrorDetails,
 });
+
 const isAnyModalOpen = computed(
 	() =>
 		isCreateSongModalOpen.value ||
@@ -281,13 +259,6 @@ async function syncSongActionTooltips(): Promise<void> {
 	);
 }
 
-function isEditInstrumentModalActive(songId: string, instrumentId: string): boolean {
-	return (
-		activeEditInstrumentModal.value?.songId === songId &&
-		activeEditInstrumentModal.value?.instrumentId === instrumentId
-	);
-}
-
 function getSongInstrumentMusicianDisplayName(
 	instrument: SongInstrumentListItemResponse,
 ): string {
@@ -305,34 +276,6 @@ function getSongInstrumentMusicianDisplayName(
 		instrument.musicianId ??
 		t('dashboard.songs.unassigned')
 	);
-}
-
-function mapEditInstrumentErrorMessage(details: UploadErrorDetails): string {
-	const message = details.message?.toLowerCase() ?? "";
-	const code = details.code?.toLowerCase() ?? "";
-	const combined = `${code} ${message}`;
-
-	if (details.status === 401 || details.status === 403) {
-		return t('dashboard.songs.errors.noPermissionEditInstrument');
-	}
-
-	if (details.status === 404 || combined.includes("instrument_not_exists")) {
-		return t('dashboard.songs.errors.instrumentNotFoundForEdit');
-	}
-
-	if (combined.includes("songinstrumentname cannot be empty")) {
-		return t('dashboard.songs.errors.emptyInstrumentName');
-	}
-
-	if (combined.includes("instrumentid cannot be empty")) {
-		return t('dashboard.songs.errors.selectInstrumentFirst');
-	}
-
-	if (details.status === 400) {
-		return t('dashboard.songs.errors.updateInstrumentFailed');
-	}
-
-	return t('dashboard.songs.errors.updateInstrumentUnexpected');
 }
 
 async function loadSongInstruments(
@@ -516,76 +459,6 @@ async function focusSongAnchorFromLocation(): Promise<void> {
 	target.focus({ preventScroll: true });
 }
 
-function setActiveEditInstrumentModal(
-	updates: Partial<EditInstrumentModalState>,
-): void {
-	if (!activeEditInstrumentModal.value) {
-		return;
-	}
-
-	activeEditInstrumentModal.value = {
-		...activeEditInstrumentModal.value,
-		...updates,
-	};
-}
-
-async function loadEditInstrumentModalDetail(
-	songId: string,
-	instrumentId: string,
-): Promise<void> {
-	try {
-		const detail = await getSongInstrumentDetailUseCase.run(songId, instrumentId);
-		if (!isEditInstrumentModalActive(songId, instrumentId)) {
-			return;
-		}
-
-		setSongInstrumentDetail(detail);
-		setActiveEditInstrumentModal({
-			name: detail.name,
-			catalogInstrumentId: getSongInstrumentCatalogId(detail),
-			isLoading: false,
-			errorMsg: "",
-		});
-	} catch {
-		if (!isEditInstrumentModalActive(songId, instrumentId)) {
-			return;
-		}
-
-		const message = t('dashboard.songs.errors.loadInstrumentDetailFailed');
-		setActiveEditInstrumentModal({
-			isLoading: false,
-			errorMsg: message,
-		});
-		showErrorToast(message);
-	}
-}
-
-function openEditInstrumentModal(songId: string, instrumentId: string): void {
-	const instrument = getSongInstrument(songId, instrumentId);
-	if (!instrument || !songId || !instrumentId) {
-		return;
-	}
-
-	const catalogInstrumentId = getSongInstrumentCatalogId(instrument);
-	activeEditInstrumentModal.value = {
-		songId,
-		instrumentId,
-		catalogInstrumentId,
-		name: instrument.name,
-		isLoading: catalogInstrumentId.length === 0,
-		isSubmitting: false,
-		errorMsg: "",
-	};
-	void ensureAvailableInstrumentsLoaded();
-	if (catalogInstrumentId.length === 0) {
-		void loadEditInstrumentModalDetail(songId, instrumentId);
-	}
-}
-
-function closeEditInstrumentModal(): void {
-	activeEditInstrumentModal.value = null;
-}
-
 useModalFocusTrap(createSongModalRef, isCreateSongModalOpen, {
 	onEscape: closeCreateSongModal,
 });
@@ -620,107 +493,6 @@ useModalFocusTrap(
 	computed(() => activeVideoPreview.value !== null),
 	{ onEscape: closeVideoPreview },
 );
-
-function handleEditInstrumentNameInput(event: Event): void {
-	const target = event.target;
-	const nextValue =
-		target && typeof target === "object" && "value" in target
-			? ((target as TextInputLike).value ?? "")
-			: "";
-	setActiveEditInstrumentModal({
-		name: nextValue,
-		errorMsg: "",
-	});
-}
-
-function handleEditInstrumentCatalogInput(event: Event): void {
-	const target = event.target;
-	const nextValue =
-		target && typeof target === "object" && "value" in target
-			? ((target as TextInputLike).value ?? "")
-			: "";
-	setActiveEditInstrumentModal({
-		catalogInstrumentId: nextValue,
-		errorMsg: "",
-	});
-}
-
-async function handleEditInstrumentSubmit(): Promise<void> {
-	if (!activeEditInstrumentModal.value) {
-		return;
-	}
-
-	const modalState = activeEditInstrumentModal.value;
-	const trimmedName = modalState.name.trim();
-
-	if (!modalState.songId || !modalState.instrumentId) {
-		const message = t('dashboard.songs.errors.instrumentNotFoundForEditAlt');
-		setActiveEditInstrumentModal({
-			errorMsg: message,
-		});
-		showErrorToast(message);
-		return;
-	}
-
-	if (!modalState.catalogInstrumentId) {
-		const message = t('dashboard.songs.errors.selectInstrumentFirst');
-		setActiveEditInstrumentModal({
-			errorMsg: message,
-		});
-		showErrorToast(message);
-		return;
-	}
-
-	if (!trimmedName) {
-		const message = t('dashboard.songs.errors.emptyInstrumentName');
-		setActiveEditInstrumentModal({
-			errorMsg: message,
-		});
-		showErrorToast(message);
-		return;
-	}
-
-	setActiveEditInstrumentModal({
-		isSubmitting: true,
-		errorMsg: "",
-	});
-
-	try {
-		const updatedInstrument = await updateSongInstrumentUseCase.run(
-			modalState.songId,
-			modalState.instrumentId,
-			trimmedName,
-			modalState.catalogInstrumentId,
-		);
-		if (!isEditInstrumentModalActive(modalState.songId, modalState.instrumentId)) {
-			return;
-		}
-
-		setSongInstrumentDetail(updatedInstrument);
-		if (updatedInstrument.instrumentId) {
-			try {
-				await ensureCatalogInstrumentNameLoaded(updatedInstrument.instrumentId);
-			} catch {
-				// Catalog name resolution must not break the song instrument flow.
-			}
-		}
-		showSuccessToast(t('dashboard.songs.success.instrumentUpdated'));
-		closeEditInstrumentModal();
-	} catch (error: unknown) {
-		if (!isEditInstrumentModalActive(modalState.songId, modalState.instrumentId)) {
-			return;
-		}
-
-		const message = mapEditInstrumentErrorMessage(
-			extractUploadErrorDetails(error),
-		);
-		setActiveEditInstrumentModal({
-			isSubmitting: false,
-			errorMsg: message,
-		});
-		showErrorToast(message);
-	}
-}
 
 </script>
 
