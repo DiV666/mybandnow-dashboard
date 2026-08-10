@@ -13,6 +13,7 @@ import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import type { SongInstrumentListItemResponse } from "../../../domain/song/SongInstrumentResponse.js";
 import type { SongResponse } from "../../../domain/song/SongResponse.js";
+import { ValidationError } from "../../../domain/shared/ValidationError.js";
 import { container } from "../../bootstrap/container.js";
 import { useBandStore } from "../../stores/useBandStore.js";
 import { useMusicianStore } from "../../stores/useMusicianStore.js";
@@ -353,9 +354,9 @@ async function loadSongs(bandId: string | null) {
 		songInstrumentDetails.value = {};
 		musicianDisplayNames.value = {};
 		const message =
-			error instanceof Error
+			error instanceof ValidationError
 				? error.message
-				: t('dashboard.songs.errors.loadSongsUnexpected');
+				: (console.error(error), t('dashboard.songs.errors.loadSongsUnexpected'));
 		songsErrorMsg.value = message;
 		showErrorToast(message);
 	} finally {

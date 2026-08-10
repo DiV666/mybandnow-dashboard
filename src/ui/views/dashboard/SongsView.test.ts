@@ -895,6 +895,31 @@ describe("SongsView", () => {
 		);
 	});
 
+	it("shows a generic fallback and logs internally when loading songs fails with a non-domain error, without leaking the raw message", async () => {
+		const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+		repositoryGetByBandIdMock.mockRejectedValueOnce(
+			new Error("Network Error: 500 at internal-service.local"),
+		);
+
+		renderSongsView(() => {
+			const store = useBandStore();
+			store.setBands([createBand("band-1", "The Stones")]);
+		});
+
+		await flushView();
+		await flushView();
+
+		expect(useToastStore().toasts).toEqual([
+			expect.objectContaining({
+				variant: "error",
+				message: "Ocurrió un error inesperado al cargar las canciones.",
+			}),
+		]);
+		expect(consoleErrorSpy).toHaveBeenCalledWith(expect.any(Error));
+
+		consoleErrorSpy.mockRestore();
+	});
+
 	it("opens the track editor route for a song from the songs list and exposes a stable anchor target", async () => {
 		repositoryGetByBandIdMock.mockResolvedValueOnce([
 			{
@@ -1513,7 +1538,7 @@ describe("SongsView", () => {
 		expect(useToastStore().toasts).toEqual([
 			expect.objectContaining({
 				variant: "error",
-				message: "No se pudieron cargar las canciones.",
+				message: "Ocurrió un error inesperado al cargar las canciones.",
 			}),
 		]);
 		view.unmount();
