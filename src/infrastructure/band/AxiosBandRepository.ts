@@ -6,26 +6,7 @@ import type {
 } from "../../domain/band/BandMemberResponse.js";
 import type { MusicianEmail } from "../../domain/musician/value-object/MusicianEmail.js";
 import { httpClient } from "../http/httpClient.js";
-
-function hasResponseStatus(
-	error: unknown,
-	status: number,
-): error is { response: { status: number } } {
-	if (typeof error !== "object" || error === null || !("response" in error)) {
-		return false;
-	}
-
-	const { response } = error;
-	if (
-		typeof response !== "object" ||
-		response === null ||
-		!("status" in response)
-	) {
-		return false;
-	}
-
-	return response.status === status;
-}
+import { hasResponseStatus } from "../http/httpErrorStatus.js";
 
 export class AxiosBandRepository implements BandRepository {
 	async getAll(): Promise<Band[]> {

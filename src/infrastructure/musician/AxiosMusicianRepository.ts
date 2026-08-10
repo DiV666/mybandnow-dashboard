@@ -8,26 +8,7 @@ import type { MusicianRepository } from "../../domain/musician/repository/Musici
 import type { MusicianId } from "../../domain/musician/value-object/MusicianId.js";
 import type { MusicianName } from "../../domain/musician/value-object/MusicianName.js";
 import type { MusicianUsername } from "../../domain/musician/value-object/MusicianUsername.js";
-
-function hasResponseStatus(
-	error: unknown,
-	status: number,
-): error is { response: { status: number } } {
-	if (typeof error !== "object" || error === null || !("response" in error)) {
-		return false;
-	}
-
-	const { response } = error;
-	if (
-		typeof response !== "object" ||
-		response === null ||
-		!("status" in response)
-	) {
-		return false;
-	}
-
-	return response.status === status;
-}
+import { hasResponseStatus } from "../http/httpErrorStatus.js";
 
 export class AxiosMusicianRepository implements MusicianRepository {
 	async getProfile(): Promise<Musician | null> {
