@@ -11,7 +11,6 @@ import {
 } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import type { BandMemberResponse } from "../../../domain/band/BandMemberResponse.js";
 import type { SongInstrumentListItemResponse } from "../../../domain/song/SongInstrumentResponse.js";
 import type { SongResponse } from "../../../domain/song/SongResponse.js";
 import { container } from "../../bootstrap/container.js";
@@ -29,23 +28,7 @@ import {
 	useSongInstrumentUpload,
 	type UploadErrorDetails,
 } from "../../composables/useSongInstrumentUpload.js";
-
-interface AssignableBandMemberViewModel {
-	id: string;
-	name: string;
-	username: string;
-}
-
-interface AssignMusicianModalState {
-	songId: string;
-	instrumentId: string;
-	email: string;
-	isSubmitting: boolean;
-	errorMsg: string;
-	members: AssignableBandMemberViewModel[];
-	isLoadingMembers: boolean;
-	membersErrorMsg: string;
-}
+import { useAssignMusician } from "../../composables/useAssignMusician.js";
 
 interface EditInstrumentModalState {
 	songId: string;
@@ -73,7 +56,6 @@ const musicianStore = useMusicianStore();
 const toastStore = useToastStore();
 const router = useRouter();
 const songsErrorMsg = ref("");
-const activeAssignMusicianModal = ref<AssignMusicianModalState | null>(null);
 const activeEditInstrumentModal = ref<EditInstrumentModalState | null>(null);
 const isLoadingSongs = ref(false);
 const songs = ref<SongResponse[]>([]);
@@ -81,7 +63,6 @@ const songInstruments = ref<SongInstrumentMap>({});
 const songActionTooltipTargets = ref<TooltipTarget[]>([]);
 const createSongModalRef = ref<HTMLElement | null>(null);
 const editInstrumentModalRef = ref<HTMLElement | null>(null);
-const assignMusicianModalRef = ref<HTMLElement | null>(null);
 
 const {
 	createSongUseCase,
@@ -210,31 +191,29 @@ const {
 	syncSongInstrumentAsyncState,
 });
 
-const activeAssignMusicianModalContext = computed(() => {
-	if (!activeAssignMusicianModal.value) {
-		return null;
-	}
-
-	const song = songs.value.find(
-		(candidate) => candidate.id === activeAssignMusicianModal.value?.songId,
-	);
-	if (!song) {
-		return null;
-	}
-
-	const instrument = getSongInstrument(
-		activeAssignMusicianModal.value.songId,
-		activeAssignMusicianModal.value.instrumentId,
-	);
-	if (!instrument) {
-		return null;
-	}
-
-	return {
-		song,
-		instrument,
-	};
+const {
+	activeAssignMusicianModal,
+	assignMusicianModalRef,
+	activeAssignMusicianModalContext,
+	openAssignMusicianModal,
+	closeAssignMusicianModal,
+	handleAssignMusicianEmailInput,
+	assignMusicianById,
+	handleAssignMusicianSubmit,
+	handleAssignBandMemberSelection,
+} = useAssignMusician({
+	getBandMembersUseCase,
+	assignSongInstrumentMusicianUseCase,
+	inviteSongInstrumentMusicianUseCase,
+	getMusicianByIdUseCase,
+	songs,
+	selectedBandId,
+	getSongInstrument,
+	refreshSongInstrumentDetail,
+	resolveMusicianDisplayName,
+	extractUploadErrorDetails,
 });
+
 const activeEditInstrumentModalContext = computed(() => {
 	if (!activeEditInstrumentModal.value) {
 		return null;
@@ -302,110 +281,11 @@ async function syncSongActionTooltips(): Promise<void> {
 	);
 }
 
-function isAssignMusicianModalActive(songId: string, instrumentId: string): boolean {
-	return (
-		activeAssignMusicianModal.value?.songId === songId &&
-		activeAssignMusicianModal.value?.instrumentId === instrumentId
-	);
-}
-
 function isEditInstrumentModalActive(songId: string, instrumentId: string): boolean {
 	return (
 		activeEditInstrumentModal.value?.songId === songId &&
 		activeEditInstrumentModal.value?.instrumentId === instrumentId
 	);
-}
-
-async function resolveAssignableBandMember(
-	member: BandMemberResponse,
-): Promise<AssignableBandMemberViewModel | null> {
-	const musician = await getMusicianByIdUseCase.run(member.musicianId);
-	if (!musician) {
-		return null;
-	}
-
-	const displayName = resolveMusicianDisplayName(
-		musician.name,
-		musician.username,
-	);
-	const username = musician.username.trim();
-	return {
-		id: musician.id,
-		name: displayName || musician.id,
-		username: username ? `@${username}` : "",
-	};
-}
-
-async function loadAssignableBandMembers(
-	songId: string,
-	instrumentId: string,
-	bandId: string | null,
-): Promise<void> {
-	if (!bandId || !isAssignMusicianModalActive(songId, instrumentId)) {
-		return;
-	}
-
-	const currentModal = activeAssignMusicianModal.value;
-	if (!currentModal) {
-		return;
-	}
-
-	activeAssignMusicianModal.value = {
-		...currentModal,
-		isLoadingMembers: true,
-		membersErrorMsg: "",
-		members: [],
-	};
-
-	try {
-		const bandMembers = await getBandMembersUseCase.run(bandId);
-		const resolvedMembers = await Promise.all(
-			bandMembers.map(resolveAssignableBandMember),
-		);
-		if (
-			!isAssignMusicianModalActive(songId, instrumentId) ||
-			selectedBandId.value !== bandId ||
-			!activeAssignMusicianModal.value
-		) {
-			return;
-		}
-
-		const currentModal = activeAssignMusicianModal.value;
-		if (!currentModal) {
-			return;
-		}
-
-		activeAssignMusicianModal.value = {
-			...currentModal,
-			members: resolvedMembers.filter(
-				(member): member is AssignableBandMemberViewModel => member !== null,
-			),
-			isLoadingMembers: false,
-			membersErrorMsg: "",
-		};
-	} catch {
-		if (
-			!isAssignMusicianModalActive(songId, instrumentId) ||
-			selectedBandId.value !== bandId ||
-			!activeAssignMusicianModal.value
-		) {
-			return;
-		}
-
-		const message = t('dashboard.songs.errors.loadMembersFailed');
-		const currentModal = activeAssignMusicianModal.value;
-		if (!currentModal) {
-			return;
-		}
-
-		activeAssignMusicianModal.value = {
-			...currentModal,
-			members: [],
-			isLoadingMembers: false,
-			membersErrorMsg: message,
-		};
-		showErrorToast(message);
-	}
 }
 
 function getSongInstrumentMusicianDisplayName(
@@ -425,54 +305,6 @@ function getSongInstrumentMusicianDisplayName(
 		instrument.musicianId ??
 		t('dashboard.songs.unassigned')
 	);
-}
-
-function mapAssignMusicianErrorMessage(details: UploadErrorDetails): string {
-	const message = details.message?.toLowerCase() ?? "";
-	const code = details.code?.toLowerCase() ?? "";
-	const combined = `${code} ${message}`;
-
-	if (details.status === 401 || details.status === 403) {
-		return t('dashboard.songs.errors.noPermissionAssign');
-	}
-
-	if (details.status === 404 || combined.includes("songinstrument_not_exists")) {
-		return t('dashboard.songs.errors.instrumentNotFoundForUpdate');
-	}
-
-	if (details.status === 400) {
-		return t('dashboard.songs.errors.assignMusicianFailed');
-	}
-
-	return t('dashboard.songs.errors.assignMusicianUnexpected');
-}
-
-function mapInviteMusicianErrorMessage(details: UploadErrorDetails): string {
-	const message = details.message?.toLowerCase() ?? "";
-	const code = details.code?.toLowerCase() ?? "";
-	const combined = `${code} ${message}`;
-
-	if (details.status === 401 || details.status === 403) {
-		return t('dashboard.songs.errors.noPermissionInvite');
-	}
-
-	if (details.status === 404 || combined.includes("songinstrument_not_exists")) {
-		return t('dashboard.songs.errors.instrumentNotFoundForUpdate');
-	}
-
-	if (combined.includes("musicianemail cannot be empty")) {
-		return t('dashboard.songs.errors.emptyInviteEmail');
-	}
-
-	if (combined.includes("musicianemail must be a valid email")) {
-		return t('dashboard.songs.errors.invalidInviteEmail');
-	}
-
-	if (details.status === 400) {
-		return t('dashboard.songs.errors.inviteFailed');
-	}
-
-	return t('dashboard.songs.errors.inviteUnexpected');
 }
 
 function mapEditInstrumentErrorMessage(details: UploadErrorDetails): string {
@@ -684,24 +516,6 @@ async function focusSongAnchorFromLocation(): Promise<void> {
 	target.focus({ preventScroll: true });
 }
 
-function openAssignMusicianModal(songId: string, instrumentId: string): void {
-	activeAssignMusicianModal.value = {
-		songId,
-		instrumentId,
-		email: "",
-		isSubmitting: false,
-		errorMsg: "",
-		members: [],
-		isLoadingMembers: false,
-		membersErrorMsg: "",
-	};
-	void loadAssignableBandMembers(songId, instrumentId, selectedBandId.value);
-}
-
-function closeAssignMusicianModal(): void {
-	activeAssignMusicianModal.value = null;
-}
-
 function setActiveEditInstrumentModal(
 	updates: Partial<EditInstrumentModalState>,
 ): void {
@@ -829,109 +643,6 @@ function handleEditInstrumentCatalogInput(event: Event): void {
 		catalogInstrumentId: nextValue,
 		errorMsg: "",
 	});
-}
-
-function handleAssignMusicianEmailInput(event: Event): void {
-	const target = event.target;
-	const nextEmail =
-		target && typeof target === "object" && "value" in target
-			? ((target as TextInputLike).value ?? "")
-			: "";
-	if (!activeAssignMusicianModal.value) {
-		return;
-	}
-
-	activeAssignMusicianModal.value = {
-		...activeAssignMusicianModal.value,
-		email: nextEmail,
-		errorMsg: "",
-	};
-}
-
-async function assignMusicianById(musicianId: string): Promise<void> {
-	if (!activeAssignMusicianModal.value) {
-		return;
-	}
-
-	const modalState = activeAssignMusicianModal.value;
-	activeAssignMusicianModal.value = {
-		...modalState,
-		isSubmitting: true,
-		errorMsg: "",
-	};
-
-	try {
-		await assignSongInstrumentMusicianUseCase.run(
-			modalState.songId,
-			modalState.instrumentId,
-			musicianId,
-		);
-		await refreshSongInstrumentDetail(modalState.songId, modalState.instrumentId);
-		if (isAssignMusicianModalActive(modalState.songId, modalState.instrumentId)) {
-			showSuccessToast(t('dashboard.songs.success.musicianAssigned'));
-			closeAssignMusicianModal();
-		}
-	} catch (error: unknown) {
-		if (!isAssignMusicianModalActive(modalState.songId, modalState.instrumentId)) {
-			return;
-		}
-
-		const message = mapAssignMusicianErrorMessage(
-			extractUploadErrorDetails(error),
-		);
-		activeAssignMusicianModal.value = {
-			...activeAssignMusicianModal.value,
-			isSubmitting: false,
-			errorMsg: message,
-		};
-		showErrorToast(message);
-	}
-}
-
-async function handleAssignMusicianSubmit(): Promise<void> {
-	if (!activeAssignMusicianModal.value) {
-		return;
-	}
-
-	const modalState = activeAssignMusicianModal.value;
-	activeAssignMusicianModal.value = {
-		...modalState,
-		isSubmitting: true,
-		errorMsg: "",
-	};
-
-	try {
-		await inviteSongInstrumentMusicianUseCase.run(
-			modalState.songId,
-			modalState.instrumentId,
-			modalState.email,
-		);
-		await refreshSongInstrumentDetail(modalState.songId, modalState.instrumentId);
-		if (isAssignMusicianModalActive(modalState.songId, modalState.instrumentId)) {
-			showSuccessToast(t('dashboard.songs.success.invitationSent'));
-			closeAssignMusicianModal();
-		}
-	} catch (error: unknown) {
-		if (!isAssignMusicianModalActive(modalState.songId, modalState.instrumentId)) {
-			return;
-		}
-
-		const message = mapInviteMusicianErrorMessage(
-			extractUploadErrorDetails(error),
-		);
-		activeAssignMusicianModal.value = {
-			...activeAssignMusicianModal.value,
-			isSubmitting: false,
-			errorMsg: message,
-		};
-		showErrorToast(message);
-	}
-}
-
-async function handleAssignBandMemberSelection(
-	member: AssignableBandMemberViewModel,
-): Promise<void> {
-	await assignMusicianById(member.id);
 }
 
 async function handleEditInstrumentSubmit(): Promise<void> {
