@@ -5,30 +5,30 @@ import type { BandRepository } from '../../domain/band/repository/BandRepository
 import { Band } from '../../domain/band/Band.js';
 
 describe('GetMyBandsUseCase', () => {
-  const repositoryMock = mock<BandRepository>();
-  let useCase: GetMyBandsUseCase;
+	const repositoryMock = mock<BandRepository>();
+	let useCase: GetMyBandsUseCase;
 
-  beforeEach(() => {
-    mockReset(repositoryMock);
-    useCase = new GetMyBandsUseCase(repositoryMock);
-  });
+	beforeEach(() => {
+		mockReset(repositoryMock);
+		useCase = new GetMyBandsUseCase(repositoryMock);
+	});
 
-  it('should return an empty array if the user has no bands', async () => {
-    repositoryMock.getAll.mockResolvedValue([]);
+	it('should return an empty array if the user has no bands', async () => {
+		repositoryMock.getAll.mockResolvedValue([]);
 
-    const bands = await useCase.run();
+		const bands = await useCase.run();
 
-    expect(repositoryMock.getAll).toHaveBeenCalled();
-    expect(bands).toEqual([]);
-  });
+		expect(repositoryMock.getAll).toHaveBeenCalled();
+		expect(bands).toEqual([]);
+	});
 
-  it('should return the user bands', async () => {
-    const bandMock = mock<Band>();
-    repositoryMock.getAll.mockResolvedValue([bandMock]);
+	it('should return the user bands', async () => {
+		const bandMock = mock<Band>();
+		repositoryMock.getAll.mockResolvedValue([bandMock]);
 
-    const bands = await useCase.run();
+		const bands = await useCase.run();
 
-    expect(bands).toHaveLength(1);
-    expect(bands[0]).toBe(bandMock);
-  });
+		expect(bands).toHaveLength(1);
+		expect(bands[0]).toBe(bandMock);
+	});
 });

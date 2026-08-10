@@ -5,29 +5,29 @@ import type { BandRepository } from '../../domain/band/repository/BandRepository
 import { Band } from '../../domain/band/Band.js';
 
 describe('GetBandByIdUseCase', () => {
-  const repositoryMock = mock<BandRepository>();
-  let useCase: GetBandByIdUseCase;
+	const repositoryMock = mock<BandRepository>();
+	let useCase: GetBandByIdUseCase;
 
-  beforeEach(() => {
-    mockReset(repositoryMock);
-    useCase = new GetBandByIdUseCase(repositoryMock);
-  });
+	beforeEach(() => {
+		mockReset(repositoryMock);
+		useCase = new GetBandByIdUseCase(repositoryMock);
+	});
 
-  it('should return null if the band does not exist', async () => {
-    repositoryMock.getById.mockResolvedValue(null);
+	it('should return null if the band does not exist', async () => {
+		repositoryMock.getById.mockResolvedValue(null);
 
-    const band = await useCase.run('123');
+		const band = await useCase.run('123');
 
-    expect(repositoryMock.getById).toHaveBeenCalledWith('123');
-    expect(band).toBeNull();
-  });
+		expect(repositoryMock.getById).toHaveBeenCalledWith('123');
+		expect(band).toBeNull();
+	});
 
-  it('should return the band if it exists', async () => {
-    const bandMock = mock<Band>();
-    repositoryMock.getById.mockResolvedValue(bandMock);
+	it('should return the band if it exists', async () => {
+		const bandMock = mock<Band>();
+		repositoryMock.getById.mockResolvedValue(bandMock);
 
-    const band = await useCase.run('123');
+		const band = await useCase.run('123');
 
-    expect(band).toBe(bandMock);
-  });
+		expect(band).toBe(bandMock);
+	});
 });
