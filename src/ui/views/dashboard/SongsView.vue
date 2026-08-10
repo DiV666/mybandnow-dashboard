@@ -28,6 +28,7 @@ import { useModalFocusTrap } from "../../composables/useModalFocusTrap.js";
 import { useSongInstrumentCatalog } from "../../composables/useSongInstrumentCatalog.js";
 import { useMusicianDisplayNames } from "../../composables/useMusicianDisplayNames.js";
 import { useCreateSong } from "../../composables/useCreateSong.js";
+import { useSongInstrumentDetails } from "../../composables/useSongInstrumentDetails.js";
 import { useVideoPreview } from "../../composables/useVideoPreview.js";
 import { useAddSongInstrument } from "../../composables/useAddSongInstrument.js";
 import { isHttpErrorLike, type HttpErrorLike } from "../../utils/httpError.js";
@@ -100,7 +101,6 @@ interface UploadErrorDetails {
 
 type SongInstrumentMap = Record<string, SongInstrumentListItemResponse[]>;
 type SongInstrumentUploadMap = Record<string, SongInstrumentUploadState>;
-type SongInstrumentDetailMap = Record<string, SongInstrumentDetailResponse>;
 type TooltipTarget = Element;
 type TooltipInstance = {
 	dispose: () => void;
@@ -123,7 +123,6 @@ const isLoadingSongs = ref(false);
 const songs = ref<SongResponse[]>([]);
 const songInstruments = ref<SongInstrumentMap>({});
 const songInstrumentUploads = ref<SongInstrumentUploadMap>({});
-const songInstrumentDetails = ref<SongInstrumentDetailMap>({});
 const songActionTooltipTargets = ref<TooltipTarget[]>([]);
 const createSongModalRef = ref<HTMLElement | null>(null);
 const editInstrumentModalRef = ref<HTMLElement | null>(null);
@@ -162,6 +161,26 @@ const {
 	ensureMusicianDisplayNameLoaded,
 	preloadMusicianDisplayNames,
 } = useMusicianDisplayNames({ getMusicianByIdUseCase });
+
+const {
+	songInstrumentDetails,
+	getSongInstrumentDetail,
+	setSongInstrumentDetail,
+	getEffectiveUpload,
+	getEffectiveVideo,
+	getSongInstrument,
+	isSongInstrumentInProgress,
+	refreshSongInstrumentDetail,
+	getSongInstrumentDisplayName,
+} = useSongInstrumentDetails({
+	getSongInstrumentDetailUseCase,
+	songs,
+	songInstruments,
+	getSongInstrumentCatalogId,
+	ensureCatalogInstrumentNameLoaded,
+	getCatalogInstrumentName,
+	ensureMusicianDisplayNameLoaded,
+});
 
 const selectedBand = computed(() => bandStore.selectedBand);
 const selectedBandId = computed(() => bandStore.selectedBandId);
@@ -477,38 +496,6 @@ function setSongInstrumentUploadState(
 	};
 }
 
-function getSongInstrumentDetail(
-	songId: string,
-	instrumentId: string,
-): SongInstrumentDetailResponse | null {
-	return songInstrumentDetails.value[getSongInstrumentUploadKey(songId, instrumentId)] ?? null;
-}
-
-function setSongInstrumentDetail(detail: SongInstrumentDetailResponse): void {
-	const key = getSongInstrumentUploadKey(detail.songId, detail.id);
-	songInstrumentDetails.value = {
-		...songInstrumentDetails.value,
-		[key]: detail,
-	};
-
-	const instruments = songInstruments.value[detail.songId] ?? [];
-	songInstruments.value = {
-		...songInstruments.value,
-		[detail.songId]: instruments.map((instrument) =>
-			instrument.id === detail.id
-				? {
-					...instrument,
-					name: detail.name,
-					instrumentId: detail.instrumentId,
-					instrumentType: detail.instrumentType,
-					musicianId: detail.musicianId,
-					upload: detail.upload,
-				}
-				: instrument,
-		),
-	};
-}
-
 function setSongInstrumentUploadStatus(
 	songId: string,
 	instrumentId: string,
@@ -528,48 +515,6 @@ function setSongInstrumentUploadStatus(
 	};
 }
 
-function getEffectiveUpload(
-	songId: string,
-	instrument: SongInstrumentListItemResponse,
-): SongInstrumentUploadResponse | null {
-	const detailUpload = getSongInstrumentDetail(songId, instrument.id)?.upload ?? null;
-	const instrumentUpload = instrument.upload ?? null;
-
-	if (
-		instrumentUpload &&
-		(isSongInstrumentInProgress(instrumentUpload) ||
-			instrumentUpload.status === songInstrumentUploadStatuses.FAILED)
-	) {
-		return instrumentUpload;
-	}
-
-	return detailUpload ?? instrumentUpload;
-}
-
-function getEffectiveVideo(
-	songId: string,
-	instrumentId: string,
-): SongInstrumentVideoResponse | null {
-	return getSongInstrumentDetail(songId, instrumentId)?.video ?? null;
-}
-
-function getSongInstrument(
-	songId: string,
-	instrumentId: string,
-): SongInstrumentListItemResponse | null {
-	return (
-		songInstruments.value[songId]?.find(
-			(instrument) => instrument.id === instrumentId,
-		) ?? null
-	);
-}
-
-function getSongInstrumentDisplayName(
-	instrument: SongInstrumentListItemResponse,
-): string {
-	return getCatalogInstrumentName(getSongInstrumentCatalogId(instrument));
-}
-
 function getSongInstrumentMusicianDisplayName(
 	instrument: SongInstrumentListItemResponse,
 ): string {
@@ -586,16 +531,6 @@ function getSongInstrumentMusicianDisplayName(
 		musicianDisplayNames.value[instrument.musicianId] ??
 		instrument.musicianId ??
 		t('dashboard.songs.unassigned')
-	);
-}
-
-function isSongInstrumentInProgress(
-	upload: SongInstrumentUploadResponse | null,
-): boolean {
-	return (
-		upload?.status === songInstrumentUploadStatuses.PENDING ||
-		upload?.status === songInstrumentUploadStatuses.READY ||
-		upload?.status === songInstrumentUploadStatuses.PROCESSING
 	);
 }
 
@@ -1195,32 +1130,6 @@ function getSongInstrumentSubmitLabel(
 	}
 
 	return t('dashboard.songs.submitLabel.upload');
-}
-
-async function refreshSongInstrumentDetail(
-	songId: string,
-	instrumentId: string,
-): Promise<SongInstrumentDetailResponse> {
-	const detail = await getSongInstrumentDetailUseCase.run(songId, instrumentId);
-	const catalogInstrumentId = getSongInstrumentCatalogId(detail);
-	if (isViewMounted && isSongStillVisible(songId)) {
-		setSongInstrumentDetail(detail);
-	}
-	if (catalogInstrumentId) {
-		try {
-			await ensureCatalogInstrumentNameLoaded(catalogInstrumentId);
-		} catch {
-			// Catalog name resolution must not break the song instrument flow.
-		}
-	}
-	if (detail.musicianId) {
-		try {
-			await ensureMusicianDisplayNameLoaded(detail.musicianId);
-		} catch {
-			// Keep the raw musician id visible when the profile lookup fails.
-		}
-	}
-	return detail;
 }
 
 function scheduleSongInstrumentPoll(
