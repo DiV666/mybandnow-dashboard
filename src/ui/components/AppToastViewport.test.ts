@@ -296,7 +296,7 @@ describe("AppToastViewport", () => {
 			throw new Error("Expected toast body to be rendered");
 		}
 		expect(textContent(toastBody)).toContain("Miembro agregado correctamente.");
-		expect(closeButton?.props["data-bs-dismiss"]).toBe("toast");
+		expect(closeButton?.props["data-bs-dismiss"]).toBeUndefined();
 		expect(bootstrapToastGetOrCreateInstance).toHaveBeenCalledWith(toast, {
 			autohide: true,
 			delay: 5000,
