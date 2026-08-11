@@ -78,7 +78,7 @@ export const router = createRouter({
 import { useAuthStore } from "../stores/useAuthStore.js";
 
 // Basic navigation guard for authenticated dashboard routes.
-router.beforeEach((to, _from, next) => {
+router.beforeEach((to) => {
 	const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);
 
 	// Use the real authentication store state.
@@ -86,8 +86,8 @@ router.beforeEach((to, _from, next) => {
 	const isAuthenticated = authStore.isAuthenticated;
 
 	if (requiresAuth && !isAuthenticated) {
-		next({ name: "Login" }); // Redirect unauthenticated users to login.
-	} else {
-		next(); // Allow the navigation.
+		return { name: "Login" }; // Redirect unauthenticated users to login.
 	}
+
+	return true; // Allow the navigation.
 });
