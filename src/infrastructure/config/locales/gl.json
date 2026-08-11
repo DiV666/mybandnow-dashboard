@@ -5,7 +5,7 @@
       "title": "Iniciar Sesión",
       "description": "Entra no teu espazo e segue construíndo videoclips coa túa banda.",
       "email": "Correo electrónico",
-      "emailPlaceholder": "user@example.com",
+      "emailPlaceholder": "user{'@'}example.com",
       "password": "Contrasinal",
       "passwordHelp": "Acceso seguro",
       "passwordPlaceholder": "••••••••",

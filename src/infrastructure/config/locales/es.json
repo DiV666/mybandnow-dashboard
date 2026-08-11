@@ -5,7 +5,7 @@
       "title": "Iniciar Sesión",
       "description": "Entrá a tu espacio y seguí construyendo videoclips con tu banda.",
       "email": "Correo electrónico",
-      "emailPlaceholder": "user@example.com",
+      "emailPlaceholder": "user{'@'}example.com",
       "password": "Contraseña",
       "passwordHelp": "Acceso seguro",
       "passwordPlaceholder": "••••••••",

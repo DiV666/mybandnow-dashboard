@@ -5,7 +5,7 @@
       "title": "Log In",
       "description": "Enter your space and keep building videoclips with your band.",
       "email": "Email address",
-      "emailPlaceholder": "user@example.com",
+      "emailPlaceholder": "user{'@'}example.com",
       "password": "Password",
       "passwordHelp": "Secure access",
       "passwordPlaceholder": "••••••••",

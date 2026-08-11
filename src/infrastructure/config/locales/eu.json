@@ -5,7 +5,7 @@
       "title": "Hasi Saioa",
       "description": "Sartu zure espaziora eta jarraitu bideoklipak sortzen zure taldearekin.",
       "email": "Posta elektronikoa",
-      "emailPlaceholder": "user@example.com",
+      "emailPlaceholder": "user{'@'}example.com",
       "password": "Pasahitza",
       "passwordHelp": "Sarbide segurua",
       "passwordPlaceholder": "••••••••",
