@@ -255,8 +255,10 @@ async function syncSongActionTooltips(): Promise<void> {
 
 	await nextTick();
 	disposeSongActionTooltips();
+	// animation: false avoids a Bootstrap timing bug where a pending fade
+	// transition callback fires after dispose() and throws on a null element.
 	songActionTooltips = songActionTooltipTargets.value.map((target) =>
-		Tooltip.getOrCreateInstance(target) as TooltipInstance,
+		Tooltip.getOrCreateInstance(target, { animation: false }) as TooltipInstance,
 	);
 }
 

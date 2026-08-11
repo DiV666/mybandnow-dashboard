@@ -1109,8 +1109,10 @@ async function syncTrackControlTooltips(): Promise<void> {
 
 	await nextTick();
 	disposeTrackControlTooltips();
+	// animation: false avoids a Bootstrap timing bug where a pending fade
+	// transition callback fires after dispose() and throws on a null element.
 	trackControlTooltips = Array.from(trackControlTooltipTargets.values()).map(
-		(target) => Tooltip.getOrCreateInstance(target) as TooltipInstance,
+		(target) => Tooltip.getOrCreateInstance(target, { animation: false }) as TooltipInstance,
 	);
 }
 
