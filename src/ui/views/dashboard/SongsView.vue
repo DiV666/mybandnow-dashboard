@@ -1041,7 +1041,7 @@ useModalFocusTrap(
                   <li
                     v-for="member in activeAssignMusicianModal.members"
                     :key="member.id"
-                    class="list-group-item px-0 d-flex justify-content-between align-items-center gap-3"
+                    class="list-group-item px-2 d-flex justify-content-between align-items-center gap-3"
                   >
                     <div>
                       <p class="fw-semibold mb-1">{{ member.name }}</p>
