@@ -7,6 +7,7 @@ import type {
 } from '../../domain/song/SongInstrumentResponse.js';
 import type { MusicianSummaryResponse } from '../../domain/musician/MusicianSummaryResponse.js';
 import type { SongResponse } from '../../domain/song/SongResponse.js';
+import { MusicianEmail } from '../../domain/musician/value-object/MusicianEmail.js';
 import { useToastStore } from '../stores/useToastStore.js';
 import type { UploadErrorDetails } from './useSongInstrumentUpload.js';
 
@@ -112,6 +113,19 @@ export function useAssignMusician(deps: UseAssignMusicianDeps) {
       song,
       instrument,
     };
+  });
+
+  const isInviteEmailValid = computed(() => {
+    if (!activeAssignMusicianModal.value) {
+      return false;
+    }
+
+    try {
+      new MusicianEmail(activeAssignMusicianModal.value.email);
+      return true;
+    } catch {
+      return false;
+    }
   });
 
   function isAssignMusicianModalActive(songId: string, instrumentId: string): boolean {
@@ -330,7 +344,7 @@ export function useAssignMusician(deps: UseAssignMusicianDeps) {
   }
 
   async function handleAssignMusicianSubmit(): Promise<void> {
-    if (!activeAssignMusicianModal.value) {
+    if (!activeAssignMusicianModal.value || !isInviteEmailValid.value) {
       return;
     }
 
@@ -377,6 +391,7 @@ export function useAssignMusician(deps: UseAssignMusicianDeps) {
     activeAssignMusicianModal,
     assignMusicianModalRef,
     activeAssignMusicianModalContext,
+    isInviteEmailValid,
     openAssignMusicianModal,
     closeAssignMusicianModal,
     handleAssignMusicianEmailInput,

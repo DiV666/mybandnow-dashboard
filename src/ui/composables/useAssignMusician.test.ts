@@ -291,6 +291,7 @@ describe("useAssignMusician", () => {
 		inviteSongInstrumentMusicianUseCase.run.mockRejectedValue({ response: { status: 400 } });
 		const {
 			openAssignMusicianModal,
+			handleAssignMusicianEmailInput,
 			handleAssignMusicianSubmit,
 			activeAssignMusicianModal,
 			toastStore,
@@ -299,6 +300,7 @@ describe("useAssignMusician", () => {
 		await vi.waitFor(() => {
 			expect(activeAssignMusicianModal.value?.isLoadingMembers).toBe(false);
 		});
+		handleAssignMusicianEmailInput({ target: { value: "musician@example.com" } } as unknown as Event);
 
 		await handleAssignMusicianSubmit();
 
@@ -329,5 +331,47 @@ describe("useAssignMusician", () => {
 
 		expect(activeAssignMusicianModal.value?.email).toBe("new@example.com");
 		expect(activeAssignMusicianModal.value?.errorMsg).toBe("");
+	});
+
+	it("reports the invite email as invalid until it is a well-formed address", async () => {
+		getBandMembersUseCase.run.mockResolvedValue([]);
+		const {
+			openAssignMusicianModal,
+			handleAssignMusicianEmailInput,
+			activeAssignMusicianModal,
+			isInviteEmailValid,
+		} = createComposable();
+		openAssignMusicianModal("song-1", "instrument-1");
+		await vi.waitFor(() => {
+			expect(activeAssignMusicianModal.value?.isLoadingMembers).toBe(false);
+		});
+
+		expect(isInviteEmailValid.value).toBe(false);
+
+		handleAssignMusicianEmailInput({ target: { value: "not-an-email" } } as unknown as Event);
+		expect(isInviteEmailValid.value).toBe(false);
+
+		handleAssignMusicianEmailInput({
+			target: { value: "musician@example.com" },
+		} as unknown as Event);
+		expect(isInviteEmailValid.value).toBe(true);
+	});
+
+	it("does not invite when the email is invalid, even if submit is called directly", async () => {
+		getBandMembersUseCase.run.mockResolvedValue([]);
+		const {
+			openAssignMusicianModal,
+			handleAssignMusicianSubmit,
+			activeAssignMusicianModal,
+		} = createComposable();
+		openAssignMusicianModal("song-1", "instrument-1");
+		await vi.waitFor(() => {
+			expect(activeAssignMusicianModal.value?.isLoadingMembers).toBe(false);
+		});
+
+		await handleAssignMusicianSubmit();
+
+		expect(inviteSongInstrumentMusicianUseCase.run).not.toHaveBeenCalled();
+		expect(activeAssignMusicianModal.value).not.toBeNull();
 	});
 });

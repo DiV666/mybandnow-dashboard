@@ -178,6 +178,7 @@ const {
 	activeAssignMusicianModal,
 	assignMusicianModalRef,
 	activeAssignMusicianModalContext,
+	isInviteEmailValid,
 	openAssignMusicianModal,
 	closeAssignMusicianModal,
 	handleAssignMusicianEmailInput,
@@ -1018,21 +1019,7 @@ useModalFocusTrap(
           </div>
           <form :aria-label="$t('dashboard.songs.inviteMusicianFormAriaLabel')" @submit.prevent="handleAssignMusicianSubmit">
             <div class="modal-body">
-              <label :for="`assignMusicianEmail-${activeAssignMusicianModalContext.instrument.id}`" class="form-label">{{ $t('dashboard.songs.musicianEmailLabel') }}</label>
-              <input
-                :id="`assignMusicianEmail-${activeAssignMusicianModalContext.instrument.id}`"
-                :value="activeAssignMusicianModal.email"
-                type="email"
-                class="form-control"
-                placeholder="musico@ejemplo.com"
-                :disabled="activeAssignMusicianModal.isSubmitting"
-                @input="handleAssignMusicianEmailInput"
-              >
-              <p class="text-muted small mt-2 mb-0">
-                {{ $t('dashboard.songs.inviteHint') }}
-              </p>
-
-              <div class="border-top mt-4 pt-3">
+              <div>
                 <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
                   <div>
                     <h5 class="h6 mb-1">{{ $t('dashboard.songs.bandMembersTitle') }}</h5>
@@ -1072,19 +1059,34 @@ useModalFocusTrap(
                   </li>
                 </ul>
               </div>
+
+              <div class="border-top mt-4 pt-3">
+                <label :for="`assignMusicianEmail-${activeAssignMusicianModalContext.instrument.id}`" class="form-label">{{ $t('dashboard.songs.musicianEmailLabel') }}</label>
+                <input
+                  :id="`assignMusicianEmail-${activeAssignMusicianModalContext.instrument.id}`"
+                  :value="activeAssignMusicianModal.email"
+                  type="email"
+                  class="form-control"
+                  placeholder="musico@ejemplo.com"
+                  :disabled="activeAssignMusicianModal.isSubmitting"
+                  @input="handleAssignMusicianEmailInput"
+                >
+                <p class="text-muted small mt-2 mb-0">
+                  {{ $t('dashboard.songs.inviteHint') }}
+                </p>
+              </div>
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-outline-secondary" :disabled="activeAssignMusicianModal.isSubmitting" @click="closeAssignMusicianModal">
                 {{ $t('dashboard.songs.cancel') }}
               </button>
-                  <button
-                    type="submit"
-                    class="btn btn-primary"
-                    :disabled="activeAssignMusicianModal.isSubmitting"
-                  >
-                    {{ $t('dashboard.songs.inviteByEmail') }}
-                  </button>
-
+              <button
+                type="submit"
+                class="btn btn-primary"
+                :disabled="activeAssignMusicianModal.isSubmitting || !isInviteEmailValid"
+              >
+                {{ $t('dashboard.songs.inviteByEmail') }}
+              </button>
             </div>
           </form>
         </div>
