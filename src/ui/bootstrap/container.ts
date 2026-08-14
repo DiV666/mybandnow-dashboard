@@ -15,6 +15,7 @@ import { GetBandSongsUseCase } from "../../application/song/GetBandSongsUseCase.
 import { GetSongInstrumentDetailUseCase } from "../../application/song/GetSongInstrumentDetailUseCase.js";
 import { GetSongInstrumentsUseCase } from "../../application/song/GetSongInstrumentsUseCase.js";
 import { InviteSongInstrumentMusicianUseCase } from "../../application/song/InviteSongInstrumentMusicianUseCase.js";
+import { RequestSongVideoclipUseCase } from "../../application/song/RequestSongVideoclipUseCase.js";
 import { UpdateSongInstrumentUseCase } from "../../application/song/UpdateSongInstrumentUseCase.js";
 import { UpdateSongInstrumentVideoStartTimeUseCase } from "../../application/song/UpdateSongInstrumentVideoStartTimeUseCase.js";
 import { UploadSongInstrumentVideoUseCase } from "../../application/song/UploadSongInstrumentVideoUseCase.js";
@@ -53,6 +54,7 @@ const inviteSongInstrumentMusicianUseCase = new InviteSongInstrumentMusicianUseC
 	songRepository,
 );
 const loginUseCase = new LoginUseCase(authRepository);
+const requestSongVideoclipUseCase = new RequestSongVideoclipUseCase(songRepository);
 const updateSongInstrumentUseCase = new UpdateSongInstrumentUseCase(songRepository);
 const updateSongInstrumentVideoStartTimeUseCase = new UpdateSongInstrumentVideoStartTimeUseCase(
 	songRepository,
@@ -87,6 +89,7 @@ export const container = {
 		getSongInstrumentsUseCase,
 		inviteSongInstrumentMusicianUseCase,
 		loginUseCase,
+		requestSongVideoclipUseCase,
 		updateSongInstrumentUseCase,
 		updateSongInstrumentVideoStartTimeUseCase,
 		uploadSongInstrumentVideoUseCase,

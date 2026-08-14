@@ -18,6 +18,7 @@ import type {
 import type { SongId } from "../../domain/song/value-object/SongId.js";
 import type { SongInstrumentId } from "../../domain/song/value-object/SongInstrumentId.js";
 import type { SongInstrumentVideoFile } from "../../domain/song/value-object/SongInstrumentVideoFile.js";
+import type { SongVideoclipId } from "../../domain/song/value-object/SongVideoclipId.js";
 
 export class AxiosSongRepository implements SongRepository {
 	async save(bandId: string, song: Song): Promise<void> {
@@ -126,5 +127,14 @@ export class AxiosSongRepository implements SongRepository {
 			formData,
 			{ timeout: 120000 },
 		);
+	}
+
+	async requestVideoclipGeneration(
+		songId: SongId,
+		videoclipId: SongVideoclipId,
+	): Promise<void> {
+		await httpClient.post(`/v1/songs/${songId.value}/videoclip`, {
+			id: videoclipId.value,
+		});
 	}
 }

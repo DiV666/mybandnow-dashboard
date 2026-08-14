@@ -69,14 +69,19 @@
         "profileRequiredForInstrument": "Musikari-profila osatu behar duzu tresnak gehitzeko.",
         "instrumentConflict": "Dagoeneko badago datu horiekin tresna bat abesti honetarako. Saiatu berriro.",
         "noPermissionAddInstrument": "Ez duzu baimenik abesti honi tresnak gehitzeko.",
-        "addInstrumentUnexpected": "Ustekabeko errorea gertatu da tresna gehitzean."
+        "addInstrumentUnexpected": "Ustekabeko errorea gertatu da tresna gehitzean.",
+        "videoclipMissingUploads": "Abestiaren tresna guztiek bideo bat igota izan behar dute bideoklipa sortu aurretik.",
+        "noPermissionVideoclip": "Ez duzu baimenik abesti honen bideoklipa sortzeko.",
+        "videoclipSongNotFound": "Ezin izan dugu bideoklipa sortzen saiatzen ari zinen abestia aurkitu.",
+        "videoclipUnexpected": "Ustekabeko errorea gertatu da bideoklipa sortzean."
       },
       "success": {
         "songCreated": "Abestia ongi sortu da.",
         "musicianAssigned": "Musikaria ongi esleitu da.",
         "invitationSent": "Gonbidapena ongi bidali da.",
         "instrumentUpdated": "Tresna ongi eguneratu da.",
-        "instrumentAdded": "Tresna ongi gehitu da."
+        "instrumentAdded": "Tresna ongi gehitu da.",
+        "videoclipRequested": "Bideoklipa sortzeko prozesua ongi hasi da."
       },
       "status": {
         "uploading": "Bideoa zerbitzarira igotzen...",
@@ -113,6 +118,8 @@
       "originalVideoclip": "Jatorrizko bideoklipa",
       "editTracks": "Editatu pistak",
       "watchOnYoutube": "Ikusi YouTuben",
+      "generateVideoclip": "Sortu bideoklipa",
+      "generatingVideoclip": "Sortzen...",
       "instrumentsTitle": "Tresnak",
       "addInstrument": "Gehitu tresna",
       "noInstrumentsYet": "Abesti honek oraindik ez du tresnarik.",

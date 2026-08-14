@@ -69,14 +69,19 @@
         "profileRequiredForInstrument": "Debes completar tu perfil de músico para añadir instrumentos.",
         "instrumentConflict": "Ya existe un instrumento con esos datos para esta canción. Inténtalo de nuevo.",
         "noPermissionAddInstrument": "No tienes permisos para añadir instrumentos a esta canción.",
-        "addInstrumentUnexpected": "Ocurrió un error inesperado al añadir el instrumento."
+        "addInstrumentUnexpected": "Ocurrió un error inesperado al añadir el instrumento.",
+        "videoclipMissingUploads": "Todos los instrumentos de la canción deben tener un vídeo subido antes de generar el videoclip.",
+        "noPermissionVideoclip": "No tienes permisos para generar el videoclip de esta canción.",
+        "videoclipSongNotFound": "No encontramos la canción para la que intentabas generar el videoclip.",
+        "videoclipUnexpected": "Ocurrió un error inesperado al generar el videoclip."
       },
       "success": {
         "songCreated": "Canción creada correctamente.",
         "musicianAssigned": "Músico asignado correctamente.",
         "invitationSent": "Invitación enviada correctamente.",
         "instrumentUpdated": "Instrumento actualizado correctamente.",
-        "instrumentAdded": "Instrumento agregado correctamente."
+        "instrumentAdded": "Instrumento agregado correctamente.",
+        "videoclipRequested": "Generación del videoclip iniciada correctamente."
       },
       "status": {
         "uploading": "Subiendo video al servidor...",
@@ -113,6 +118,8 @@
       "originalVideoclip": "Videoclip original",
       "editTracks": "Editar pistas",
       "watchOnYoutube": "Ver en YouTube",
+      "generateVideoclip": "Generar videoclip",
+      "generatingVideoclip": "Generando...",
       "instrumentsTitle": "Instrumentos",
       "addInstrument": "Añadir instrumento",
       "noInstrumentsYet": "Esta canción todavía no tiene instrumentos.",

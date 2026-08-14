@@ -12,6 +12,7 @@ import { SongInstrumentName } from "../../domain/song/value-object/SongInstrumen
 import { SongInstrumentVideoFile } from "../../domain/song/value-object/SongInstrumentVideoFile.js";
 import { SongOriginalVideoclipUrl } from "../../domain/song/value-object/SongOriginalVideoclipUrl.js";
 import { SongTitle } from "../../domain/song/value-object/SongTitle.js";
+import { SongVideoclipId } from "../../domain/song/value-object/SongVideoclipId.js";
 
 describe("AxiosSongRepository", () => {
 	const repository = new AxiosSongRepository();
@@ -323,5 +324,20 @@ describe("AxiosSongRepository", () => {
 			{ timeout: 120000 },
 		);
 		expect(postSpy.mock.calls[0]).toHaveLength(3);
+	});
+
+	it("should request the videoclip generation for the selected song", async () => {
+		const postSpy = vi
+			.spyOn(httpClient, "post")
+			.mockResolvedValue({ data: undefined } as never);
+
+		await repository.requestVideoclipGeneration(
+			new SongId("song-123"),
+			new SongVideoclipId("11111111-1111-4111-8111-111111111111"),
+		);
+
+		expect(postSpy).toHaveBeenCalledWith("/v1/songs/song-123/videoclip", {
+			id: "11111111-1111-4111-8111-111111111111",
+		});
 	});
 });

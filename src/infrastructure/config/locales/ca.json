@@ -69,14 +69,19 @@
         "profileRequiredForInstrument": "Has de completar el teu perfil de músic per afegir instruments.",
         "instrumentConflict": "Ja existeix un instrument amb aquestes dades per a aquesta cançó. Torna-ho a provar.",
         "noPermissionAddInstrument": "No tens permisos per afegir instruments a aquesta cançó.",
-        "addInstrumentUnexpected": "S'ha produït un error inesperat en afegir l'instrument."
+        "addInstrumentUnexpected": "S'ha produït un error inesperat en afegir l'instrument.",
+        "videoclipMissingUploads": "Tots els instruments de la cançó han de tenir un vídeo pujat abans de generar el videoclip.",
+        "noPermissionVideoclip": "No tens permisos per generar el videoclip d'aquesta cançó.",
+        "videoclipSongNotFound": "No hem trobat la cançó per a la qual intentaves generar el videoclip.",
+        "videoclipUnexpected": "S'ha produït un error inesperat en generar el videoclip."
       },
       "success": {
         "songCreated": "Cançó creada correctament.",
         "musicianAssigned": "Músic assignat correctament.",
         "invitationSent": "Invitació enviada correctament.",
         "instrumentUpdated": "Instrument actualitzat correctament.",
-        "instrumentAdded": "Instrument afegit correctament."
+        "instrumentAdded": "Instrument afegit correctament.",
+        "videoclipRequested": "S'ha iniciat correctament la generació del videoclip."
       },
       "status": {
         "uploading": "Pujant el vídeo al servidor...",
@@ -113,6 +118,8 @@
       "originalVideoclip": "Videoclip original",
       "editTracks": "Edita les pistes",
       "watchOnYoutube": "Mira'l a YouTube",
+      "generateVideoclip": "Genera videoclip",
+      "generatingVideoclip": "Generant...",
       "instrumentsTitle": "Instruments",
       "addInstrument": "Afegeix un instrument",
       "noInstrumentsYet": "Aquesta cançó encara no té instruments.",

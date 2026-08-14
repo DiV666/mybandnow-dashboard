@@ -25,6 +25,7 @@ import { useCreateSong } from "../../composables/useCreateSong.js";
 import { useSongInstrumentDetails } from "../../composables/useSongInstrumentDetails.js";
 import { useVideoPreview } from "../../composables/useVideoPreview.js";
 import { useAddSongInstrument } from "../../composables/useAddSongInstrument.js";
+import { useRequestSongVideoclip } from "../../composables/useRequestSongVideoclip.js";
 import { useSongInstrumentUpload } from "../../composables/useSongInstrumentUpload.js";
 import { useAssignMusician } from "../../composables/useAssignMusician.js";
 import { useEditSongInstrument } from "../../composables/useEditSongInstrument.js";
@@ -61,6 +62,7 @@ const {
 	inviteSongInstrumentMusicianUseCase,
 	updateSongInstrumentUseCase,
 	uploadSongInstrumentVideoUseCase,
+	requestSongVideoclipUseCase,
 } = container.useCases;
 
 const {
@@ -115,6 +117,10 @@ const {
 	closeCreateSongModal,
 	handleCreateSong,
 } = useCreateSong({ createSongUseCase, selectedBand, onCreated: loadSongs });
+
+const { isRequestingVideoclip, requestSongVideoclip } = useRequestSongVideoclip({
+	requestSongVideoclipUseCase,
+});
 
 const { activeVideoPreview, videoPreviewModalRef, openVideoPreview, closeVideoPreview } =
 	useVideoPreview({ getEffectiveVideo, getSongInstrumentDisplayName });
@@ -578,6 +584,23 @@ useModalFocusTrap(
                         <span aria-hidden="true">▶</span>
                         <span>{{ $t('dashboard.songs.watchOnYoutube') }}</span>
                       </a>
+                      <button
+                        type="button"
+                        class="btn btn-outline-success btn-sm d-inline-flex align-items-center gap-2"
+                        :disabled="isRequestingVideoclip(song.id)"
+                        @click="requestSongVideoclip(song.id)"
+                      >
+                        <span
+                          v-if="isRequestingVideoclip(song.id)"
+                          class="spinner-border spinner-border-sm"
+                          aria-hidden="true"
+                        ></span>
+                        {{
+                          isRequestingVideoclip(song.id)
+                            ? $t('dashboard.songs.generatingVideoclip')
+                            : $t('dashboard.songs.generateVideoclip')
+                        }}
+                      </button>
                     </div>
                   </div>
 
