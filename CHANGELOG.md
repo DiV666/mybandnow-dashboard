@@ -4,6 +4,12 @@ Todos los cambios notables de este proyecto se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.0] - 2026-08-15
+
+### Añadido
+
+- Workflow de GitHub Actions para ejecutar los tests y desplegar automáticamente en Firebase Hosting.
+
 ## [0.2.0] - 2026-08-15
 
 ### Añadido
