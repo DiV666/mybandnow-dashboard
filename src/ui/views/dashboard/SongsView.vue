@@ -67,7 +67,6 @@ const {
 
 const {
 	availableInstruments,
-	catalogInstrumentNames,
 	ensureAvailableInstrumentsLoaded,
 	ensureCatalogInstrumentNameLoaded,
 	preloadCatalogInstrumentNames,
@@ -84,7 +83,6 @@ const {
 
 const {
 	songInstrumentDetails,
-	getSongInstrumentDetail,
 	setSongInstrumentDetail,
 	getEffectiveUpload,
 	getEffectiveVideo,
@@ -108,11 +106,9 @@ const selectedBandId = computed(() => bandStore.selectedBandId);
 const {
 	title,
 	originalVideoclipUrl,
-	errorMsg,
 	isCreateSongModalOpen,
 	isLoading,
 	canSubmit,
-	resetCreateSongForm,
 	openCreateSongModal,
 	closeCreateSongModal,
 	handleCreateSong,
@@ -128,11 +124,8 @@ const { activeVideoPreview, videoPreviewModalRef, openVideoPreview, closeVideoPr
 const {
 	songInstrumentUploads,
 	songInstrumentUploadModalRef,
-	activeSongInstrumentUploadModal,
 	activeSongInstrumentUploadModalContext,
 	getSongInstrumentUploadState,
-	setSongInstrumentUploadState,
-	setSongInstrumentUploadStatus,
 	cancelAllSongInstrumentPolls,
 	extractUploadErrorDetails,
 	getSongInstrumentUploadErrorMessage,
@@ -188,7 +181,6 @@ const {
 	openAssignMusicianModal,
 	closeAssignMusicianModal,
 	handleAssignMusicianEmailInput,
-	assignMusicianById,
 	handleAssignMusicianSubmit,
 	handleAssignBandMemberSelection,
 } = useAssignMusician({
@@ -242,10 +234,6 @@ let previousBodyOverflow: string | null = null;
 
 function showErrorToast(message: string): void {
 	toastStore.error(message);
-}
-
-function showSuccessToast(message: string): void {
-	toastStore.success(message);
 }
 
 function disposeSongActionTooltips(): void {

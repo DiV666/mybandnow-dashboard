@@ -32,29 +32,41 @@ interface PlayerLike {
 	pause?: () => void;
 }
 
-interface PointerCaptureLike {
-	setPointerCapture?: (pointerId: number) => void;
-	releasePointerCapture?: (pointerId: number) => void;
-}
-
 interface TrackDragEventLike {
 	clientX?: number;
 	pointerId?: number;
-	currentTarget?: PointerCaptureLike | null;
+	currentTarget?: EventTarget | null;
 	preventDefault?: () => void;
-}
-
-interface TimelineSeekTargetLike {
-	getBoundingClientRect?: () => {
-		left: number;
-		width: number;
-	};
 }
 
 interface TimelineSeekEventLike {
 	clientX?: number;
 	offsetX?: number;
-	currentTarget?: TimelineSeekTargetLike | null;
+	currentTarget?: EventTarget | null;
+}
+
+function hasPointerCapture(
+	target: EventTarget | null | undefined,
+): target is Element {
+	return !!target && "setPointerCapture" in target;
+}
+
+function hasBoundingClientRect(
+	target: EventTarget | null | undefined,
+): target is Element {
+	return (
+		!!target &&
+		typeof (target as { getBoundingClientRect?: unknown }).getBoundingClientRect ===
+			"function"
+	);
+}
+
+function isElementRef(value: unknown): value is Element {
+	return (
+		!!value &&
+		typeof (value as { getBoundingClientRect?: unknown }).getBoundingClientRect ===
+			"function"
+	);
 }
 
 interface TrackDragState {
@@ -296,7 +308,7 @@ const timelineMarkers = computed<TimelineMarker[]>(() => {
 	return markers;
 });
 
-function clampTrackStartTimeMs(_track: EditorTrack, startTimeMs: number): number {
+function clampTrackStartTimeMs(startTimeMs: number): number {
 	const nonNegativeStartTimeMs = Math.max(0, startTimeMs);
 	if (originalVideoClipDurationMs.value === null) {
 		return nonNegativeStartTimeMs;
@@ -319,16 +331,7 @@ function extractStartTimeMs(detail: SongInstrumentDetailResponse): number {
 		return Math.max(0, rawStartTimeMs);
 	}
 
-	return clampTrackStartTimeMs(
-		{
-			id: detail.id,
-			name: detail.name,
-			instrumentId: detail.instrumentId ?? null,
-			startTimeMs: rawStartTimeMs,
-			video: detail.video,
-		},
-		rawStartTimeMs,
-	);
+	return clampTrackStartTimeMs(rawStartTimeMs);
 }
 
 function formatTime(totalSeconds: number): string {
@@ -405,7 +408,7 @@ function syncTrackPlayer(
 					PLAYER_SYNC_DRIFT_THRESHOLD_SEC));
 	const resolvedPlayerTime = shouldSyncTime
 		? clampedLocalTimeSec
-		: referencePlayerTime;
+		: (referencePlayerTime ?? clampedLocalTimeSec);
 
 	if (shouldSyncTime) {
 		player.currentTime = clampedLocalTimeSec;
@@ -501,7 +504,7 @@ function syncSelectedPreview(
 					PLAYER_SYNC_DRIFT_THRESHOLD_SEC));
 	const resolvedPlayerTime = shouldSyncTime
 		? clampedLocalTimeSec
-		: referencePlayerTime;
+		: (referencePlayerTime ?? clampedLocalTimeSec);
 
 	if (shouldSyncTime) {
 		previewPlayer.currentTime = clampedLocalTimeSec;
@@ -651,7 +654,7 @@ async function saveTrackStartTime(trackId: string): Promise<void> {
 		return;
 	}
 
-	const startTimeMs = clampTrackStartTimeMs(track, track.startTimeMs);
+	const startTimeMs = clampTrackStartTimeMs(track.startTimeMs);
 	if (startTimeMs !== track.startTimeMs) {
 		tracks.value = tracks.value.map((candidate) =>
 			candidate.id === trackId
@@ -708,7 +711,6 @@ function updateTrackStartTime(trackId: string, nextStartTimeMs: number): void {
 		}
 
 		const clampedStartTimeMs = clampTrackStartTimeMs(
-			track,
 			Math.round(nextStartTimeMs),
 		);
 		if (clampedStartTimeMs === track.startTimeMs) {
@@ -857,7 +859,9 @@ function convertTimelineOffsetPxToTimeSec(offsetPx: number): number {
 }
 
 function convertClientXToTimelineOffsetPx(event: TimelineSeekEventLike): number {
-	const bounds = event.currentTarget?.getBoundingClientRect?.();
+	const bounds = hasBoundingClientRect(event.currentTarget)
+		? event.currentTarget.getBoundingClientRect()
+		: undefined;
 	if (typeof event.clientX === "number" && bounds) {
 		return clampTimelineOffsetPx(event.clientX - bounds.left);
 	}
@@ -904,8 +908,8 @@ function startTrackDrag(trackId: string, event: TrackDragEventLike): void {
 		initialStartTimeMs: track.startTimeMs,
 		pointerId: event.pointerId ?? null,
 	};
-	if (typeof event.pointerId === "number") {
-		event.currentTarget?.setPointerCapture?.(event.pointerId);
+	if (typeof event.pointerId === "number" && hasPointerCapture(event.currentTarget)) {
+		event.currentTarget.setPointerCapture(event.pointerId);
 	}
 }
 
@@ -928,8 +932,11 @@ function endTrackDrag(trackId: string, event: TrackDragEventLike): void {
 	}
 
 	moveTrackDrag(trackId, event);
-	if (typeof dragState.value.pointerId === "number") {
-		event.currentTarget?.releasePointerCapture?.(dragState.value.pointerId);
+	if (
+		typeof dragState.value.pointerId === "number" &&
+		hasPointerCapture(event.currentTarget)
+	) {
+		event.currentTarget.releasePointerCapture(dragState.value.pointerId);
 	}
 	dragState.value = null;
 }
@@ -1085,8 +1092,9 @@ function getTrackMuteTooltipLabel(track: EditorTrack): string {
 
 function setTrackControlTooltipTarget(
 	key: string,
-	element: Element | null,
+	componentOrElement: unknown,
 ): void {
+	const element = isElementRef(componentOrElement) ? componentOrElement : null;
 	if (!element) {
 		trackControlTooltipTargets.delete(key);
 		return;
@@ -1510,10 +1518,10 @@ onBeforeUnmount(() => {
 									}"
 								>
 									<i
-										v-if="[
+										v-if="([
 											AUTOSAVE_STATES.pending,
 											AUTOSAVE_STATES.saving,
-										].includes(autosaveStatuses[track.id]?.state ?? AUTOSAVE_STATES.idle)"
+										] as AutosaveState[]).includes(autosaveStatuses[track.id]?.state ?? AUTOSAVE_STATES.idle)"
 										:data-testid="`autosave-saving-icon-${track.id}`"
 										:class="getAutosaveSpinnerClass(track.id)"
 										:style="getAutosaveSpinnerStyle(track.id)"

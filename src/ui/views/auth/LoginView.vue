@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '../../stores/useAuthStore.js';
 import { useToastStore } from '../../stores/useToastStore.js';
 import { container } from '../../bootstrap/container.js';
-import { isHttpErrorLike, type HttpErrorLike } from '../../utils/httpError.js';
+import { isHttpErrorLike } from '../../utils/httpError.js';
 
 const email = ref('');
 const password = ref('');

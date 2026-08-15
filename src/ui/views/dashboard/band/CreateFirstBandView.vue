@@ -5,7 +5,7 @@ import { useRouter } from 'vue-router';
 import { container } from '../../../bootstrap/container.js';
 import { useBandStore } from '../../../stores/useBandStore.js';
 import { useToastStore } from '../../../stores/useToastStore.js';
-import { isHttpErrorLike, type HttpErrorLike } from '../../../utils/httpError.js';
+import { isHttpErrorLike } from '../../../utils/httpError.js';
 
 const { t } = useI18n();
 const router = useRouter();

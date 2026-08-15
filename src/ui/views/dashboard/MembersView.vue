@@ -9,7 +9,7 @@ import { container } from "../../bootstrap/container.js";
 import { useBandStore } from "../../stores/useBandStore.js";
 import { useToastStore } from "../../stores/useToastStore.js";
 import { useModalFocusTrap } from "../../composables/useModalFocusTrap.js";
-import { isHttpErrorLike, type HttpErrorLike } from "../../utils/httpError.js";
+import { isHttpErrorLike } from "../../utils/httpError.js";
 
 interface MemberCardViewModel {
 	id: string;

@@ -8,7 +8,7 @@
           <p class="lead text-light mb-5 fs-4">
             {{ $t('public.landing.description') }}
           </p>
-          <router-link :to="{ name: 'Login' }" class="btn btn-primary btn-lg px-5 glow-button">
+          <router-link :to="{ name: 'Login' }" class="btn btn-primary px-5 glow-button">
             {{ $t('public.landing.cta') }}
           </router-link>
         </div>
@@ -59,7 +59,7 @@
       <div class="position-relative z-1">
         <h2 class="fw-bold mb-3 text-shadow-glow">{{ $t('public.landing.finalCta.title') }}</h2>
         <p class="text-body-secondary mb-4 fs-5">{{ $t('public.landing.finalCta.description') }}</p>
-        <router-link :to="{ name: 'Login' }" class="btn btn-primary btn-lg px-5 glow-button">
+        <router-link :to="{ name: 'Login' }" class="btn btn-primary px-5 glow-button">
           {{ $t('public.landing.cta') }}
         </router-link>
       </div>

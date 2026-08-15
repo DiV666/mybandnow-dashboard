@@ -4,6 +4,14 @@ Todos los cambios notables de este proyecto se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.1] - 2026-08-15
+
+### Arreglado
+
+- `package-lock.json` regenerado contra `registry.npmjs.org`: algunas dependencias quedaban resueltas contra un proxy Nexus privado local, lo que rompía `npm ci` en GitHub Actions con un error 401.
+- Build de producción (`vue-tsc -b`) restaurado: se elimina la opción `baseUrl` obsoleta en `tsconfig.app.json` y se corrigen los errores de tipos que quedaban ocultos detrás de ese fallo de configuración (variables/imports sin usar, eventos de puntero y refs de plantilla en `SongTrackEditorView.vue`).
+- Clases `btn-lg` sobrantes en `LandingView.vue`, que rompían el contrato de estilos verificado por `style.test.ts`.
+
 ## [0.3.0] - 2026-08-15
 
 ### Añadido

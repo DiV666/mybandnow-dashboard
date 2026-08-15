@@ -30,7 +30,7 @@ const props = withDefaults(defineProps<{
 }>(), {
 	floating: true
 });
-import { getCurrentTheme, THEMES } from "../theme/theme.js";
+import { THEMES } from "../theme/theme.js";
 
 const { locale: currentLocale, availableLocales: locales, t } = useI18n();
 
