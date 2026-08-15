@@ -94,7 +94,7 @@ prepare_release() {
 	NEW_PACKAGE_VERSION="$(npx semver "$PACKAGE_VERSION" -i "$VERSION_TYPE" | tr -d '\r')"
 
 	echo "Incrementando versión con tipo: $VERSION_TYPE..."
-	run_cmd npm run development:update-version -- "$VERSION_TYPE"
+	run_cmd npm version "$VERSION_TYPE" --no-git-tag-version
 
 	echo 'Actualizando package-lock.json...'
 	run_cmd npm i
@@ -102,13 +102,14 @@ prepare_release() {
 
 finalize_release() {
 	NEW_PACKAGE_VERSION="$(read_package_version)"
+	CURRENT_BRANCH="$(git symbolic-ref --short HEAD)"
 
 	echo "Committing y etiquetando nueva versión: v$NEW_PACKAGE_VERSION..."
-	run_cmd git add package.json package-lock.json src/apps/scaffolding/backend/config/swagger/definition.json
+	run_cmd git add package.json package-lock.json
 	run_cmd git commit -m "chore(release): Bump version to v$NEW_PACKAGE_VERSION"
 	run_cmd git tag -a "v$NEW_PACKAGE_VERSION" -m "v$NEW_PACKAGE_VERSION"
 	run_cmd git push origin --tags
-	run_cmd git push origin master
+	run_cmd git push origin "$CURRENT_BRANCH"
 
 	echo ''
 	echo "¡Versión actualizada a v$NEW_PACKAGE_VERSION!"
