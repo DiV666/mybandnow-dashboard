@@ -2455,6 +2455,7 @@ describe("SongTrackEditorView", () => {
 	});
 
 	it("soloes one track by muting the other synchronized players without breaking playback sync", async () => {
+		vi.useFakeTimers();
 		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
 			{
 				id: "instrument-1",
@@ -2541,6 +2542,7 @@ describe("SongTrackEditorView", () => {
 		expect(secondTrackPlayer.currentTime).toBeCloseTo(0, 1);
 
 		view.unmount();
+		vi.useRealTimers();
 	});
 
 	it("allows multiple solo tracks to remain audible together while muting non-solo tracks", async () => {
@@ -2805,6 +2807,7 @@ describe("SongTrackEditorView", () => {
 	});
 
 	it("keeps the preview area passive without native controls while synchronizing the visible monitor and hidden audio track players", async () => {
+		vi.useFakeTimers();
 		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
 			{
 				id: "instrument-1",
@@ -2908,6 +2911,7 @@ describe("SongTrackEditorView", () => {
 		expect(previewMonitor.currentTime).toBeCloseTo(3, 2);
 
 		view.unmount();
+		vi.useRealTimers();
 	});
 
 	it("uses Bootstrap tooltips for the solo and mute toggles while preserving accessible labels", async () => {

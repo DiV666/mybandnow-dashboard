@@ -4,6 +4,12 @@ Todos los cambios notables de este proyecto se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.3] - 2026-08-16
+
+### Arreglado
+
+- Dos tests de `SongTrackEditorView.test.ts` (`soloes one track...` y `keeps the preview area passive...`) dependían del `Date.now()` real para comprobar el `currentTime` de los reproductores justo tras iniciar la reproducción, con un margen de pocos milisegundos. En runners de CI más lentos ese margen se agotaba y el test fallaba de forma intermitente. Se añade `vi.useFakeTimers()`/`vi.useRealTimers()`, igual que ya hacían el resto de tests de este archivo con el mismo patrón.
+
 ## [0.3.2] - 2026-08-16
 
 ### Arreglado
