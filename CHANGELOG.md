@@ -4,6 +4,12 @@ Todos los cambios notables de este proyecto se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.5] - 2026-08-17
+
+### Añadido
+
+- `VITE_API_BASE_URL` inyectada en el build de CI desde una repository variable de GitHub Actions, para que el build de producción apunte a `https://api.mybandnow.com/api` en vez del fallback de `localhost:3000/api`.
+
 ## [0.3.4] - 2026-08-16
 
 ### Cambiado
