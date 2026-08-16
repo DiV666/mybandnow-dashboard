@@ -4,6 +4,12 @@ Todos los cambios notables de este proyecto se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.4] - 2026-08-16
+
+### Cambiado
+
+- Despliegue de Firebase Hosting movido del proyecto `my-band-now-5792c` al proyecto `my-band-now` (el proyecto de Google Cloud ya existente donde vive la API que se desplegará en Cloud Run), para no duplicar proyectos GCP para la misma app. La URL de producción pasa a ser `https://my-band-now.web.app`.
+
 ## [0.3.3] - 2026-08-16
 
 ### Arreglado
