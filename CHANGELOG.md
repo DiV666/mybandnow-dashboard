@@ -4,6 +4,12 @@ Todos los cambios notables de este proyecto se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.2] - 2026-08-16
+
+### Arreglado
+
+- Locale de test fijado a `es-ES` en `vitest.environment.ts`: el idioma por defecto de `vue-i18n` se resolvía con `navigator.language`, que en Node hereda el locale del sistema operativo. En los runners de GitHub Actions ese locale es inglés, así que 73 tests que comprobaban textos en español fallaban solo en CI.
+
 ## [0.3.1] - 2026-08-15
 
 ### Arreglado
