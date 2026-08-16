@@ -4,7 +4,13 @@ Todos los cambios notables de este proyecto se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
-## [0.3.5] - 2026-08-17
+## [0.4.1] - 2026-08-17
+
+### Arreglado
+
+- Tercer test de `SongTrackEditorView.test.ts` (`mutes only the selected track audio player...`) con el mismo problema de dependencia del reloj real que ya se había corregido en otros dos tests del mismo archivo — se nos había quedado uno sin el fix. Este era el que bloqueaba el job `test` del pipeline y, con ello, el despliegue.
+
+## [0.4.0] - 2026-08-17
 
 ### Añadido
 

@@ -2357,6 +2357,7 @@ describe("SongTrackEditorView", () => {
 	});
 
 	it("mutes only the selected track audio player without affecting the other synchronized tracks", async () => {
+		vi.useFakeTimers();
 		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
 			{
 				id: "instrument-1",
@@ -2452,6 +2453,7 @@ describe("SongTrackEditorView", () => {
 		expect(secondTrackPlayer.muted).toBe(false);
 
 		view.unmount();
+		vi.useRealTimers();
 	});
 
 	it("soloes one track by muting the other synchronized players without breaking playback sync", async () => {
