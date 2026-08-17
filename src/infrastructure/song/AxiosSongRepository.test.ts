@@ -1,3 +1,4 @@
+import axios from "axios";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AxiosSongRepository } from "./AxiosSongRepository.js";
 import { httpClient } from "../http/httpClient.js";
@@ -9,6 +10,7 @@ import { SongInstrument } from "../../domain/song/SongInstrument.js";
 import { SongId } from "../../domain/song/value-object/SongId.js";
 import { SongInstrumentId } from "../../domain/song/value-object/SongInstrumentId.js";
 import { SongInstrumentName } from "../../domain/song/value-object/SongInstrumentName.js";
+import { SongInstrumentUploadId } from "../../domain/song/value-object/SongInstrumentUploadId.js";
 import { SongInstrumentVideoFile } from "../../domain/song/value-object/SongInstrumentVideoFile.js";
 import { SongOriginalVideoclipUrl } from "../../domain/song/value-object/SongOriginalVideoclipUrl.js";
 import { SongTitle } from "../../domain/song/value-object/SongTitle.js";
@@ -297,9 +299,18 @@ describe("AxiosSongRepository", () => {
 		);
 	});
 
-	it("should upload an MP4 file as multipart form data for the selected song instrument with a 2 minute timeout", async () => {
+	it("should request a signed upload URL, PUT the video to it, then confirm the upload", async () => {
 		const postSpy = vi
 			.spyOn(httpClient, "post")
+			.mockResolvedValueOnce({
+				data: {
+					uploadId: "upload-789",
+					uploadUrl: "https://storage.example/signed-upload",
+				},
+			} as never)
+			.mockResolvedValueOnce({ data: undefined } as never);
+		const putSpy = vi
+			.spyOn(axios, "put")
 			.mockResolvedValue({ data: undefined } as never);
 		const videoFile = new File(["video-bytes"], "riff.mp4", {
 			type: "video/mp4",
@@ -311,19 +322,54 @@ describe("AxiosSongRepository", () => {
 			new SongInstrumentVideoFile(videoFile),
 		);
 
-		expect(postSpy).toHaveBeenCalledTimes(1);
-		expect(postSpy.mock.calls[0][0]).toBe(
+		expect(postSpy).toHaveBeenNthCalledWith(
+			1,
 			"/v1/songs/song-123/instruments/instrument-456/upload",
 		);
-		const formData = postSpy.mock.calls[0][1];
-		expect(formData).toBeInstanceOf(FormData);
-		expect((formData as FormData).get("video")).toBe(videoFile);
+		expect(putSpy).toHaveBeenCalledWith(
+			"https://storage.example/signed-upload",
+			videoFile,
+			{
+				headers: { "Content-Type": "video/mp4" },
+				timeout: 120000,
+			},
+		);
+		expect(postSpy).toHaveBeenNthCalledWith(
+			2,
+			"/v1/songs/song-123/instruments/instrument-456/upload/upload-789/confirm",
+		);
+	});
+
+	it("should cancel the active upload attempt for the selected song instrument", async () => {
+		const postSpy = vi
+			.spyOn(httpClient, "post")
+			.mockResolvedValue({ data: undefined } as never);
+
+		await repository.cancelInstrumentUpload(
+			new SongId("song-123"),
+			new SongInstrumentId("instrument-456"),
+			new SongInstrumentUploadId("upload-789"),
+		);
+
 		expect(postSpy).toHaveBeenCalledWith(
-			"/v1/songs/song-123/instruments/instrument-456/upload",
-			formData,
-			{ timeout: 120000 },
+			"/v1/songs/song-123/instruments/instrument-456/upload/upload-789/cancel",
 		);
-		expect(postSpy.mock.calls[0]).toHaveLength(3);
+	});
+
+	it("should confirm a previously started upload attempt for the selected song instrument", async () => {
+		const postSpy = vi
+			.spyOn(httpClient, "post")
+			.mockResolvedValue({ data: undefined } as never);
+
+		await repository.confirmInstrumentUpload(
+			new SongId("song-123"),
+			new SongInstrumentId("instrument-456"),
+			new SongInstrumentUploadId("upload-789"),
+		);
+
+		expect(postSpy).toHaveBeenCalledWith(
+			"/v1/songs/song-123/instruments/instrument-456/upload/upload-789/confirm",
+		);
 	});
 
 	it("should request the videoclip generation for the selected song", async () => {

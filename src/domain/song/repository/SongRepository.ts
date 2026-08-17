@@ -11,6 +11,7 @@ import type {
 import type { SongResponse } from "../SongResponse.js";
 import type { SongId } from "../value-object/SongId.js";
 import type { SongInstrumentId } from "../value-object/SongInstrumentId.js";
+import type { SongInstrumentUploadId } from "../value-object/SongInstrumentUploadId.js";
 import type { SongInstrumentVideoFile } from "../value-object/SongInstrumentVideoFile.js";
 import type { SongVideoclipId } from "../value-object/SongVideoclipId.js";
 
@@ -49,6 +50,16 @@ export interface SongRepository {
 		songId: SongId,
 		instrumentId: SongInstrumentId,
 		videoFile: SongInstrumentVideoFile,
+	): Promise<void>;
+	cancelInstrumentUpload(
+		songId: SongId,
+		instrumentId: SongInstrumentId,
+		uploadId: SongInstrumentUploadId,
+	): Promise<void>;
+	confirmInstrumentUpload(
+		songId: SongId,
+		instrumentId: SongInstrumentId,
+		uploadId: SongInstrumentUploadId,
 	): Promise<void>;
 	requestVideoclipGeneration(
 		songId: SongId,

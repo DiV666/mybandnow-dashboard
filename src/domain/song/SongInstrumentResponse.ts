@@ -15,12 +15,28 @@ export type SongInstrumentUploadPendingStatus = Exclude<
 >;
 
 export interface SongInstrumentUploadPendingResponse {
+	// Optimistic client-side echoes of this status (set right after the upload starts, before
+	// the backend confirms) don't carry an id yet — only the polled server response does.
+	id?: string;
 	status: SongInstrumentUploadPendingStatus;
 }
 
+export const songInstrumentUploadErrorCodes = {
+	UNSUPPORTED_CODEC: "UNSUPPORTED_CODEC",
+	DURATION_EXCEEDED: "DURATION_EXCEEDED",
+	INVALID_VIDEO_FORMAT: "INVALID_VIDEO_FORMAT",
+	FILE_NOT_FOUND: "FILE_NOT_FOUND",
+	PROCESSING_FAILED: "PROCESSING_FAILED",
+} as const;
+
+export type SongInstrumentUploadErrorCode =
+	(typeof songInstrumentUploadErrorCodes)[keyof typeof songInstrumentUploadErrorCodes];
+
 export interface SongInstrumentUploadFailedResponse {
+	id?: string;
 	status: typeof songInstrumentUploadStatuses.FAILED;
 	errorMessage: string;
+	errorCode?: SongInstrumentUploadErrorCode;
 }
 
 export type SongInstrumentUploadResponse =

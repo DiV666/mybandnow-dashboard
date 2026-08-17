@@ -1,3 +1,4 @@
+import axios from "axios";
 import { httpClient } from "../http/httpClient.js";
 import type { SongRepository } from "../../domain/song/repository/SongRepository.js";
 import type { Song } from "../../domain/song/Song.js";
@@ -17,6 +18,7 @@ import type {
 } from "../../domain/song/SongResponse.js";
 import type { SongId } from "../../domain/song/value-object/SongId.js";
 import type { SongInstrumentId } from "../../domain/song/value-object/SongInstrumentId.js";
+import { SongInstrumentUploadId } from "../../domain/song/value-object/SongInstrumentUploadId.js";
 import type { SongInstrumentVideoFile } from "../../domain/song/value-object/SongInstrumentVideoFile.js";
 import type { SongVideoclipId } from "../../domain/song/value-object/SongVideoclipId.js";
 
@@ -114,18 +116,50 @@ export class AxiosSongRepository implements SongRepository {
 		);
 	}
 
+	private getInstrumentUploadPath(songId: SongId, instrumentId: SongInstrumentId): string {
+		return `/v1/songs/${songId.value}/instruments/${instrumentId.value}/upload`;
+	}
+
 	async uploadInstrumentVideo(
 		songId: SongId,
 		instrumentId: SongInstrumentId,
 		videoFile: SongInstrumentVideoFile,
 	): Promise<void> {
-		const formData = new FormData();
-		formData.append("video", videoFile.value);
+		const uploadPath = this.getInstrumentUploadPath(songId, instrumentId);
 
+		const { data } = await httpClient.post<{ uploadId: string; uploadUrl: string }>(
+			uploadPath,
+		);
+
+		await axios.put(data.uploadUrl, videoFile.value, {
+			headers: { "Content-Type": "video/mp4" },
+			timeout: 120000,
+		});
+
+		await this.confirmInstrumentUpload(
+			songId,
+			instrumentId,
+			new SongInstrumentUploadId(data.uploadId),
+		);
+	}
+
+	async cancelInstrumentUpload(
+		songId: SongId,
+		instrumentId: SongInstrumentId,
+		uploadId: SongInstrumentUploadId,
+	): Promise<void> {
 		await httpClient.post(
-			`/v1/songs/${songId.value}/instruments/${instrumentId.value}/upload`,
-			formData,
-			{ timeout: 120000 },
+			`${this.getInstrumentUploadPath(songId, instrumentId)}/${uploadId.value}/cancel`,
+		);
+	}
+
+	async confirmInstrumentUpload(
+		songId: SongId,
+		instrumentId: SongInstrumentId,
+		uploadId: SongInstrumentUploadId,
+	): Promise<void> {
+		await httpClient.post(
+			`${this.getInstrumentUploadPath(songId, instrumentId)}/${uploadId.value}/confirm`,
 		);
 	}
 
