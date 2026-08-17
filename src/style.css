@@ -37,6 +37,8 @@
 	--rock-z-dashboard-topbar: 100;
 	--rock-z-dashboard-dropdown: 110;
 	--rock-z-floating-control: 120;
+	--rock-z-create-band-backdrop: 130;
+	--rock-z-create-band-modal: 140;
 	--rock-z-session-expired-backdrop: 1040;
 	--rock-z-session-expired-modal: 1050;
 	--rock-z-complete-profile-backdrop: 1060;
@@ -527,6 +529,12 @@ h6,
 .public-brand:focus-visible {
 	outline: none;
 	opacity: 0.88;
+}
+
+.public-brand__logo {
+	height: 1.75rem;
+	width: auto;
+	flex-shrink: 0;
 }
 
 .public-navbar__actions {

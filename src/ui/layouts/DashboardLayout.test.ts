@@ -2,11 +2,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import { createRenderer, defineComponent, h, nextTick } from "vue";
 import type { Band } from "../../domain/band/Band.js";
+import type { SongResponse } from "../../domain/song/SongResponse.js";
+import type { BandMemberResponse } from "../../domain/band/BandMemberResponse.js";
 
 const {
 	sessionStorage,
 	routerPushMock,
 	getMyBandsRunMock,
+	getBandSongsRunMock,
+	getBandMembersRunMock,
 	currentRouteState,
 	documentListeners,
 } = vi.hoisted(() => ({
@@ -23,6 +27,8 @@ const {
 	},
 	routerPushMock: vi.fn(),
 	getMyBandsRunMock: vi.fn<() => Promise<Band[]>>(),
+	getBandSongsRunMock: vi.fn<() => Promise<SongResponse[]>>(),
+	getBandMembersRunMock: vi.fn<() => Promise<BandMemberResponse[]>>(),
 	currentRouteState: {
 		path: "/dashboard",
 	},
@@ -37,10 +43,30 @@ vi.mock("../../infrastructure/band/AxiosBandRepository.js", () => ({
 	AxiosBandRepository: class {},
 }));
 
+vi.mock("../../infrastructure/song/AxiosSongRepository.js", () => ({
+	AxiosSongRepository: class {},
+}));
+
 vi.mock("../../application/band/GetMyBandsUseCase.js", () => ({
 	GetMyBandsUseCase: class {
 		run(): Promise<Band[]> {
 			return getMyBandsRunMock();
+		}
+	},
+}));
+
+vi.mock("../../application/song/GetBandSongsUseCase.js", () => ({
+	GetBandSongsUseCase: class {
+		run(): Promise<SongResponse[]> {
+			return getBandSongsRunMock();
+		}
+	},
+}));
+
+vi.mock("../../application/band/GetBandMembersUseCase.js", () => ({
+	GetBandMembersUseCase: class {
+		run(): Promise<BandMemberResponse[]> {
+			return getBandMembersRunMock();
 		}
 	},
 }));
@@ -473,10 +499,14 @@ describe("DashboardLayout", () => {
 		sessionStorage.clearSkippedBandOnboarding.mockReset();
 		routerPushMock.mockReset();
 		getMyBandsRunMock.mockReset();
+		getBandSongsRunMock.mockReset();
+		getBandMembersRunMock.mockReset();
 		sessionStorage.getAuthToken.mockReturnValue(null);
 		sessionStorage.getSelectedBandId.mockReturnValue(null);
 		sessionStorage.getSkippedBandOnboarding.mockReturnValue(false);
 		getMyBandsRunMock.mockResolvedValue([]);
+		getBandSongsRunMock.mockResolvedValue([]);
+		getBandMembersRunMock.mockResolvedValue([]);
 		currentRouteState.path = "/dashboard";
 		vi.restoreAllMocks();
 	});
@@ -1149,7 +1179,7 @@ describe("DashboardLayout", () => {
 			: null;
 
 		expect(sidebarNavList).not.toBeNull();
-		expect(navLinks).toEqual(["Canciones", "Miembros", "Videoclips"]);
+		expect(navLinks).toEqual(["Canciones0", "Miembros0", "Videoclips"]);
 		expect(findByText(view.root, "Inicio")).toBeNull();
 		expect(classNames(songsLink as TestElementNode)).toContain("nav-link");
 		expect(classNames(songsLink as TestElementNode)).toContain("d-flex");
@@ -1181,6 +1211,58 @@ describe("DashboardLayout", () => {
 		);
 		expect(classNames(videoclipsIcon as TestElementNode)).toContain(
 			"dashboard-sidebar-link__icon",
+		);
+
+		view.unmount();
+	});
+
+	it("shows the songs and members totals as badges next to the sidebar links, but not for videoclips", async () => {
+		getMyBandsRunMock.mockResolvedValueOnce([
+			{
+				id: { value: "band-1" },
+				name: { value: "The Stones" },
+			} as Band,
+		]);
+		getBandSongsRunMock.mockResolvedValueOnce([
+			{ id: "song-1" } as SongResponse,
+		]);
+		getBandMembersRunMock.mockResolvedValueOnce([
+			{ musicianId: "musician-1" } as BandMemberResponse,
+			{ musicianId: "musician-2" } as BandMemberResponse,
+		]);
+		const view = renderDashboardLayout(() => {
+			const bandStore = useBandStore();
+			const musicianStore = useMusicianStore();
+			bandStore.selectedBandId = "band-1";
+			musicianStore.fetchProfile = vi.fn().mockResolvedValue(undefined);
+		});
+
+		await flushView();
+		await flushView();
+		await flushView();
+
+		const songsLink = findElement(
+			view.root,
+			(node) =>
+				node.type === "a" && textContent(node).includes("Canciones"),
+		);
+		const membersLink = findElement(
+			view.root,
+			(node) => node.type === "a" && textContent(node).includes("Miembros"),
+		);
+		const videoclipsLink = findElement(
+			view.root,
+			(node) => node.type === "a" && textContent(node).includes("Videoclips"),
+		);
+
+		expect(textContent(songsLink as TestElementNode).trim()).toBe(
+			"Canciones1",
+		);
+		expect(textContent(membersLink as TestElementNode).trim()).toBe(
+			"Miembros2",
+		);
+		expect(textContent(videoclipsLink as TestElementNode).trim()).toBe(
+			"Videoclips",
 		);
 
 		view.unmount();

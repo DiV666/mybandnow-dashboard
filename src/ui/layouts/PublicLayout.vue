@@ -8,10 +8,11 @@
     >
       <div class="container public-navbar__inner">
         <router-link
-          class="navbar-brand public-brand fw-bold text-body text-decoration-none"
+          class="navbar-brand public-brand fw-bold text-body text-decoration-none d-inline-flex align-items-center gap-2"
           :to="{ name: 'Landing' }"
         >
-          {{ $t('layouts.public.brand') }}
+          <img src="/logo.png" alt="" class="public-brand__logo" aria-hidden="true">
+          <span>{{ $t('layouts.public.brand') }}</span>
         </router-link>
 
         <div class="public-navbar__actions">
@@ -55,10 +56,11 @@
         <button
           id="publicNavDrawerLabel"
           type="button"
-          class="navbar-brand public-brand public-offcanvas__brand text-body text-decoration-none mb-0"
+          class="navbar-brand public-brand public-offcanvas__brand text-body text-decoration-none mb-0 d-inline-flex align-items-center gap-2"
           @click="navigateFromDrawer({ name: 'Landing' })"
         >
-          {{ $t('layouts.public.brand') }}
+          <img src="/logo.png" alt="" class="public-brand__logo" aria-hidden="true">
+          <span>{{ $t('layouts.public.brand') }}</span>
         </button>
         <button
           type="button"

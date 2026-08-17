@@ -287,6 +287,7 @@
       "submitLoading": "Creant...",
       "submit": "Crea el meu grup",
       "skip": "Omet per ara",
+      "close": "Tanca",
       "errors": {
         "emptyName": "El nom del grup no pot estar buit",
         "conflict": "Hi ha hagut un conflicte en crear el grup. Torna-ho a provar.",
@@ -401,7 +402,7 @@
   },
   "layouts": {
     "public": {
-      "brand": "Mybandnow",
+      "brand": "My Band Now",
       "openNav": "Obre la navegació pública",
       "closeNav": "Tanca la navegació",
       "login": "Inicia sessió",
@@ -411,7 +412,7 @@
       "primaryNavLabel": "Navegació principal"
     },
     "dashboard": {
-      "brand": "Mybandnow Admin",
+      "brand": "My Band Now",
       "loading": "Carregant...",
       "activeBand": "Grup Actiu:",
       "activeBandMobile": "Grup Actiu",

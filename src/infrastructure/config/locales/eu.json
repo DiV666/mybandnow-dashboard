@@ -287,6 +287,7 @@
       "submitLoading": "Sortzen...",
       "submit": "Sortu nire taldea",
       "skip": "Utzi oraingoz",
+      "close": "Itxi",
       "errors": {
         "emptyName": "Taldearen izena ezin da hutsik egon",
         "conflict": "Gatazka bat izan da taldea sortzean. Saiatu berriro.",
@@ -401,7 +402,7 @@
   },
   "layouts": {
     "public": {
-      "brand": "Mybandnow",
+      "brand": "My Band Now",
       "openNav": "Ireki nabigazio publikoa",
       "closeNav": "Itxi nabigazioa",
       "login": "Hasi saioa",
@@ -411,7 +412,7 @@
       "primaryNavLabel": "Nabigazio nagusia"
     },
     "dashboard": {
-      "brand": "Mybandnow Admin",
+      "brand": "My Band Now",
       "loading": "Kargatzen...",
       "activeBand": "Talde Aktiboa:",
       "activeBandMobile": "Talde Aktiboa",

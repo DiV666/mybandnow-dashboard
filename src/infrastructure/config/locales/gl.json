@@ -287,6 +287,7 @@
       "submitLoading": "Creando...",
       "submit": "Crear o meu grupo",
       "skip": "Omitir por agora",
+      "close": "Pechar",
       "errors": {
         "emptyName": "O nome do grupo non pode estar baleiro",
         "conflict": "Houbo un conflito ao crear o grupo. Téntao de novo.",
@@ -401,7 +402,7 @@
   },
   "layouts": {
     "public": {
-      "brand": "Mybandnow",
+      "brand": "My Band Now",
       "openNav": "Abrir navegación pública",
       "closeNav": "Pechar navegación",
       "login": "Iniciar sesión",
@@ -411,7 +412,7 @@
       "primaryNavLabel": "Navegación principal"
     },
     "dashboard": {
-      "brand": "Mybandnow Admin",
+      "brand": "My Band Now",
       "loading": "Cargando...",
       "activeBand": "Grupo Activo:",
       "activeBandMobile": "Grupo Activo",

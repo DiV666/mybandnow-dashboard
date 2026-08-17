@@ -287,6 +287,7 @@
       "submitLoading": "Creating...",
       "submit": "Create my band",
       "skip": "Skip for now",
+      "close": "Close",
       "errors": {
         "emptyName": "The band name cannot be empty",
         "conflict": "There was a conflict creating the band. Please try again.",
@@ -401,7 +402,7 @@
   },
   "layouts": {
     "public": {
-      "brand": "Mybandnow",
+      "brand": "My Band Now",
       "openNav": "Open public navigation",
       "closeNav": "Close navigation",
       "login": "Log in",
@@ -411,7 +412,7 @@
       "primaryNavLabel": "Primary navigation"
     },
     "dashboard": {
-      "brand": "Mybandnow Admin",
+      "brand": "My Band Now",
       "loading": "Loading...",
       "activeBand": "Active Band:",
       "activeBandMobile": "Active Band",

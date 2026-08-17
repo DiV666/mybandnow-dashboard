@@ -107,7 +107,7 @@ onBeforeUnmount(() => {
       :data-bs-delay="toast.durationMs"
     >
       <div class="d-flex align-items-center">
-        <div class="toast-body small fw-semibold">{{ toast.message }}</div>
+        <div class="toast-body fw-semibold">{{ toast.message }}</div>
         <button
           type="button"
           class="btn-close btn-close-white me-2 m-auto"
@@ -123,5 +123,9 @@ onBeforeUnmount(() => {
 .toast-viewport {
   z-index: var(--rock-z-toast);
   width: min(100%, 24rem);
+}
+
+.toast-body {
+  font-size: 1rem;
 }
 </style>

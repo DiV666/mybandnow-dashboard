@@ -38,7 +38,6 @@ vi.mock("../../../../application/band/CreateBandUseCase.js", () => ({
 
 import CreateFirstBandView from "./CreateFirstBandView.vue";
 import { i18n } from "../../../../infrastructure/config/i18n.js";
-import { useBandStore } from "../../../stores/useBandStore.js";
 
 type TestTextNode = {
 	type: "text" | "comment" | "static";
@@ -288,7 +287,7 @@ describe("CreateFirstBandView", () => {
 		sessionStorage.getSkippedBandOnboarding.mockReturnValue(false);
 	});
 
-	it("sends skip-for-now users to songs instead of the removed dashboard home", async () => {
+	it("does not offer a skip-for-now option anymore", async () => {
 		const view = renderCreateFirstBandView();
 
 		await flushView();
@@ -300,17 +299,38 @@ describe("CreateFirstBandView", () => {
 				textContent(node).includes("Omitir por ahora"),
 		);
 
-		expect(skipButton).not.toBeNull();
+		expect(skipButton).toBeNull();
 
-		if (!skipButton) {
-			throw new Error("Expected skip button to exist");
+		view.unmount();
+	});
+
+	it("opens the create band modal when the create band button is clicked", async () => {
+		const view = renderCreateFirstBandView();
+
+		await flushView();
+
+		const createButton = findElement(
+			view.root,
+			(node) =>
+				node.type === "button" &&
+				textContent(node).includes("Crear una banda"),
+		);
+
+		expect(createButton).not.toBeNull();
+
+		if (!createButton) {
+			throw new Error("Expected create band button to exist");
 		}
 
-		clickElement(skipButton);
+		clickElement(createButton);
+		await flushView();
 
-		const bandStore = useBandStore();
-		expect(bandStore.hasSkippedBandOnboarding).toBe(true);
-		expect(routerPushMock).toHaveBeenCalledWith({ name: "SongsManager" });
+		const modalTitle = findElement(
+			view.root,
+			(node) => node.props.id === "create-band-title",
+		);
+
+		expect(modalTitle).not.toBeNull();
 
 		view.unmount();
 	});

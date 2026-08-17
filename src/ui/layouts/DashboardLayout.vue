@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { container } from '../bootstrap/container.js';
@@ -9,6 +9,7 @@ import { useMusicianStore } from '../stores/useMusicianStore.js';
 import bandLogoPlaceholder from '../../assets/band-logo-placeholder.png';
 import LocaleToggle from "../components/LocaleToggle.vue";
 import ThemeToggle from "../components/ThemeToggle.vue";
+import CreateBandModal from "../components/CreateBandModal.vue";
 
 const { t } = useI18n();
 const router = useRouter();
@@ -16,7 +17,7 @@ const authStore = useAuthStore();
 const bandStore = useBandStore();
 const musicianStore = useMusicianStore();
 
-const { getMyBandsUseCase } = container.useCases;
+const { getMyBandsUseCase, getBandSongsUseCase, getBandMembersUseCase } = container.useCases;
 
 interface BootstrapOffcanvasInstance {
   hide(): void;
@@ -45,6 +46,9 @@ function closeSidebarOffcanvas(): void {
 const isLoading = ref(true);
 const isUserMenuOpen = ref(false);
 const isBandMenuOpen = ref(false);
+const isCreateBandModalOpen = ref(false);
+const sidebarSongsCount = ref<number | null>(null);
+const sidebarMembersCount = ref<number | null>(null);
 const userMenuContainer = ref<HTMLElement | null>(null);
 const userMenuContainerMobile = ref<HTMLElement | null>(null);
 const bandMenuContainer = ref<HTMLElement | null>(null);
@@ -150,9 +154,42 @@ const handleDocumentKeydown = (event: KeyboardEvent) => {
   }
 };
 
-const goToCreateFirstBand = () => {
-  router.push({ name: 'CreateFirstBand' });
+const openCreateBandModal = () => {
+  isCreateBandModalOpen.value = true;
 };
+
+const closeCreateBandModal = () => {
+  isCreateBandModalOpen.value = false;
+};
+
+async function loadSidebarCounts(bandId: string): Promise<void> {
+  try {
+    const [songs, members] = await Promise.all([
+      getBandSongsUseCase.run(bandId),
+      getBandMembersUseCase.run(bandId),
+    ]);
+
+    sidebarSongsCount.value = songs.length;
+    sidebarMembersCount.value = members.length;
+  } catch (error) {
+    console.error('Error fetching sidebar counts', error);
+    sidebarSongsCount.value = null;
+    sidebarMembersCount.value = null;
+  }
+}
+
+watch(
+  () => bandStore.selectedBandId,
+  (bandId) => {
+    if (bandId) {
+      void loadSidebarCounts(bandId);
+    } else {
+      sidebarSongsCount.value = null;
+      sidebarMembersCount.value = null;
+    }
+  },
+  { immediate: true },
+);
 
 const toggleUserMenu = () => {
   const nextIsOpen = !isUserMenuOpen.value;
@@ -245,11 +282,17 @@ onBeforeUnmount(() => {
         >
           <span class="navbar-toggler-icon" aria-hidden="true"></span>
         </button>
-        <span class="navbar-brand dashboard-brand m-0 p-0">{{ $t('layouts.dashboard.brand') }}</span>
+        <span class="navbar-brand dashboard-brand m-0 p-0 d-inline-flex align-items-center gap-2">
+          <img src="/logo.png" alt="" class="dashboard-brand__logo" aria-hidden="true">
+          <span>{{ $t('layouts.dashboard.brand') }}</span>
+        </span>
       </div>
 
       <!-- Desktop Brand -->
-      <span class="navbar-brand dashboard-brand me-0 px-0 d-none d-md-block">{{ $t('layouts.dashboard.brand') }}</span>
+      <span class="navbar-brand dashboard-brand me-0 px-0 d-none d-md-inline-flex align-items-center gap-2">
+        <img src="/logo.png" alt="" class="dashboard-brand__logo" aria-hidden="true">
+        <span>{{ $t('layouts.dashboard.brand') }}</span>
+      </span>
 
       <div
         v-if="bandStore.hasBands"
@@ -293,6 +336,16 @@ onBeforeUnmount(() => {
               </button>
             </div>
           </div>
+
+          <button
+            type="button"
+            class="btn btn-outline-primary btn-sm dashboard-create-band-button d-inline-flex align-items-center justify-content-center"
+            :aria-label="$t('layouts.dashboard.createBand')"
+            :title="$t('layouts.dashboard.createBand')"
+            @click="openCreateBandModal"
+          >
+            <span class="dashboard-create-band-button__symbol" aria-hidden="true">+</span>
+          </button>
         </div>
       </div>
 
@@ -303,7 +356,7 @@ onBeforeUnmount(() => {
         <button
           type="button"
           class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2"
-          @click="goToCreateFirstBand"
+          @click="openCreateBandModal"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -380,19 +433,33 @@ onBeforeUnmount(() => {
             class="dashboard-mobile-section d-md-none position-relative"
           >
             <span class="d-block text-muted small mb-2 fw-semibold text-uppercase text-center" style="letter-spacing: 0.05em;">{{ $t('layouts.dashboard.activeBandMobile') }}</span>
-            <button
-              ref="bandMenuToggleMobile"
-              type="button"
-              class="btn dashboard-header-dropdown-toggle w-100 d-flex align-items-center justify-content-between gap-2"
-              data-testid="band-switcher-toggle-mobile"
-              :aria-expanded="isBandMenuOpen"
-              aria-haspopup="true"
-              aria-controls="dashboard-band-menu-mobile"
-              @click="toggleBandMenu"
-            >
-              <span class="dashboard-band-toggle__label text-truncate">{{ selectedBandName }}</span>
-              <span aria-hidden="true" class="dashboard-dropdown-icon">▾</span>
-            </button>
+            <div class="d-flex align-items-center gap-2">
+              <button
+                ref="bandMenuToggleMobile"
+                type="button"
+                class="btn dashboard-header-dropdown-toggle flex-grow-1 d-flex align-items-center justify-content-between gap-2"
+                data-testid="band-switcher-toggle-mobile"
+                :aria-expanded="isBandMenuOpen"
+                aria-haspopup="true"
+                aria-controls="dashboard-band-menu-mobile"
+                @click="toggleBandMenu"
+              >
+                <span class="dashboard-band-toggle__label text-truncate">{{ selectedBandName }}</span>
+                <span aria-hidden="true" class="dashboard-dropdown-icon">▾</span>
+              </button>
+
+              <button
+                type="button"
+                class="btn btn-outline-primary btn-sm dashboard-create-band-button d-inline-flex align-items-center justify-content-center flex-shrink-0"
+                data-bs-dismiss="offcanvas"
+                data-bs-target="#sidebarMenu"
+                :aria-label="$t('layouts.dashboard.createBand')"
+                :title="$t('layouts.dashboard.createBand')"
+                @click="openCreateBandModal"
+              >
+                <span class="dashboard-create-band-button__symbol" aria-hidden="true">+</span>
+              </button>
+            </div>
 
             <div
               v-if="isBandMenuOpen"
@@ -419,7 +486,7 @@ onBeforeUnmount(() => {
               class="btn btn-primary btn-sm w-100 d-inline-flex align-items-center justify-content-center gap-2"
               data-bs-dismiss="offcanvas"
               data-bs-target="#sidebarMenu"
-              @click="goToCreateFirstBand"
+              @click="openCreateBandModal"
             >
               <i class="bi bi-plus-circle" aria-hidden="true"></i>
               <span>{{ $t('layouts.dashboard.createBand') }}</span>
@@ -453,7 +520,8 @@ onBeforeUnmount(() => {
                     @click="closeSidebarOffcanvas"
                   >
                     <i class="bi bi-music-note-list dashboard-sidebar-link__icon" aria-hidden="true"></i>
-                    <span>{{ $t('layouts.dashboard.nav.songs') }}</span>
+                    <span class="flex-grow-1">{{ $t('layouts.dashboard.nav.songs') }}</span>
+                    <span v-if="sidebarSongsCount !== null" class="badge rounded-pill text-bg-secondary-subtle text-secondary-emphasis dashboard-sidebar-badge">{{ sidebarSongsCount }}</span>
                   </router-link>
                 </li>
                 <li class="nav-item">
@@ -464,7 +532,8 @@ onBeforeUnmount(() => {
                     @click="closeSidebarOffcanvas"
                   >
                     <i class="bi bi-people dashboard-sidebar-link__icon" aria-hidden="true"></i>
-                    <span>{{ $t('layouts.dashboard.nav.members') }}</span>
+                    <span class="flex-grow-1">{{ $t('layouts.dashboard.nav.members') }}</span>
+                    <span v-if="sidebarMembersCount !== null" class="badge rounded-pill text-bg-secondary-subtle text-secondary-emphasis dashboard-sidebar-badge">{{ sidebarMembersCount }}</span>
                   </router-link>
                 </li>
                 <li class="nav-item">
@@ -546,6 +615,8 @@ onBeforeUnmount(() => {
       </main>
     </div>
   </div>
+
+  <CreateBandModal :open="isCreateBandModalOpen" @close="closeCreateBandModal" />
 </template>
 
 <style scoped>
@@ -582,12 +653,19 @@ onBeforeUnmount(() => {
 
 .dashboard-band-switcher {
   width: min(100%, 26rem);
+  flex-wrap: nowrap;
 }
 
 .dashboard-brand {
   color: var(--bs-heading-color);
   font-family: var(--rock-heading-font-family);
   letter-spacing: 0.04em;
+}
+
+.dashboard-brand__logo {
+  height: 1.75rem;
+  width: auto;
+  flex-shrink: 0;
 }
 
 .dashboard-label,
@@ -602,6 +680,8 @@ onBeforeUnmount(() => {
 
 .dashboard-band-dropdown {
   width: min(100%, 16rem);
+  min-width: 0;
+  flex-shrink: 1;
 }
 
 .dashboard-header-dropdown-toggle {
@@ -643,6 +723,23 @@ onBeforeUnmount(() => {
 
 .dashboard-band-toggle__label {
   min-width: 0;
+}
+
+.dashboard-create-band-button {
+  width: 1.60rem;
+  height: 1.60rem;
+  min-height: 1.60rem;
+  padding: 0;
+  border-radius: 50%;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.dashboard-create-band-button__symbol {
+  display: block;
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 0.6;
 }
 
 .dashboard-dropdown-icon,
@@ -796,6 +893,11 @@ onBeforeUnmount(() => {
 .dashboard-sidebar-link:hover .dashboard-sidebar-link__icon,
 .dashboard-sidebar-link:focus-visible .dashboard-sidebar-link__icon {
   opacity: 1;
+}
+
+.dashboard-sidebar-badge {
+  min-width: 1.5rem;
+  font-weight: 600;
 }
 
 .dashboard-user-nav .nav-link {
