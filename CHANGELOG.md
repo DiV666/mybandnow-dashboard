@@ -4,6 +4,24 @@ Todos los cambios notables de este proyecto se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.5.0] - 2026-08-17
+
+### Añadido
+
+- Modal de creación de banda (`CreateBandModal`), que reemplaza el formulario inline de la pantalla "aún no tienes banda" y es accesible también desde un icono "+" en el header (selector de bandas y menú offcanvas móvil).
+- Contador de canciones y de miembros junto a los enlaces "Canciones" y "Miembros" del sidebar del dashboard.
+- Logotipo (`/logo.png`) a la izquierda del título "My Band Now" en las cabeceras pública y del dashboard.
+
+### Cambiado
+
+- El texto de marca de las cabeceras pasa a ser "My Band Now" en todos los idiomas (antes "Mybandnow" / "Mybandnow Admin").
+- El texto de los toasts ya no usa la clase `small` de Bootstrap, para mejorar la legibilidad.
+- Favicon movido de `favicon.svg` a `favicon.ico`.
+
+### Eliminado
+
+- Botón "Omitir por ahora" de la pantalla de creación de la primera banda.
+
 ## [0.4.1] - 2026-08-17
 
 ### Arreglado
