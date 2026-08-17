@@ -4,6 +4,20 @@ Todos los cambios notables de este proyecto se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.6.0] - 2026-08-17
+
+### Añadido
+
+- Nuevo flujo de subida de vídeo de instrumento en 3 pasos con URL firmada (`POST .../upload` → `PUT` directo a la URL firmada → `POST .../upload/{uploadId}/confirm`), en sustitución del antiguo `POST` con `multipart/form-data`.
+- Acción "Cancelar subida" en la modal de subida de vídeo, disponible en paralelo al botón de subir/reintentar mientras el `SongInstrumentUpload` está en estado `PENDING`.
+- Reintento automático del `confirm` cuando el listado empieza a hacer polling de un instrumento con un upload `PENDING`, para cubrir el caso de que un refresco de página interrumpiera el flujo entre el `PUT` del vídeo y el `confirm`.
+- Tooltip en el listado de instrumentos con la traducción del `errorCode` que devuelve el backend cuando la validación asíncrona del vídeo falla (códec no soportado, duración excedida, formato inválido, archivo no encontrado, fallo de procesado genérico).
+
+### Cambiado
+
+- El mensaje de error de subida ya no se muestra como texto fijo bajo los botones de acción del listado de instrumentos; ahora aparece únicamente en el tooltip del icono de error junto al badge de estado.
+- La modal de subida de vídeo resetea su estado (progreso, archivo seleccionado, error) al abrirse o cerrarse, en vez de arrastrar el estado de un intento anterior.
+
 ## [0.5.0] - 2026-08-17
 
 ### Añadido
