@@ -9,6 +9,8 @@ import { CreateProfileUseCase } from "../../application/musician/CreateProfileUs
 import { GetMusicianByIdUseCase } from "../../application/musician/GetMusicianByIdUseCase.js";
 import { GetMyProfileUseCase } from "../../application/musician/GetMyProfileUseCase.js";
 import { AssignSongInstrumentMusicianUseCase } from "../../application/song/AssignSongInstrumentMusicianUseCase.js";
+import { CancelSongInstrumentUploadUseCase } from "../../application/song/CancelSongInstrumentUploadUseCase.js";
+import { ConfirmSongInstrumentUploadUseCase } from "../../application/song/ConfirmSongInstrumentUploadUseCase.js";
 import { CreateSongInstrumentUseCase } from "../../application/song/CreateSongInstrumentUseCase.js";
 import { CreateSongUseCase } from "../../application/song/CreateSongUseCase.js";
 import { GetBandSongsUseCase } from "../../application/song/GetBandSongsUseCase.js";
@@ -33,6 +35,12 @@ const songRepository = new AxiosSongRepository();
 
 const addBandMemberUseCase = new AddBandMemberUseCase(bandRepository);
 const assignSongInstrumentMusicianUseCase = new AssignSongInstrumentMusicianUseCase(
+	songRepository,
+);
+const cancelSongInstrumentUploadUseCase = new CancelSongInstrumentUploadUseCase(
+	songRepository,
+);
+const confirmSongInstrumentUploadUseCase = new ConfirmSongInstrumentUploadUseCase(
 	songRepository,
 );
 const createBandUseCase = new CreateBandUseCase(bandRepository);
@@ -74,6 +82,8 @@ export const container = {
 	useCases: {
 		addBandMemberUseCase,
 		assignSongInstrumentMusicianUseCase,
+		cancelSongInstrumentUploadUseCase,
+		confirmSongInstrumentUploadUseCase,
 		createBandUseCase,
 		createProfileUseCase,
 		createSongInstrumentUseCase,

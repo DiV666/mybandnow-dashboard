@@ -24,9 +24,20 @@ type SongInstrumentUploadProgressStage =
 const SONG_INSTRUMENT_POLL_INTERVAL_MS = 5000;
 const SONG_INSTRUMENT_PROGRESS_TICK_MS = 400;
 
+// Keyed by the backend's SongInstrumentUpload errorCode (exact match, takes priority over the
+// message-based heuristics below, which exist for errors that don't carry a code).
+const songInstrumentUploadErrorCodeMessageKeys: Record<string, string> = {
+  UNSUPPORTED_CODEC: 'dashboard.songs.errors.unsupportedCodec',
+  DURATION_EXCEEDED: 'dashboard.songs.errors.durationExceeded',
+  INVALID_VIDEO_FORMAT: 'dashboard.songs.errors.invalidVideoFormat',
+  FILE_NOT_FOUND: 'dashboard.songs.errors.uploadFileNotFound',
+  PROCESSING_FAILED: 'dashboard.songs.errors.processingFailed',
+};
+
 export interface SongInstrumentUploadState {
   selectedFile: File | null;
   isSubmitting: boolean;
+  isCancelling: boolean;
   successMsg: string;
   errorMsg: string;
   progress: number;
@@ -55,6 +66,12 @@ type SongInstrumentUploadMap = Record<string, SongInstrumentUploadState>;
 interface UseSongInstrumentUploadUseCases {
   uploadSongInstrumentVideoUseCase: {
     run(songId: string, instrumentId: string, videoFile: File): Promise<void>;
+  };
+  cancelSongInstrumentUploadUseCase: {
+    run(songId: string, instrumentId: string, uploadId: string): Promise<void>;
+  };
+  confirmSongInstrumentUploadUseCase: {
+    run(songId: string, instrumentId: string, uploadId: string): Promise<void>;
   };
 }
 
@@ -87,6 +104,8 @@ interface UseSongInstrumentUploadDeps extends UseSongInstrumentUploadUseCases {
 export function useSongInstrumentUpload(deps: UseSongInstrumentUploadDeps) {
   const {
     uploadSongInstrumentVideoUseCase,
+    cancelSongInstrumentUploadUseCase,
+    confirmSongInstrumentUploadUseCase,
     songs,
     songInstruments,
     refreshSongInstrumentDetail,
@@ -160,6 +179,7 @@ export function useSongInstrumentUpload(deps: UseSongInstrumentUploadDeps) {
     const nextState: SongInstrumentUploadState = {
       selectedFile: null,
       isSubmitting: false,
+      isCancelling: false,
       successMsg: '',
       errorMsg: '',
       progress: 0,
@@ -260,6 +280,13 @@ export function useSongInstrumentUpload(deps: UseSongInstrumentUploadDeps) {
     details: UploadErrorDetails,
     fallbackMessage: string,
   ): string {
+    if (details.code) {
+      const errorCodeMessageKey = songInstrumentUploadErrorCodeMessageKeys[details.code];
+      if (errorCodeMessageKey) {
+        return t(errorCodeMessageKey);
+      }
+    }
+
     const message = details.message?.toLowerCase() ?? '';
     const code = details.code?.toLowerCase() ?? '';
     const combined = `${code} ${message}`;
@@ -337,6 +364,7 @@ export function useSongInstrumentUpload(deps: UseSongInstrumentUploadDeps) {
       return mapUploadErrorMessage(
         {
           message: upload.errorMessage,
+          code: upload.errorCode,
         },
         t('dashboard.songs.errors.uploadFailedGeneric'),
       );
@@ -663,6 +691,55 @@ export function useSongInstrumentUpload(deps: UseSongInstrumentUploadDeps) {
     );
   }
 
+  function canCancelSongInstrumentUpload(
+    songId: string,
+    instrument: SongInstrumentListItemResponse,
+  ): boolean {
+    const upload = getEffectiveUpload(songId, instrument);
+    return upload?.status === songInstrumentUploadStatuses.PENDING && Boolean(upload.id);
+  }
+
+  function isSongInstrumentCancelDisabled(
+    songId: string,
+    instrument: SongInstrumentListItemResponse,
+  ): boolean {
+    return getSongInstrumentUploadState(songId, instrument.id).isCancelling;
+  }
+
+  async function handleCancelSongInstrumentUpload(
+    songId: string,
+    instrumentId: string,
+  ): Promise<void> {
+    const instrument = getSongInstrument(songId, instrumentId);
+    const upload = instrument ? getEffectiveUpload(songId, instrument) : null;
+    if (!upload || upload.status !== songInstrumentUploadStatuses.PENDING || !upload.id) {
+      return;
+    }
+
+    setSongInstrumentUploadState(songId, instrumentId, { isCancelling: true });
+
+    try {
+      await cancelSongInstrumentUploadUseCase.run(songId, instrumentId, upload.id);
+      cancelSongInstrumentPoll(songId, instrumentId);
+      resetSongInstrumentProgress(songId, instrumentId);
+      setSongInstrumentUploadState(songId, instrumentId, {
+        isCancelling: false,
+        isSubmitting: false,
+        successMsg: '',
+        errorMsg: '',
+      });
+      await refreshSongInstrumentDetail(songId, instrumentId);
+    } catch (error: unknown) {
+      const details = extractUploadErrorDetails(error);
+      const message =
+        details.status === 409
+          ? t('dashboard.songs.errors.cancelUploadConflict')
+          : mapUploadErrorMessage(details, t('dashboard.songs.errors.cancelUploadFailed'));
+      setSongInstrumentUploadState(songId, instrumentId, { isCancelling: false });
+      showErrorToast(message);
+    }
+  }
+
   function isSongInstrumentUploadSubmitDisabled(
     songId: string,
     instrument: SongInstrumentListItemResponse,
@@ -752,6 +829,7 @@ export function useSongInstrumentUpload(deps: UseSongInstrumentUploadDeps) {
         const message = mapUploadErrorMessage(
           {
             message: detail.upload.errorMessage,
+            code: detail.upload.errorCode,
           },
           t('dashboard.songs.errors.uploadFailedGeneric'),
         );
@@ -810,6 +888,25 @@ export function useSongInstrumentUpload(deps: UseSongInstrumentUploadDeps) {
     instrument: SongInstrumentListItemResponse,
   ): Promise<void> {
     if (isSongInstrumentInProgress(instrument.upload)) {
+      if (
+        instrument.upload?.status === songInstrumentUploadStatuses.PENDING &&
+        instrument.upload.id
+      ) {
+        try {
+          await confirmSongInstrumentUploadUseCase.run(
+            songId,
+            instrument.id,
+            instrument.upload.id,
+          );
+        } catch {
+          // A page refresh may interrupt the flow between the video PUT and this confirm call,
+          // leaving the upload stuck at PENDING without the backend ever starting validation.
+          // Retrying it here is safe even when it was already confirmed (e.g. normal PENDING
+          // while validation is in progress): the status poll below is the source of truth
+          // either way, so a redundant/rejected retry is silently ignored.
+        }
+      }
+
       setSongInstrumentUploadState(songId, instrument.id, {
         isSubmitting: false,
         successMsg: '',
@@ -842,7 +939,24 @@ export function useSongInstrumentUpload(deps: UseSongInstrumentUploadDeps) {
     });
   }
 
+  function resetSongInstrumentUploadFormState(songId: string, instrumentId: string): void {
+    const uploadState = getSongInstrumentUploadState(songId, instrumentId);
+    const instrument = getSongInstrument(songId, instrumentId);
+    const upload = instrument ? getEffectiveUpload(songId, instrument) : null;
+    if (uploadState.isSubmitting || uploadState.isCancelling || isSongInstrumentInProgress(upload)) {
+      return;
+    }
+
+    resetSongInstrumentProgress(songId, instrumentId);
+    setSongInstrumentUploadState(songId, instrumentId, {
+      selectedFile: null,
+      successMsg: '',
+      errorMsg: '',
+    });
+  }
+
   function openSongInstrumentUploadModal(songId: string, instrumentId: string): void {
+    resetSongInstrumentUploadFormState(songId, instrumentId);
     activeSongInstrumentUploadModal.value = {
       songId,
       instrumentId,
@@ -850,6 +964,10 @@ export function useSongInstrumentUpload(deps: UseSongInstrumentUploadDeps) {
   }
 
   function closeSongInstrumentUploadModal(): void {
+    const active = activeSongInstrumentUploadModal.value;
+    if (active) {
+      resetSongInstrumentUploadFormState(active.songId, active.instrumentId);
+    }
     activeSongInstrumentUploadModal.value = null;
   }
 
@@ -981,6 +1099,8 @@ export function useSongInstrumentUpload(deps: UseSongInstrumentUploadDeps) {
     isSongInstrumentUploadDisabled,
     isSongInstrumentUploadSubmitDisabled,
     getSongInstrumentSubmitLabel,
+    canCancelSongInstrumentUpload,
+    isSongInstrumentCancelDisabled,
     scheduleSongInstrumentPoll,
     runSongInstrumentPoll,
     syncSongInstrumentAsyncState,
@@ -988,5 +1108,6 @@ export function useSongInstrumentUpload(deps: UseSongInstrumentUploadDeps) {
     closeSongInstrumentUploadModal,
     handleSongInstrumentVideoSelection,
     handleUploadSongInstrumentVideo,
+    handleCancelSongInstrumentUpload,
   };
 }

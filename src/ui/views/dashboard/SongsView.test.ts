@@ -3690,8 +3690,9 @@ describe("SongsView", () => {
 			queryByTestId(view.root, "upload-progress-song-1-instrument-1"),
 		).toBeNull();
 		expect(
-			findByText(view.root, "El archivo supera el tamaño máximo permitido."),
-		).not.toBeNull();
+			findTooltipTargetByLabel(view.root, "El archivo supera el tamaño máximo permitido.")
+				.type,
+		).toBe("span");
 		expect(
 			findByText(view.root, "Subida aceptada. Pendiente de validación."),
 		).toBeNull();

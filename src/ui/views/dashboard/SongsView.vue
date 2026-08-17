@@ -62,6 +62,8 @@ const {
 	inviteSongInstrumentMusicianUseCase,
 	updateSongInstrumentUseCase,
 	uploadSongInstrumentVideoUseCase,
+	cancelSongInstrumentUploadUseCase,
+	confirmSongInstrumentUploadUseCase,
 	requestSongVideoclipUseCase,
 } = container.useCases;
 
@@ -139,13 +141,18 @@ const {
 	isSongInstrumentUploadDisabled,
 	isSongInstrumentUploadSubmitDisabled,
 	getSongInstrumentSubmitLabel,
+	canCancelSongInstrumentUpload,
+	isSongInstrumentCancelDisabled,
 	syncSongInstrumentAsyncState,
 	openSongInstrumentUploadModal,
 	closeSongInstrumentUploadModal,
 	handleSongInstrumentVideoSelection,
 	handleUploadSongInstrumentVideo,
+	handleCancelSongInstrumentUpload,
 } = useSongInstrumentUpload({
 	uploadSongInstrumentVideoUseCase,
+	cancelSongInstrumentUploadUseCase,
+	confirmSongInstrumentUploadUseCase,
 	songs,
 	songInstruments,
 	refreshSongInstrumentDetail,
@@ -636,6 +643,17 @@ useModalFocusTrap(
                                 >
                                   {{ getSongInstrumentAvailabilityLabel(song.id, instrument.id) }}
                                 </span>
+                                <span
+                                  v-if="getSongInstrumentUploadErrorMessage(song.id, instrument)"
+                                  ref="songActionTooltipTargets"
+                                  class="d-inline-flex align-items-center justify-content-center text-danger"
+                                  tabindex="0"
+                                  data-bs-toggle="tooltip"
+                                  :data-bs-title="getSongInstrumentUploadErrorMessage(song.id, instrument)"
+                                  :aria-label="getSongInstrumentUploadErrorMessage(song.id, instrument)"
+                                >
+                                  <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+                                </span>
                                 <button
                                   v-if="hasSongInstrumentVideo(song.id, instrument.id)"
                                   ref="songActionTooltipTargets"
@@ -693,12 +711,6 @@ useModalFocusTrap(
                               <i class="bi bi-person" aria-hidden="true"></i>
                             </button>
                           </div>
-                          <p
-                            v-if="getSongInstrumentUploadErrorMessage(song.id, instrument)"
-                            class="mb-0 mt-2 small text-danger-emphasis"
-                          >
-                            {{ getSongInstrumentUploadErrorMessage(song.id, instrument) }}
-                          </p>
                         </td>
                       </tr>
                     </tbody>
@@ -985,6 +997,20 @@ useModalFocusTrap(
             <div class="modal-footer">
               <button type="button" class="btn btn-outline-secondary" @click="closeSongInstrumentUploadModal">
                 {{ $t('dashboard.songs.close') }}
+              </button>
+              <button
+                v-if="canCancelSongInstrumentUpload(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument)"
+                type="button"
+                class="btn btn-outline-danger"
+                :disabled="isSongInstrumentCancelDisabled(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument)"
+                @click="handleCancelSongInstrumentUpload(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument.id)"
+              >
+                <span
+                  v-if="getSongInstrumentUploadState(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument.id).isCancelling"
+                  class="spinner-border spinner-border-sm me-2"
+                  aria-hidden="true"
+                ></span>
+                {{ $t('dashboard.songs.cancelUploadLabel') }}
               </button>
               <button
                 v-if="shouldShowSongInstrumentUploadForm(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument.id)"
