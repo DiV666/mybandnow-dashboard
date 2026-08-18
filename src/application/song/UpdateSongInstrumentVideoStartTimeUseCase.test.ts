@@ -33,10 +33,22 @@ describe("UpdateSongInstrumentVideoStartTimeUseCase", () => {
 		expect(repositoryMock.updateInstrumentVideoStartTime).not.toHaveBeenCalled();
 	});
 
-	it("should fail before reaching the repository when startTimeMs is negative", async () => {
+	it("should update the instrument video start time when startTimeMs is negative", async () => {
+		repositoryMock.updateInstrumentVideoStartTime.mockResolvedValue(undefined);
+
+		await useCase.run("song-1", "instrument-1", -1500);
+
+		expect(repositoryMock.updateInstrumentVideoStartTime).toHaveBeenCalledWith(
+			new SongId("song-1"),
+			new SongInstrumentId("instrument-1"),
+			{ startTimeMs: -1500 },
+		);
+	});
+
+	it("should fail before reaching the repository when startTimeMs is not finite", async () => {
 		await expect(
-			useCase.run("song-1", "instrument-1", -1),
-		).rejects.toThrow("SongInstrumentStartTimeMs must be a non-negative finite number");
+			useCase.run("song-1", "instrument-1", Number.NaN),
+		).rejects.toThrow("SongInstrumentStartTimeMs must be a finite number");
 		expect(repositoryMock.updateInstrumentVideoStartTime).not.toHaveBeenCalled();
 	});
 });

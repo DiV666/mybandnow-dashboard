@@ -2270,6 +2270,70 @@ describe("SongTrackEditorView", () => {
 		vi.useRealTimers();
 	});
 
+	it("allows dragging a clip left of zero into a negative startTimeMs and persists it", async () => {
+		vi.useFakeTimers();
+		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
+			{
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentId: "catalog-1",
+				songId: "song-123",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+				upload: { status: "COMPLETED" },
+			},
+		]);
+		repositoryGetInstrumentByIdMock.mockResolvedValueOnce({
+			id: "instrument-1",
+			name: "Guitarra principal",
+			instrumentId: "catalog-1",
+			songId: "song-123",
+			musicianId: "musician-1",
+			createdAt: "2026-07-15T10:00:00.000Z",
+			startTimeMs: 1000,
+			video: {
+				id: "video-1",
+				songInstrumentId: "instrument-1",
+				url: "https://cdn.example/guitar.mp4",
+				duration: 12,
+				size: 456,
+				createdAt: "2026-07-15T10:02:00.000Z",
+			},
+			upload: { status: "COMPLETED" },
+		});
+		repositoryUpdateInstrumentVideoStartTimeMock.mockResolvedValue(undefined);
+
+		const view = renderView();
+		await flushView();
+		await flushView();
+
+		dragTrackClip(view.root, "instrument-1", 100, 40);
+		await flushView();
+
+		expect(findByTestId(view.root, "track-clip-instrument-1").props).toEqual(
+			expect.objectContaining({
+				"data-start-time-ms": -1500,
+			}),
+		);
+		expect(
+			findByTestId(view.root, "track-start-time-input-instrument-1").value,
+		).toBe("-1500");
+
+		await vi.advanceTimersByTimeAsync(2600);
+		await flushView();
+
+		expect(repositoryUpdateInstrumentVideoStartTimeMock).toHaveBeenCalledWith(
+			new SongId("song-123"),
+			new SongInstrumentId("instrument-1"),
+			{
+				startTimeMs: -1500,
+			},
+		);
+
+		view.unmount();
+		vi.useRealTimers();
+	});
+
 	it("navigates back to the songs anchor for the current song", async () => {
 		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
 			{
@@ -3483,7 +3547,7 @@ describe("SongTrackEditorView", () => {
 		vi.useRealTimers();
 	});
 
-	it("lets the user edit startTimeMs manually with large shared-timeline offsets, clamps only negatives, and preserves drag editing", async () => {
+	it("lets the user edit startTimeMs manually with large shared-timeline offsets, allows negative offsets, and preserves drag editing", async () => {
 		vi.useFakeTimers();
 		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
 			{
@@ -3568,18 +3632,18 @@ describe("SongTrackEditorView", () => {
 
 		expect(findByTestId(view.root, "track-clip-instrument-1").props).toEqual(
 			expect.objectContaining({
-				"data-start-time-ms": 0,
+				"data-start-time-ms": -50,
 			}),
 		);
 
 		dragTrackClip(view.root, "instrument-1", 100, 40);
 		await flushView();
 
-		expect(findByTestId(view.root, "track-clip-instrument-1").props).toEqual(
-			expect.objectContaining({
-				"data-start-time-ms": 0,
-			}),
-		);
+		expect(
+			(findByTestId(view.root, "track-clip-instrument-1").props as {
+				"data-start-time-ms": number;
+			})["data-start-time-ms"],
+		).toBeLessThan(-50);
 		expect(
 			queryByTestId(view.root, "autosave-saving-icon-instrument-1"),
 		).not.toBeNull();

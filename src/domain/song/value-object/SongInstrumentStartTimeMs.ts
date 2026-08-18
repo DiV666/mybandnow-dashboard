@@ -4,9 +4,9 @@ export class SongInstrumentStartTimeMs {
 	readonly value: number;
 
 	constructor(value: number) {
-		if (!Number.isFinite(value) || value < 0) {
+		if (!Number.isFinite(value)) {
 			throw new ValidationError(
-				"SongInstrumentStartTimeMs must be a non-negative finite number",
+				"SongInstrumentStartTimeMs must be a finite number",
 			);
 		}
 

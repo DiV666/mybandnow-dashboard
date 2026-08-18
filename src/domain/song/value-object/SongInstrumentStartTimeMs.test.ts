@@ -14,15 +14,15 @@ describe("SongInstrumentStartTimeMs", () => {
 		expect(valueObject.value).toBe(0);
 	});
 
-	it("rejects a negative value", () => {
-		expect(() => new SongInstrumentStartTimeMs(-1)).toThrow(
-			"SongInstrumentStartTimeMs must be a non-negative finite number",
-		);
+	it("accepts a negative value", () => {
+		const valueObject = new SongInstrumentStartTimeMs(-1500);
+
+		expect(valueObject.value).toBe(-1500);
 	});
 
 	it("rejects a non-finite value", () => {
 		expect(() => new SongInstrumentStartTimeMs(Number.NaN)).toThrow(
-			"SongInstrumentStartTimeMs must be a non-negative finite number",
+			"SongInstrumentStartTimeMs must be a finite number",
 		);
 	});
 });

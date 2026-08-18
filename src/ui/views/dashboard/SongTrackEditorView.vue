@@ -329,12 +329,11 @@ const timelineMarkers = computed<TimelineMarker[]>(() => {
 });
 
 function clampTrackStartTimeMs(startTimeMs: number): number {
-	const nonNegativeStartTimeMs = Math.max(0, startTimeMs);
 	if (originalVideoClipDurationMs.value === null) {
-		return nonNegativeStartTimeMs;
+		return startTimeMs;
 	}
 
-	return Math.min(nonNegativeStartTimeMs, originalVideoClipDurationMs.value);
+	return Math.min(startTimeMs, originalVideoClipDurationMs.value);
 }
 
 function extractStartTimeMs(detail: SongInstrumentDetailResponse): number {
