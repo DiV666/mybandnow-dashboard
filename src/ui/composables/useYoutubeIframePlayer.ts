@@ -34,9 +34,14 @@ interface YoutubeIframeApi {
 	) => YoutubePlayerLike;
 }
 
-function rejectAfter(ms: number, message: string): Promise<never> {
-	return new Promise((_resolve, reject) => {
-		setTimeout(() => reject(new Error(message)), ms);
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+	let timeoutId: ReturnType<typeof setTimeout>;
+	const timeoutPromise = new Promise<never>((_resolve, reject) => {
+		timeoutId = setTimeout(() => reject(new Error(message)), ms);
+	});
+
+	return Promise.race([promise, timeoutPromise]).finally(() => {
+		clearTimeout(timeoutId);
 	});
 }
 
@@ -86,13 +91,11 @@ function loadYoutubeIframeApi(): Promise<YoutubeIframeApi> {
 		});
 	}
 
-	return Promise.race([
+	return withTimeout(
 		youtubeIframeApiPromise,
-		rejectAfter(
-			YOUTUBE_API_LOAD_TIMEOUT_MS,
-			"Timed out loading the YouTube IFrame API",
-		),
-	]);
+		YOUTUBE_API_LOAD_TIMEOUT_MS,
+		"Timed out loading the YouTube IFrame API",
+	);
 }
 
 export interface YoutubeSyncPlayer {
@@ -169,13 +172,11 @@ export function useYoutubeIframePlayer() {
 			});
 		});
 
-		return Promise.race([
+		return withTimeout(
 			playerReadyPromise,
-			rejectAfter(
-				YOUTUBE_PLAYER_READY_TIMEOUT_MS,
-				"Timed out waiting for the YouTube player to become ready",
-			),
-		]);
+			YOUTUBE_PLAYER_READY_TIMEOUT_MS,
+			"Timed out waiting for the YouTube player to become ready",
+		);
 	}
 
 	function destroyYoutubePlayer(): void {
