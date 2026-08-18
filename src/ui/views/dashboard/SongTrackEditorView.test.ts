@@ -925,7 +925,7 @@ describe("SongTrackEditorView", () => {
 		const firstTrackTitle = findByTestId(view.root, "track-title-instrument-1");
 		const firstTrackStartTimeLabel = findByText(
 			firstTrackMeta,
-			"Empieza en",
+			"Inicio",
 		);
 		const firstTrackStartTimeInput = findByTestId(
 			view.root,
@@ -1008,8 +1008,8 @@ describe("SongTrackEditorView", () => {
 				borderRadius: "0",
 			}),
 		);
-		expect(textContent(firstTrackMeta)).toContain("Duración: 00:12");
-		expect(textContent(firstTrackMeta)).not.toContain("Inicio");
+		expect(textContent(firstTrackMeta)).toContain("00:00");
+		expect(textContent(firstTrackMeta)).toContain("00:12");
 		expect(textContent(firstTrackLane)).not.toContain("Inicio");
 		expect(textContent(firstTrackLane)).not.toContain("Duración total");
 		expect(firstTrackLane.props.class).toContain("bg-dark-subtle");
@@ -1898,12 +1898,8 @@ describe("SongTrackEditorView", () => {
 		);
 
 		expect(String(metaPanel.props.class || "")).toContain("position-relative");
-		expect(durationRow.props.style).toEqual(
-			expect.objectContaining({
-				paddingRight: "2rem",
-			}),
-		);
-		expect(textContent(durationRow)).toContain("Duración: 00:12");
+		expect(textContent(durationRow)).toContain("00:00");
+		expect(textContent(durationRow)).toContain("00:12");
 		expect(durationRow.props.style).toEqual(
 			expect.objectContaining({
 				marginTop: "0",
@@ -1924,8 +1920,8 @@ describe("SongTrackEditorView", () => {
 		expect(pendingOverlay.props.style).toEqual(
 			expect.objectContaining({
 				position: "absolute",
-				right: "1rem",
-				bottom: "1rem",
+				right: "0.5rem",
+				top: "0.5rem",
 			}),
 		);
 		const pendingSpinner = findByTestId(
@@ -1952,8 +1948,8 @@ describe("SongTrackEditorView", () => {
 		expect(savingOverlay.props.style).toEqual(
 			expect.objectContaining({
 				position: "absolute",
-				right: "1rem",
-				bottom: "1rem",
+				right: "0.5rem",
+				top: "0.5rem",
 			}),
 		);
 		const savingSpinner = findByTestId(

@@ -394,6 +394,10 @@ function getTrackLocalTimeSec(track: EditorTrack): number {
 	return currentTimeSec.value - track.startTimeMs / 1000;
 }
 
+function getClampedTrackLocalTimeSec(track: EditorTrack): number {
+	return Math.min(track.video.duration, Math.max(0, getTrackLocalTimeSec(track)));
+}
+
 function hasSoloedTracks(): boolean {
 	return tracks.value.some((track) => track.isSoloed);
 }
@@ -1818,23 +1822,32 @@ onBeforeUnmount(() => {
 										</span>
 									</button>
 								</div>
-								<div class="d-flex align-items-start justify-content-between gap-2">
-									<label class="d-grid gap-1 small text-muted fw-semibold flex-grow-1">
-										<span>{{ $t('dashboard.trackEditor.startsAtLabel') }}</span>
-										<div class="input-group input-group-sm">
-											<input
-												:data-testid="`track-start-time-input-${track.id}`"
-												type="text"
-												class="form-control"
-												:style="{ minHeight: 'unset', padding: '4px 10px', borderRadius: '0' }"
-												inputmode="numeric"
-												:value="String(track.startTimeMs)"
-												@input="handleTrackStartTimeInput(track.id, String(($event.target as HTMLInputElement).value))"
-											/>
-											<span class="input-group-text" :style="{ borderRadius: '0' }">ms</span>
-										</div>
-									</label>
-									<div class="d-flex align-items-center gap-1 flex-shrink-0 mt-4">
+								<label class="d-flex align-items-center gap-2 small text-muted fw-semibold">
+									<span>{{ $t('dashboard.trackEditor.startsAtLabel') }}</span>
+									<div class="input-group input-group-sm">
+										<input
+											:data-testid="`track-start-time-input-${track.id}`"
+											type="text"
+											class="form-control"
+											:style="{ minHeight: 'unset', padding: '4px 10px', borderRadius: '0' }"
+											inputmode="numeric"
+											:value="String(track.startTimeMs)"
+											@input="handleTrackStartTimeInput(track.id, String(($event.target as HTMLInputElement).value))"
+										/>
+										<span class="input-group-text" :style="{ borderRadius: '0' }">ms</span>
+									</div>
+								</label>
+								<div
+									:data-testid="`track-duration-row-${track.id}`"
+									class="small text-muted d-flex align-items-center justify-content-between flex-nowrap gap-2"
+									:style="{ minHeight: '1.5rem', marginTop: '0', marginBottom: '0' }"
+								>
+									<span :style="{ whiteSpace: 'nowrap' }">
+										<span :data-testid="`track-current-time-${track.id}`">{{ formatTime(getClampedTrackLocalTimeSec(track)) }}</span>
+										 /
+										<span>{{ formatTime(track.video.duration) }}</span>
+									</span>
+									<div class="d-flex align-items-center gap-1 flex-shrink-0">
 										<button
 											type="button"
 											:data-testid="`track-solo-toggle-${track.id}`"
@@ -1868,21 +1881,14 @@ onBeforeUnmount(() => {
 										</button>
 									</div>
 								</div>
-								<div
-									:data-testid="`track-duration-row-${track.id}`"
-									class="small text-muted"
-									:style="{ paddingRight: '2rem', minHeight: '1.5rem', marginTop: '0', marginBottom: '0' }"
-								>
-									<span>{{ $t('dashboard.trackEditor.durationLabel', { duration: formatTime(track.video.duration) }) }}</span>
-								</div>
 								<span
 									v-if="autosaveStatuses[track.id]"
 									:data-testid="`track-autosave-overlay-${track.id}`"
 									class="d-inline-flex align-items-center justify-content-end"
 									:style="{
 										position: 'absolute',
-										right: '1rem',
-										bottom: '1rem',
+										right: '0.5rem',
+										top: '0.5rem',
 										minWidth: '1.5rem',
 										minHeight: '1.5rem',
 									}"
