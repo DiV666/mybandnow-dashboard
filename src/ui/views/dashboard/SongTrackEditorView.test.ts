@@ -102,6 +102,7 @@ vi.mock("bootstrap", () => ({
 
 import SongTrackEditorView from "./SongTrackEditorView.vue";
 import { i18n } from "../../../infrastructure/config/i18n.js";
+import { __resetTrackWaveformAssetsForTests } from "../../composables/useTrackWaveformAssets.js";
 
 type PointerCaptureLike = {
 	setPointerCapture?: (pointerId: number) => void;
@@ -543,6 +544,7 @@ describe("SongTrackEditorView", () => {
 		elementClientWidthState.value = 720;
 		elementBoundingWidthState.value = 720;
 		vi.unstubAllGlobals();
+		__resetTrackWaveformAssetsForTests();
 		vi.stubGlobal("localStorage", {
 			getItem: vi.fn((key: string) => localStorageState.get(key) ?? null),
 			setItem: vi.fn((key: string, value: string) => {
@@ -628,6 +630,82 @@ describe("SongTrackEditorView", () => {
 		);
 
 		view.unmount();
+	});
+
+	it("decodes each instrument track's audio once and reuses the same download to drive playback", async () => {
+		class FakeAudioContext {
+			decodeAudioData(): Promise<{
+				numberOfChannels: number;
+				duration: number;
+				getChannelData: () => Float32Array;
+			}> {
+				return Promise.resolve({
+					numberOfChannels: 1,
+					duration: 12,
+					getChannelData: () => Float32Array.from([0.1, 0.8, 0.3, 0.2]),
+				});
+			}
+		}
+
+		const fetchMock = vi.fn().mockResolvedValue({
+			ok: true,
+			status: 200,
+			arrayBuffer: async () => new ArrayBuffer(8),
+		});
+		vi.stubGlobal("AudioContext", FakeAudioContext);
+		vi.stubGlobal("fetch", fetchMock);
+		URL.createObjectURL = vi.fn(() => "blob:waveform-test");
+
+		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
+			{
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentId: "catalog-1",
+				songId: "song-123",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+				upload: { status: "COMPLETED" },
+			},
+		]);
+		repositoryGetInstrumentByIdMock.mockResolvedValueOnce({
+			id: "instrument-1",
+			name: "Guitarra principal",
+			instrumentId: "catalog-1",
+			songId: "song-123",
+			musicianId: "musician-1",
+			createdAt: "2026-07-15T10:00:00.000Z",
+			startTimeMs: 0,
+			video: {
+				id: "video-1",
+				songInstrumentId: "instrument-1",
+				url: "https://cdn.example/waveform-test.mp4",
+				duration: 12,
+				size: 456,
+				createdAt: "2026-07-15T10:02:00.000Z",
+			},
+			upload: { status: "COMPLETED" },
+		});
+
+		try {
+			const view = renderView();
+			await flushView();
+			await flushView();
+
+			expect(fetchMock).toHaveBeenCalledTimes(1);
+			expect(fetchMock).toHaveBeenCalledWith("https://cdn.example/waveform-test.mp4");
+
+			const canvas = findByTestId(view.root, "track-waveform-instrument-1");
+			expect(canvas.type).toBe("canvas");
+
+			const syncAudio = findByTestId(view.root, "sync-audio-instrument-1");
+			expect((syncAudio as unknown as { src?: string }).src).toBe(
+				"blob:waveform-test",
+			);
+
+			view.unmount();
+		} finally {
+			Reflect.deleteProperty(URL, "createObjectURL");
+		}
 	});
 
 	it("prepends the original YouTube audio as a synced reference track when the route provides the clip URL and duration", async () => {
@@ -932,13 +1010,13 @@ describe("SongTrackEditorView", () => {
 		);
 		expect(textContent(firstTrackMeta)).toContain("Duración: 00:12");
 		expect(textContent(firstTrackMeta)).not.toContain("Inicio");
-		expect(textContent(firstTrackLane)).toContain("Inicio: 00:00");
+		expect(textContent(firstTrackLane)).not.toContain("Inicio");
 		expect(textContent(firstTrackLane)).not.toContain("Duración total");
 		expect(firstTrackLane.props.class).toContain("bg-dark-subtle");
 		expect(firstTrackLane.props.class).not.toContain("rounded-4");
 		expect(
 			textContent(findByTestId(view.root, "track-clip-instrument-1")),
-		).toContain("Inicio: 00:00");
+		).not.toContain("Inicio");
 		expect(firstTrackLane.props.class).toContain("align-items-stretch");
 		expect(firstTrackLane.props.style).toEqual(
 			expect.objectContaining({

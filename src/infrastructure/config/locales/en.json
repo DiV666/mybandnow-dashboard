@@ -185,6 +185,7 @@
       "originalVideoBadge": "Original video {time}",
       "selectedTrackStartsAt": "The selected track starts at {time}.",
       "playTitle": "Play",
+      "loadingAudioTitle": "Loading track audio...",
       "pauseVisuallyHidden": "Pause",
       "playVisuallyHidden": "Play",
       "goToStartTitle": "Go to the beginning",
@@ -205,7 +206,6 @@
       "pendingSave": "Pending save",
       "saving": "Saving",
       "saved": "Saved",
-      "trackStartLabel": "Start: {time}",
       "originalAudioTrackName": "Original video (YouTube)",
       "originalAudioPreviewNote": "Reference track: it syncs with the rest but has no video preview.",
       "errors": {

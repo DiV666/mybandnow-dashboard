@@ -185,6 +185,7 @@
       "originalVideoBadge": "Vídeo original {time}",
       "selectedTrackStartsAt": "La pista seleccionada comença a {time}.",
       "playTitle": "Play",
+      "loadingAudioTitle": "Carregant l'àudio de les pistes...",
       "pauseVisuallyHidden": "Pausa",
       "playVisuallyHidden": "Reprodueix",
       "goToStartTitle": "Comença des del principi",
@@ -205,7 +206,6 @@
       "pendingSave": "Pendent de desar",
       "saving": "Desant",
       "saved": "Desat",
-      "trackStartLabel": "Inici: {time}",
       "originalAudioTrackName": "Vídeo original (YouTube)",
       "originalAudioPreviewNote": "Pista de referència: se sincronitza amb la resta però no té vista prèvia de vídeo.",
       "errors": {

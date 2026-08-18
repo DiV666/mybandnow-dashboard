@@ -16,6 +16,8 @@ import { container } from "../../bootstrap/container.js";
 import { useToastStore } from "../../stores/useToastStore.js";
 import { getYoutubeVideoId } from "../../utils/youtube.js";
 import { useYoutubeIframePlayer } from "../../composables/useYoutubeIframePlayer.js";
+import { useTrackWaveformAssets } from "../../composables/useTrackWaveformAssets.js";
+import { resamplePeaksToWidth } from "../../utils/audioPeaks.js";
 
 interface EditorTrack {
 	id: string;
@@ -123,6 +125,7 @@ const MIN_TIMELINE_MARKER_SPACING_PX = 72;
 const TIMELINE_MARKER_STEP_OPTIONS_SEC = [5, 10, 15, 30, 60, 120, 300, 600];
 const TIMELINE_ZOOM_STORAGE_KEY = "song-track-editor-zoom";
 const ORIGINAL_AUDIO_TRACK_ID = "__original-audio__";
+const WAVEFORM_CANVAS_HEIGHT_PX = 60;
 
 const { t } = useI18n();
 const route = useRoute();
@@ -163,6 +166,21 @@ let originalAudioPlayerHostElement: HTMLElement | null = null;
 
 const { createYoutubePlayer, destroyYoutubePlayer } = useYoutubeIframePlayer();
 const originalAudioPlayerHostRef = ref<HTMLElement | null>(null);
+const {
+	states: trackWaveformStates,
+	getRawState: getTrackWaveformState,
+	ensureLoaded: ensureTrackWaveformLoaded,
+} = useTrackWaveformAssets();
+const trackWaveformCanvasRefs = new Map<string, HTMLCanvasElement>();
+const trackAudioElementRefs = new Map<string, { src: string }>();
+
+interface ButtonElementLike {
+	disabled: boolean;
+	title: string;
+	classList: { toggle(className: string, force?: boolean): void };
+}
+
+const transportButtonRefs = new Map<string, ButtonElementLike>();
 
 const songId = computed(() => String(route.params.songId ?? ""));
 const songTitle = computed(() => {
@@ -200,6 +218,16 @@ const originalAudioTrack = computed(
 	() => tracks.value.find((track) => track.isOriginalAudio === true) ?? null,
 );
 const hasOriginalAudioTrack = computed(() => originalAudioTrack.value !== null);
+
+// Not a computed on purpose: reading it from the template would make waveform state
+// changes force a full component re-render (see applyTransportButtonsLoadingState below).
+function isAnyTrackAudioLoadingNow(): boolean {
+	return tracks.value.some(
+		(track) =>
+			!track.isOriginalAudio &&
+			getTrackWaveformState(track.video.url).status === "loading",
+	);
+}
 const timelineDurationSec = computed(() => {
 	return tracks.value.reduce((maxDuration, track) => {
 		const trackEndSec = track.startTimeMs / 1000 + track.video.duration;
@@ -905,10 +933,18 @@ function setPlaybackTime(nextTimeSec: number): void {
 }
 
 function goToStart(): void {
+	if (isAnyTrackAudioLoadingNow()) {
+		return;
+	}
+
 	setPlaybackTime(0);
 }
 
 function nudgePlayback(deltaSec: number): void {
+	if (isAnyTrackAudioLoadingNow()) {
+		return;
+	}
+
 	setPlaybackTime(currentTimeSec.value + deltaSec);
 }
 
@@ -961,7 +997,7 @@ function endTrackDrag(trackId: string, event: TrackDragEventLike): void {
 }
 
 function togglePlayback(): void {
-	if (timelineDurationSec.value === 0) {
+	if (timelineDurationSec.value === 0 || isAnyTrackAudioLoadingNow()) {
 		return;
 	}
 
@@ -1025,6 +1061,161 @@ function getTrackOffsetPx(track: EditorTrack): number {
 
 function getTrackWidthPx(track: EditorTrack): number {
 	return Math.max(convertTimelineMsToPx(track.video.duration * 1000), 12);
+}
+
+function getTrackAudioSrc(track: EditorTrack): string | undefined {
+	const state = getTrackWaveformState(track.video.url);
+	if (state.status === "ready") {
+		return state.asset.objectUrl;
+	}
+
+	if (state.status === "error") {
+		// Waveform decoding failed (unsupported browser, CORS, network error): fall back
+		// to the direct URL so playback still works, even though the shared-download and
+		// waveform benefits are lost for this track.
+		return track.video.url;
+	}
+
+	// While the shared download is still in flight, leave the element without a src
+	// rather than pointing it at the remote URL too, so the file isn't fetched twice.
+	return undefined;
+}
+
+// The audio element's src is assigned imperatively (not via a reactive `:src` binding) so
+// that waveform state updates don't force the whole component to re-render — that used to
+// re-trigger every inline template ref callback (including the selected-track preview's),
+// resyncing play/pause state unnecessarily.
+interface AudioElementLike {
+	src: string;
+}
+
+function isAudioElementLike(value: unknown): value is AudioElementLike {
+	return !!value && typeof value === "object";
+}
+
+function applyTrackAudioSrc(trackId: string): void {
+	const element = trackAudioElementRefs.get(trackId);
+	const track = tracks.value.find((candidate) => candidate.id === trackId);
+	if (!element || !track || track.isOriginalAudio) {
+		return;
+	}
+
+	const nextSrc = getTrackAudioSrc(track);
+	if (typeof nextSrc === "string" && element.src !== nextSrc) {
+		element.src = nextSrc;
+	}
+}
+
+function applyAllTrackAudioSrcs(): void {
+	for (const trackId of trackAudioElementRefs.keys()) {
+		applyTrackAudioSrc(trackId);
+	}
+}
+
+function isButtonElementLike(value: unknown): value is ButtonElementLike {
+	return !!value && typeof value === "object";
+}
+
+function setTransportButtonRef(key: string, element: unknown): void {
+	if (!isButtonElementLike(element)) {
+		transportButtonRefs.delete(key);
+		return;
+	}
+
+	transportButtonRefs.set(key, element);
+	applyTransportButtonsLoadingState();
+}
+
+// Imperative for the same reason the audio src is: keeping isAnyTrackAudioLoadingNow()
+// out of the render function avoids forcing a full re-render (and the resulting inline
+// ref churn) every time a track's waveform state settles.
+function applyTransportButtonsLoadingState(): void {
+	const isLoading = isAnyTrackAudioLoadingNow();
+	const loadingTitle = t('dashboard.trackEditor.loadingAudioTitle');
+	const defaultTitles: Record<string, string> = {
+		play: t('dashboard.trackEditor.playTitle'),
+		goToStart: t('dashboard.trackEditor.goToStartTitle'),
+		rewind: t('dashboard.trackEditor.rewindTitle'),
+		forward: t('dashboard.trackEditor.forward'),
+	};
+
+	for (const [key, button] of transportButtonRefs) {
+		button.disabled = isLoading;
+		if (typeof button.classList?.toggle === "function") {
+			button.classList.toggle('opacity-50', isLoading);
+		}
+		button.title = isLoading ? loadingTitle : (defaultTitles[key] ?? button.title);
+	}
+}
+
+function setTrackAudioElementRef(trackId: string, element: unknown): void {
+	if (!isAudioElementLike(element)) {
+		trackAudioElementRefs.delete(trackId);
+		return;
+	}
+
+	trackAudioElementRefs.set(trackId, element);
+	applyTrackAudioSrc(trackId);
+}
+
+function getTrackWaveformCanvasWidthPx(track: EditorTrack): number {
+	return Math.max(1, Math.round(getTrackWidthPx(track)));
+}
+
+function setTrackWaveformCanvasRef(
+	trackId: string,
+	element: HTMLCanvasElement | null,
+): void {
+	if (!element) {
+		trackWaveformCanvasRefs.delete(trackId);
+		return;
+	}
+
+	trackWaveformCanvasRefs.set(trackId, element);
+	drawTrackWaveformCanvas(trackId);
+}
+
+function drawTrackWaveformCanvas(trackId: string): void {
+	const canvas = trackWaveformCanvasRefs.get(trackId);
+	const track = tracks.value.find((candidate) => candidate.id === trackId);
+	if (
+		!canvas ||
+		!track ||
+		track.isOriginalAudio ||
+		typeof canvas.getContext !== "function"
+	) {
+		return;
+	}
+
+	const context = canvas.getContext("2d");
+	if (!context) {
+		return;
+	}
+
+	const widthPx = getTrackWaveformCanvasWidthPx(track);
+	const heightPx = WAVEFORM_CANVAS_HEIGHT_PX;
+	canvas.width = widthPx;
+	canvas.height = heightPx;
+	context.clearRect(0, 0, widthPx, heightPx);
+
+	const state = getTrackWaveformState(track.video.url);
+	if (state.status !== "ready") {
+		return;
+	}
+
+	const peaks = resamplePeaksToWidth(state.asset.peaks, widthPx);
+	const midY = heightPx / 2;
+	context.fillStyle = "rgba(255, 255, 255, 0.55)";
+	for (let x = 0; x < peaks.length; x += 1) {
+		const barHeight = Math.max(1, peaks[x] * heightPx);
+		context.fillRect(x, midY - barHeight / 2, 1, barHeight);
+	}
+}
+
+function redrawAllTrackWaveformCanvases(): void {
+	for (const trackId of trackWaveformCanvasRefs.keys()) {
+		drawTrackWaveformCanvas(trackId);
+	}
 }
 
 function getAutosaveSpinnerClass(trackId: string): string {
@@ -1250,6 +1441,9 @@ async function loadTracks(): Promise<void> {
 		tracks.value = newOriginalAudioTrack
 			? [newOriginalAudioTrack, ...instrumentTracks]
 			: instrumentTracks;
+		for (const track of instrumentTracks) {
+			ensureTrackWaveformLoaded(track.video.url);
+		}
 		selectedTrackId.value =
 			instrumentTracks[0]?.id ?? newOriginalAudioTrack?.id ?? null;
 		currentTimeSec.value = 0;
@@ -1303,6 +1497,16 @@ watch(isPlaying, (playing) => {
 	syncAllPlayers(true);
 	syncSelectedPreview(true);
 });
+
+watch(
+	[timelineZoomPercent, trackWaveformStates],
+	() => {
+		redrawAllTrackWaveformCanvases();
+		applyAllTrackAudioSrcs();
+		applyTransportButtonsLoadingState();
+	},
+	{ deep: true },
+);
 
 onMounted(() => {
 	void loadTracks();
@@ -1390,8 +1594,10 @@ onBeforeUnmount(() => {
 						v-for="track in tracks.filter((candidate) => !candidate.isOriginalAudio)"
 						:key="`sync-${track.id}`"
 						:data-testid="`sync-audio-${track.id}`"
-						:ref="(element) => setSyncPlayerRef(track.id, element as PlayerLike | null)"
-						:src="track.video.url"
+						:ref="(element) => {
+							setSyncPlayerRef(track.id, element as PlayerLike | null);
+							setTrackAudioElementRef(track.id, element);
+						}"
 						preload="auto"
 					/>
 					<div
@@ -1447,19 +1653,19 @@ onBeforeUnmount(() => {
 						</p>
 						<div class="d-flex align-items-center justify-content-between gap-3">
 							<div class="d-inline-flex align-items-center gap-2 flex-wrap">
-								<button type="button" class="border-0 bg-transparent p-0 text-body d-inline-flex align-items-center justify-content-center" :title="$t('dashboard.trackEditor.playTitle')" :style="{ lineHeight: '1', minHeight: 'unset', transform: 'none', translate: 'none' }" @click="togglePlayback">
+								<button type="button" class="border-0 bg-transparent p-0 text-body d-inline-flex align-items-center justify-content-center" :ref="(element) => setTransportButtonRef('play', element)" :title="$t('dashboard.trackEditor.playTitle')" :style="{ lineHeight: '1', minHeight: 'unset', transform: 'none', translate: 'none' }" @click="togglePlayback">
 									<i :class="isPlaying ? 'bi bi-pause-fill fs-5' : 'bi bi-play-fill fs-5'" aria-hidden="true"></i>
 									<span class="visually-hidden">{{ isPlaying ? $t('dashboard.trackEditor.pauseVisuallyHidden') : $t('dashboard.trackEditor.playVisuallyHidden') }}</span>
 								</button>
-								<button type="button" class="border-0 bg-transparent p-0 text-body d-inline-flex align-items-center justify-content-center" :title="$t('dashboard.trackEditor.goToStartTitle')" :style="{ lineHeight: '1', minHeight: 'unset', transform: 'none', translate: 'none' }" @click="goToStart">
+								<button type="button" class="border-0 bg-transparent p-0 text-body d-inline-flex align-items-center justify-content-center" :ref="(element) => setTransportButtonRef('goToStart', element)" :title="$t('dashboard.trackEditor.goToStartTitle')" :style="{ lineHeight: '1', minHeight: 'unset', transform: 'none', translate: 'none' }" @click="goToStart">
 									<i class="bi bi-skip-start-fill fs-5" aria-hidden="true"></i>
 									<span class="visually-hidden">{{ $t('dashboard.trackEditor.goToStartVisuallyHidden') }}</span>
 								</button>
-								<button type="button" class="border-0 bg-transparent p-0 text-body d-inline-flex align-items-center justify-content-center" :title="$t('dashboard.trackEditor.rewindTitle')" :style="{ lineHeight: '1', minHeight: 'unset', transform: 'none', translate: 'none' }" @click="nudgePlayback(-1)">
+								<button type="button" class="border-0 bg-transparent p-0 text-body d-inline-flex align-items-center justify-content-center" :ref="(element) => setTransportButtonRef('rewind', element)" :title="$t('dashboard.trackEditor.rewindTitle')" :style="{ lineHeight: '1', minHeight: 'unset', transform: 'none', translate: 'none' }" @click="nudgePlayback(-1)">
 									<i class="bi bi-rewind-fill fs-5" aria-hidden="true"></i>
 									<span class="visually-hidden">{{ $t('dashboard.trackEditor.rewindVisuallyHidden') }}</span>
 								</button>
-								<button type="button" class="border-0 bg-transparent p-0 text-body d-inline-flex align-items-center justify-content-center" :title="$t('dashboard.trackEditor.forward')" :style="{ lineHeight: '1', minHeight: 'unset', transform: 'none', translate: 'none' }" @click="nudgePlayback(1)">
+								<button type="button" class="border-0 bg-transparent p-0 text-body d-inline-flex align-items-center justify-content-center" :ref="(element) => setTransportButtonRef('forward', element)" :title="$t('dashboard.trackEditor.forward')" :style="{ lineHeight: '1', minHeight: 'unset', transform: 'none', translate: 'none' }" @click="nudgePlayback(1)">
 									<i class="bi bi-fast-forward-fill fs-5" aria-hidden="true"></i>
 									<span class="visually-hidden">{{ $t('dashboard.trackEditor.forward') }}</span>
 								</button>
@@ -1763,7 +1969,19 @@ onBeforeUnmount(() => {
 											@pointerup="endTrackDrag(track.id, $event)"
 											@pointercancel="endTrackDrag(track.id, $event)"
 										>
-											{{ $t('dashboard.trackEditor.trackStartLabel', { time: formatTime(track.startTimeMs / 1000) }) }}
+											<canvas
+												:data-testid="`track-waveform-${track.id}`"
+												:ref="(element) => setTrackWaveformCanvasRef(track.id, element as HTMLCanvasElement | null)"
+												:width="getTrackWaveformCanvasWidthPx(track)"
+												:height="WAVEFORM_CANVAS_HEIGHT_PX"
+												:style="{
+													position: 'absolute',
+													inset: '0',
+													width: '100%',
+													height: '100%',
+													pointerEvents: 'none',
+												}"
+											></canvas>
 										</div>
 									</div>
 								</div>
