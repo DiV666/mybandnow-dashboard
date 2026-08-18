@@ -26,6 +26,7 @@ interface EditorTrack {
 	startTimeMs: number;
 	isMuted: boolean;
 	isSoloed: boolean;
+	volume: number;
 	isOriginalAudio?: boolean;
 	video: NonNullable<SongInstrumentDetailResponse["video"]>;
 }
@@ -33,6 +34,7 @@ interface EditorTrack {
 interface PlayerLike {
 	currentTime?: number;
 	muted?: boolean;
+	volume?: number;
 	play?: () => Promise<void> | void;
 	pause?: () => void;
 }
@@ -425,6 +427,7 @@ function syncTrackPlayer(
 	}
 
 	player.muted = !isTrackAudible(track);
+	player.volume = track.volume;
 
 	const localTimeSec = getTrackLocalTimeSec(track);
 	const clampedLocalTimeSec = Math.min(
@@ -1047,6 +1050,32 @@ function toggleTrackMute(trackId: string): void {
 	syncAllPlayers(false, true);
 }
 
+function setTrackVolume(trackId: string, volume: number): void {
+	const clampedVolume = Math.min(1, Math.max(0, volume));
+	tracks.value = tracks.value.map((track) =>
+		track.id === trackId
+			? {
+				...track,
+				volume: clampedVolume,
+			}
+			: track,
+	);
+	syncAllPlayers(false, true);
+}
+
+function handleTrackVolumeInput(trackId: string, rawValue: string): void {
+	const nextValue = Number.parseInt(rawValue, 10);
+	if (!Number.isFinite(nextValue)) {
+		return;
+	}
+
+	setTrackVolume(trackId, nextValue / 100);
+}
+
+function getTrackVolumePercent(track: EditorTrack): number {
+	return Math.round(track.volume * 100);
+}
+
 function toggleTrackSolo(trackId: string): void {
 	tracks.value = tracks.value.map((track) =>
 		track.id === trackId
@@ -1351,6 +1380,7 @@ function createOriginalAudioTrack(): EditorTrack | null {
 		startTimeMs: 0,
 		isMuted: false,
 		isSoloed: false,
+		volume: 1,
 		isOriginalAudio: true,
 		video: {
 			id: ORIGINAL_AUDIO_TRACK_ID,
@@ -1439,6 +1469,7 @@ async function loadTracks(): Promise<void> {
 				startTimeMs: extractStartTimeMs(detail),
 				isMuted: false,
 				isSoloed: false,
+				volume: 1,
 				video: detail.video,
 			}));
 		tracks.value = newOriginalAudioTrack
@@ -1673,7 +1704,7 @@ onBeforeUnmount(() => {
 									<span class="visually-hidden">{{ $t('dashboard.trackEditor.forward') }}</span>
 								</button>
 							</div>
-							<div class="position-relative">
+							<div class="position-relative hover-popover-group">
 								<button type="button" class="border-0 bg-transparent p-0 text-body d-inline-flex align-items-center justify-content-center" :title="$t('dashboard.trackEditor.zoomTitle')" :style="{ lineHeight: '1', minHeight: 'unset', transform: 'none', translate: 'none' }" @click="toggleZoomPopover">
 									<i class="bi bi-zoom-in fs-6" aria-hidden="true"></i>
 									<span class="visually-hidden">{{ $t('dashboard.trackEditor.zoomVisuallyHidden') }}</span>
@@ -1685,12 +1716,12 @@ onBeforeUnmount(() => {
 									@click="closeZoomPopover"
 								></div>
 								<div
-									v-if="isZoomPopoverOpen"
 									data-testid="zoom-popover"
-									class="border bg-body p-2 shadow-sm"
+									class="hover-popover border bg-body p-2 shadow-sm"
+									:class="{ show: isZoomPopoverOpen }"
 									:style="{
 										position: 'absolute',
-										top: 'calc(100% + 0.5rem)',
+										top: '100%',
 										right: '0',
 										width: '10rem',
 										zIndex: '3',
@@ -1736,23 +1767,48 @@ onBeforeUnmount(() => {
 									<span class="fw-semibold">S</span>
 									<span class="visually-hidden">{{ originalAudioTrack.isSoloed ? $t('dashboard.trackEditor.soloTooltipActive') : $t('dashboard.trackEditor.soloLabelInactive') }}</span>
 								</button>
-								<button
-									type="button"
-									:data-testid="`track-mute-toggle-${originalAudioTrack.id}`"
-									:ref="(element) => setTrackControlTooltipTarget(`mute-${originalAudioTrack!.id}`, element)"
-									:class="getTrackToggleButtonClass(originalAudioTrack.isMuted, 'btn-warning')"
-									:style="getTrackToggleButtonStyle()"
-									:aria-pressed="originalAudioTrack.isMuted"
-									data-bs-toggle="tooltip"
-									:data-bs-title="getTrackMuteTooltipLabel(originalAudioTrack)"
-									@click="toggleTrackMute(originalAudioTrack.id)"
-								>
-									<i
-										:class="originalAudioTrack.isMuted ? 'bi bi-volume-mute-fill' : 'bi bi-volume-up-fill'"
-										aria-hidden="true"
-									></i>
-									<span class="visually-hidden">{{ originalAudioTrack.isMuted ? $t('dashboard.trackEditor.muteTooltipActive') : $t('dashboard.trackEditor.muteLabelInactive') }}</span>
-								</button>
+								<div class="position-relative hover-popover-group">
+									<button
+										type="button"
+										:data-testid="`track-mute-toggle-${originalAudioTrack.id}`"
+										:ref="(element) => setTrackControlTooltipTarget(`mute-${originalAudioTrack!.id}`, element)"
+										:class="getTrackToggleButtonClass(originalAudioTrack.isMuted, 'btn-warning')"
+										:style="getTrackToggleButtonStyle()"
+										:aria-pressed="originalAudioTrack.isMuted"
+										data-bs-toggle="tooltip"
+										:data-bs-title="getTrackMuteTooltipLabel(originalAudioTrack)"
+										@click="toggleTrackMute(originalAudioTrack.id)"
+									>
+										<i
+											:class="originalAudioTrack.isMuted ? 'bi bi-volume-mute-fill' : 'bi bi-volume-up-fill'"
+											aria-hidden="true"
+										></i>
+										<span class="visually-hidden">{{ originalAudioTrack.isMuted ? $t('dashboard.trackEditor.muteTooltipActive') : $t('dashboard.trackEditor.muteLabelInactive') }}</span>
+									</button>
+									<div
+										:data-testid="`track-volume-popover-${originalAudioTrack.id}`"
+										class="hover-popover border bg-body p-2 shadow-sm"
+										:style="{
+											position: 'absolute',
+											top: '100%',
+											right: '0',
+											width: '8rem',
+											zIndex: '3',
+										}"
+									>
+										<input
+											:data-testid="`track-volume-input-${originalAudioTrack.id}`"
+											type="range"
+											class="form-range mb-0"
+											:aria-label="$t('dashboard.trackEditor.volumeVisuallyHidden')"
+											min="0"
+											max="100"
+											step="1"
+											:value="getTrackVolumePercent(originalAudioTrack)"
+											@input="handleTrackVolumeInput(originalAudioTrack!.id, ($event.target as HTMLInputElement).value)"
+										/>
+									</div>
+								</div>
 							</div>
 						</div>
 					</section>
@@ -1862,23 +1918,48 @@ onBeforeUnmount(() => {
 											<span class="fw-semibold">S</span>
 											<span class="visually-hidden">{{ track.isSoloed ? $t('dashboard.trackEditor.soloTooltipActive') : $t('dashboard.trackEditor.soloLabelInactive') }}</span>
 										</button>
-										<button
-											type="button"
-											:data-testid="`track-mute-toggle-${track.id}`"
-											:ref="(element) => setTrackControlTooltipTarget(`mute-${track.id}`, element)"
-											:class="getTrackToggleButtonClass(track.isMuted, 'btn-warning')"
-											:style="getTrackToggleButtonStyle()"
-											:aria-pressed="track.isMuted"
-											data-bs-toggle="tooltip"
-											:data-bs-title="getTrackMuteTooltipLabel(track)"
-											@click="toggleTrackMute(track.id)"
-										>
-											<i
-												:class="track.isMuted ? 'bi bi-volume-mute-fill' : 'bi bi-volume-up-fill'"
-												aria-hidden="true"
-											></i>
-											<span class="visually-hidden">{{ track.isMuted ? $t('dashboard.trackEditor.muteTooltipActive') : $t('dashboard.trackEditor.muteLabelInactive') }}</span>
-										</button>
+										<div class="position-relative hover-popover-group">
+											<button
+												type="button"
+												:data-testid="`track-mute-toggle-${track.id}`"
+												:ref="(element) => setTrackControlTooltipTarget(`mute-${track.id}`, element)"
+												:class="getTrackToggleButtonClass(track.isMuted, 'btn-warning')"
+												:style="getTrackToggleButtonStyle()"
+												:aria-pressed="track.isMuted"
+												data-bs-toggle="tooltip"
+												:data-bs-title="getTrackMuteTooltipLabel(track)"
+												@click="toggleTrackMute(track.id)"
+											>
+												<i
+													:class="track.isMuted ? 'bi bi-volume-mute-fill' : 'bi bi-volume-up-fill'"
+													aria-hidden="true"
+												></i>
+												<span class="visually-hidden">{{ track.isMuted ? $t('dashboard.trackEditor.muteTooltipActive') : $t('dashboard.trackEditor.muteLabelInactive') }}</span>
+											</button>
+											<div
+												:data-testid="`track-volume-popover-${track.id}`"
+												class="hover-popover border bg-body p-2 shadow-sm"
+												:style="{
+													position: 'absolute',
+													top: '100%',
+													right: '0',
+													width: '8rem',
+													zIndex: '3',
+												}"
+											>
+												<input
+													:data-testid="`track-volume-input-${track.id}`"
+													type="range"
+													class="form-range mb-0"
+													:aria-label="$t('dashboard.trackEditor.volumeVisuallyHidden')"
+													min="0"
+													max="100"
+													step="1"
+													:value="getTrackVolumePercent(track)"
+													@input="handleTrackVolumeInput(track.id, ($event.target as HTMLInputElement).value)"
+												/>
+											</div>
+										</div>
 									</div>
 								</div>
 								<span
@@ -2004,5 +2085,36 @@ onBeforeUnmount(() => {
 	background-color: rgba(var(--bs-secondary-rgb), 0.1);
 	border: 1px solid rgba(var(--bs-secondary-rgb), 0.25);
 	color: var(--bs-body-color);
+}
+
+.hover-popover-group {
+	/* Extends the hoverable hit area down to where the popover starts (padding is part
+	   of the hover box), so moving the mouse from the button to the popover never
+	   crosses a dead zone. The negative margin cancels the layout impact, so sibling
+	   buttons don't shift. */
+	padding-bottom: 0.5rem;
+	margin-bottom: -0.5rem;
+}
+
+.hover-popover {
+	opacity: 0;
+	visibility: hidden;
+	pointer-events: none;
+	/* visibility/pointer-events only flip once the opacity fade-out has fully finished
+	   (delay + duration), so the popover stays hoverable through the whole fade — moving
+	   the mouse back onto it mid-fade cancels the hide and fades opacity back to 1. */
+	transition:
+		opacity 0.15s ease 0.25s,
+		visibility 0s linear 0.4s,
+		pointer-events 0s linear 0.4s;
+}
+
+.hover-popover-group:hover .hover-popover,
+.hover-popover-group:focus-within .hover-popover,
+.hover-popover.show {
+	opacity: 1;
+	visibility: visible;
+	pointer-events: auto;
+	transition-delay: 0s;
 }
 </style>

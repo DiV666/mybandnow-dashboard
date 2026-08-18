@@ -202,6 +202,7 @@
       "muteTooltipActive": "Unmute",
       "muteTooltipInactive": "Mute track",
       "muteLabelInactive": "Mute",
+      "volumeVisuallyHidden": "Track volume",
       "pendingSave": "Pending save",
       "saving": "Saving",
       "saved": "Saved",

@@ -133,6 +133,7 @@ type TestElementNode = {
 	listeners: Record<string, Array<(event: TestEvent) => void>>;
 	value?: unknown;
 	muted?: boolean;
+	volume?: number;
 	currentTime?: number;
 	currentTimeSetCount?: number;
 	play?: ReturnType<typeof vi.fn>;
@@ -750,6 +751,16 @@ describe("SongTrackEditorView", () => {
 
 			unMute(): void {
 				this.mutedState = false;
+			}
+
+			volumePercent = 100;
+
+			getVolume(): number {
+				return this.volumePercent;
+			}
+
+			setVolume(volume: number): void {
+				this.volumePercent = volume;
 			}
 
 			playVideo(): void {}
@@ -1625,13 +1636,19 @@ describe("SongTrackEditorView", () => {
 		expect(findByTestId(view.root, "zoom-popover").props.style).toEqual(
 			expect.objectContaining({
 				position: "absolute",
-				top: "calc(100% + 0.5rem)",
+				top: "100%",
 				right: "0",
 			}),
 		);
+		expect(String(findByTestId(view.root, "zoom-popover").props.class || "")).toContain(
+			"show",
+		);
 		clickElement(findByTestId(view.root, "zoom-popover-backdrop"));
 		await flushView();
-		expect(queryByTestId(view.root, "zoom-popover")).toBeNull();
+		expect(queryByTestId(view.root, "zoom-popover-backdrop")).toBeNull();
+		expect(String(findByTestId(view.root, "zoom-popover").props.class || "")).not.toContain(
+			"show",
+		);
 		clickButton(findButtonByText(view.root, "Avanzar 1 segundo"));
 		await flushView();
 		expect(
@@ -2728,6 +2745,92 @@ describe("SongTrackEditorView", () => {
 
 		expect(firstTrackPlayer.muted).toBe(false);
 		expect(secondTrackPlayer.muted).toBe(false);
+
+		view.unmount();
+		vi.useRealTimers();
+	});
+
+	it("adjusts only the targeted track's audio player volume via its volume slider", async () => {
+		vi.useFakeTimers();
+		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
+			{
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentId: "catalog-1",
+				songId: "song-123",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+				upload: { status: "COMPLETED" },
+			},
+			{
+				id: "instrument-2",
+				name: "Bajo",
+				instrumentId: "catalog-2",
+				songId: "song-123",
+				musicianId: "musician-2",
+				createdAt: "2026-07-15T10:01:00.000Z",
+				upload: { status: "COMPLETED" },
+			},
+		]);
+		repositoryGetInstrumentByIdMock
+			.mockResolvedValueOnce({
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentId: "catalog-1",
+				songId: "song-123",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+				startTimeMs: 0,
+				video: {
+					id: "video-1",
+					songInstrumentId: "instrument-1",
+					url: "https://cdn.example/guitar.mp4",
+					duration: 12,
+					size: 456,
+					createdAt: "2026-07-15T10:02:00.000Z",
+				},
+				upload: { status: "COMPLETED" },
+			})
+			.mockResolvedValueOnce({
+				id: "instrument-2",
+				name: "Bajo",
+				instrumentId: "catalog-2",
+				songId: "song-123",
+				musicianId: "musician-2",
+				createdAt: "2026-07-15T10:01:00.000Z",
+				startTimeMs: 0,
+				video: {
+					id: "video-2",
+					songInstrumentId: "instrument-2",
+					url: "https://cdn.example/bass.mp4",
+					duration: 9,
+					size: 654,
+					createdAt: "2026-07-15T10:03:00.000Z",
+				},
+				upload: { status: "COMPLETED" },
+			});
+
+		const view = renderView();
+		await flushView();
+		await flushView();
+
+		const firstTrackPlayer = findByTestId(view.root, "sync-audio-instrument-1");
+		const secondTrackPlayer = findByTestId(
+			view.root,
+			"sync-audio-instrument-2",
+		);
+
+		expect(firstTrackPlayer.volume).toBe(1);
+		expect(secondTrackPlayer.volume).toBe(1);
+
+		setInputValue(
+			findByTestId(view.root, "track-volume-input-instrument-1"),
+			"40",
+		);
+		await flushView();
+
+		expect(firstTrackPlayer.volume).toBeCloseTo(0.4, 2);
+		expect(secondTrackPlayer.volume).toBe(1);
 
 		view.unmount();
 		vi.useRealTimers();

@@ -202,6 +202,7 @@
       "muteTooltipActive": "Activar audio",
       "muteTooltipInactive": "Silenciar pista",
       "muteLabelInactive": "Silenciar",
+      "volumeVisuallyHidden": "Volume da pista",
       "pendingSave": "Pendente de gardar",
       "saving": "Gardando",
       "saved": "Gardado",

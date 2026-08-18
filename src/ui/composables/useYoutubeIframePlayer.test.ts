@@ -59,6 +59,7 @@ function withSetup<T>(composable: () => T): { result: T; unmount: () => void } {
 class FakeYtPlayer {
 	currentTimeSec = 0;
 	mutedState = false;
+	volumePercent = 100;
 	playCalls = 0;
 	pauseCalls = 0;
 	destroyCalls = 0;
@@ -99,6 +100,14 @@ class FakeYtPlayer {
 
 	unMute(): void {
 		this.mutedState = false;
+	}
+
+	getVolume(): number {
+		return this.volumePercent;
+	}
+
+	setVolume(volume: number): void {
+		this.volumePercent = volume;
 	}
 
 	playVideo(): void {
@@ -169,6 +178,10 @@ describe("useYoutubeIframePlayer", () => {
 
 		adapter.muted = false;
 		expect(fakePlayer.mutedState).toBe(false);
+
+		adapter.volume = 0.5;
+		expect(fakePlayer.volumePercent).toBe(50);
+		expect(adapter.volume).toBe(0.5);
 
 		adapter.play();
 		expect(fakePlayer.playCalls).toBe(1);

@@ -6,6 +6,8 @@ export interface YoutubePlayerLike {
 	isMuted(): boolean;
 	mute(): void;
 	unMute(): void;
+	getVolume(): number;
+	setVolume(volume: number): void;
 	playVideo(): void;
 	pauseVideo(): void;
 	destroy(): void;
@@ -68,6 +70,7 @@ function loadYoutubeIframeApi(): Promise<YoutubeIframeApi> {
 export interface YoutubeSyncPlayer {
 	currentTime: number;
 	muted: boolean;
+	volume: number;
 	play: () => void;
 	pause: () => void;
 }
@@ -90,6 +93,12 @@ function createSyncPlayerAdapter(ytPlayer: YoutubePlayerLike): YoutubeSyncPlayer
 			}
 
 			ytPlayer.unMute();
+		},
+		get volume(): number {
+			return ytPlayer.getVolume() / 100;
+		},
+		set volume(volume: number) {
+			ytPlayer.setVolume(Math.round(volume * 100));
 		},
 		play(): void {
 			ytPlayer.playVideo();
