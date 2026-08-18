@@ -530,6 +530,57 @@ async function flushView() {
 	}
 }
 
+interface FakeKeyboardEvent {
+	key: string;
+	ctrlKey?: boolean;
+	metaKey?: boolean;
+	shiftKey?: boolean;
+	altKey?: boolean;
+	target?: unknown;
+	preventDefault: ReturnType<typeof vi.fn>;
+}
+
+function makeKeydownEvent(
+	overrides: Partial<Omit<FakeKeyboardEvent, "preventDefault">>,
+): FakeKeyboardEvent {
+	return {
+		key: overrides.key ?? "",
+		ctrlKey: overrides.ctrlKey ?? false,
+		metaKey: overrides.metaKey ?? false,
+		shiftKey: overrides.shiftKey ?? false,
+		altKey: overrides.altKey ?? false,
+		target: overrides.target ?? null,
+		preventDefault: vi.fn(),
+	};
+}
+
+function stubGlobalEventListeners(): {
+	dispatchKeydown: (event: FakeKeyboardEvent) => void;
+} {
+	const listeners: Record<string, Array<(event: unknown) => void>> = {};
+	vi.stubGlobal(
+		"addEventListener",
+		(type: string, handler: (event: unknown) => void) => {
+			(listeners[type] ??= []).push(handler);
+		},
+	);
+	vi.stubGlobal(
+		"removeEventListener",
+		(type: string, handler: (event: unknown) => void) => {
+			listeners[type] = (listeners[type] ?? []).filter(
+				(candidate) => candidate !== handler,
+			);
+		},
+	);
+	return {
+		dispatchKeydown(event: FakeKeyboardEvent) {
+			for (const handler of listeners.keydown ?? []) {
+				handler(event);
+			}
+		},
+	};
+}
+
 describe("SongTrackEditorView", () => {
 	beforeEach(() => {
 		setActivePinia(createPinia());
@@ -3875,5 +3926,565 @@ describe("SongTrackEditorView", () => {
 
 		view.unmount();
 		vi.useRealTimers();
+	});
+
+	it("adjusts the selected track's startTimeMs with the arrow key shortcuts", async () => {
+		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
+			{
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentId: "catalog-1",
+				songId: "song-123",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+				upload: { status: "COMPLETED" },
+			},
+		]);
+		repositoryGetInstrumentByIdMock.mockResolvedValueOnce({
+			id: "instrument-1",
+			name: "Guitarra principal",
+			instrumentId: "catalog-1",
+			songId: "song-123",
+			musicianId: "musician-1",
+			createdAt: "2026-07-15T10:00:00.000Z",
+			startTimeMs: 5000,
+			video: {
+				id: "video-1",
+				songInstrumentId: "instrument-1",
+				url: "https://cdn.example/guitar.mp4",
+				duration: 12,
+				size: 456,
+				createdAt: "2026-07-15T10:02:00.000Z",
+			},
+			upload: { status: "COMPLETED" },
+		});
+
+		const { dispatchKeydown } = stubGlobalEventListeners();
+		const view = renderView();
+		await flushView();
+		await flushView();
+
+		dispatchKeydown(makeKeydownEvent({ key: "ArrowRight" }));
+		await flushView();
+		expect(
+			findByTestId(view.root, "track-start-time-input-instrument-1").value,
+		).toBe("6000");
+
+		dispatchKeydown(makeKeydownEvent({ key: "ArrowRight", ctrlKey: true }));
+		await flushView();
+		expect(
+			findByTestId(view.root, "track-start-time-input-instrument-1").value,
+		).toBe("6100");
+
+		dispatchKeydown(
+			makeKeydownEvent({ key: "ArrowRight", ctrlKey: true, altKey: true }),
+		);
+		await flushView();
+		expect(
+			findByTestId(view.root, "track-start-time-input-instrument-1").value,
+		).toBe("6110");
+
+		dispatchKeydown(makeKeydownEvent({ key: "ArrowLeft" }));
+		await flushView();
+		expect(
+			findByTestId(view.root, "track-start-time-input-instrument-1").value,
+		).toBe("5110");
+
+		dispatchKeydown(makeKeydownEvent({ key: "ArrowLeft", ctrlKey: true }));
+		await flushView();
+		expect(
+			findByTestId(view.root, "track-start-time-input-instrument-1").value,
+		).toBe("5010");
+
+		dispatchKeydown(
+			makeKeydownEvent({ key: "ArrowLeft", ctrlKey: true, altKey: true }),
+		);
+		await flushView();
+		expect(
+			findByTestId(view.root, "track-start-time-input-instrument-1").value,
+		).toBe("5000");
+
+		view.unmount();
+	});
+
+	it("adjusts the selected track's volume with the up/down arrow shortcuts, clamped to 0-1", async () => {
+		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
+			{
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentId: "catalog-1",
+				songId: "song-123",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+				upload: { status: "COMPLETED" },
+			},
+		]);
+		repositoryGetInstrumentByIdMock.mockResolvedValueOnce({
+			id: "instrument-1",
+			name: "Guitarra principal",
+			instrumentId: "catalog-1",
+			songId: "song-123",
+			musicianId: "musician-1",
+			createdAt: "2026-07-15T10:00:00.000Z",
+			startTimeMs: 0,
+			video: {
+				id: "video-1",
+				songInstrumentId: "instrument-1",
+				url: "https://cdn.example/guitar.mp4",
+				duration: 12,
+				size: 456,
+				createdAt: "2026-07-15T10:02:00.000Z",
+			},
+			upload: { status: "COMPLETED" },
+		});
+
+		const { dispatchKeydown } = stubGlobalEventListeners();
+		const view = renderView();
+		await flushView();
+		await flushView();
+
+		const syncPlayer = findByTestId(view.root, "sync-audio-instrument-1");
+		expect(syncPlayer.volume).toBe(1);
+
+		dispatchKeydown(makeKeydownEvent({ key: "ArrowDown" }));
+		await flushView();
+		expect(syncPlayer.volume).toBeCloseTo(0.9, 2);
+
+		for (let index = 0; index < 15; index += 1) {
+			dispatchKeydown(makeKeydownEvent({ key: "ArrowDown" }));
+		}
+		await flushView();
+		expect(syncPlayer.volume).toBe(0);
+
+		dispatchKeydown(makeKeydownEvent({ key: "ArrowUp" }));
+		await flushView();
+		expect(syncPlayer.volume).toBeCloseTo(0.1, 2);
+
+		for (let index = 0; index < 15; index += 1) {
+			dispatchKeydown(makeKeydownEvent({ key: "ArrowUp" }));
+		}
+		await flushView();
+		expect(syncPlayer.volume).toBe(1);
+
+		view.unmount();
+	});
+
+	it("zooms the shared timeline with Ctrl+ArrowUp/ArrowDown regardless of the selected track", async () => {
+		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
+			{
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentId: "catalog-1",
+				songId: "song-123",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+				upload: { status: "COMPLETED" },
+			},
+		]);
+		repositoryGetInstrumentByIdMock.mockResolvedValueOnce({
+			id: "instrument-1",
+			name: "Guitarra principal",
+			instrumentId: "catalog-1",
+			songId: "song-123",
+			musicianId: "musician-1",
+			createdAt: "2026-07-15T10:00:00.000Z",
+			startTimeMs: 0,
+			video: {
+				id: "video-1",
+				songInstrumentId: "instrument-1",
+				url: "https://cdn.example/guitar.mp4",
+				duration: 12,
+				size: 456,
+				createdAt: "2026-07-15T10:02:00.000Z",
+			},
+			upload: { status: "COMPLETED" },
+		});
+
+		const { dispatchKeydown } = stubGlobalEventListeners();
+		const view = renderView();
+		await flushView();
+		await flushView();
+
+		const summary = findByTestId(view.root, "editor-summary");
+		expect(textContent(summary)).toContain("Zoom 100%");
+
+		dispatchKeydown(makeKeydownEvent({ key: "ArrowUp", ctrlKey: true }));
+		await flushView();
+		expect(textContent(summary)).toContain("Zoom 125%");
+
+		dispatchKeydown(makeKeydownEvent({ key: "ArrowDown", ctrlKey: true }));
+		await flushView();
+		dispatchKeydown(makeKeydownEvent({ key: "ArrowDown", ctrlKey: true }));
+		await flushView();
+		expect(textContent(summary)).toContain("Zoom 100%");
+
+		view.unmount();
+	});
+
+	it("toggles mute and solo on the selected track with Ctrl+M and Ctrl+S", async () => {
+		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
+			{
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentId: "catalog-1",
+				songId: "song-123",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+				upload: { status: "COMPLETED" },
+			},
+		]);
+		repositoryGetInstrumentByIdMock.mockResolvedValueOnce({
+			id: "instrument-1",
+			name: "Guitarra principal",
+			instrumentId: "catalog-1",
+			songId: "song-123",
+			musicianId: "musician-1",
+			createdAt: "2026-07-15T10:00:00.000Z",
+			startTimeMs: 0,
+			video: {
+				id: "video-1",
+				songInstrumentId: "instrument-1",
+				url: "https://cdn.example/guitar.mp4",
+				duration: 12,
+				size: 456,
+				createdAt: "2026-07-15T10:02:00.000Z",
+			},
+			upload: { status: "COMPLETED" },
+		});
+
+		const { dispatchKeydown } = stubGlobalEventListeners();
+		const view = renderView();
+		await flushView();
+		await flushView();
+
+		expect(
+			findByTestId(view.root, "track-mute-toggle-instrument-1").props[
+				"aria-pressed"
+			],
+		).toBe(false);
+		expect(
+			findByTestId(view.root, "track-solo-toggle-instrument-1").props[
+				"aria-pressed"
+			],
+		).toBe(false);
+
+		dispatchKeydown(makeKeydownEvent({ key: "m", ctrlKey: true }));
+		await flushView();
+		expect(
+			findByTestId(view.root, "track-mute-toggle-instrument-1").props[
+				"aria-pressed"
+			],
+		).toBe(true);
+
+		dispatchKeydown(makeKeydownEvent({ key: "s", ctrlKey: true }));
+		await flushView();
+		expect(
+			findByTestId(view.root, "track-solo-toggle-instrument-1").props[
+				"aria-pressed"
+			],
+		).toBe(true);
+
+		view.unmount();
+	});
+
+	it("ignores keyboard shortcuts while typing in a form field or while the help modal is open", async () => {
+		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
+			{
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentId: "catalog-1",
+				songId: "song-123",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+				upload: { status: "COMPLETED" },
+			},
+		]);
+		repositoryGetInstrumentByIdMock.mockResolvedValueOnce({
+			id: "instrument-1",
+			name: "Guitarra principal",
+			instrumentId: "catalog-1",
+			songId: "song-123",
+			musicianId: "musician-1",
+			createdAt: "2026-07-15T10:00:00.000Z",
+			startTimeMs: 5000,
+			video: {
+				id: "video-1",
+				songInstrumentId: "instrument-1",
+				url: "https://cdn.example/guitar.mp4",
+				duration: 12,
+				size: 456,
+				createdAt: "2026-07-15T10:02:00.000Z",
+			},
+			upload: { status: "COMPLETED" },
+		});
+
+		const { dispatchKeydown } = stubGlobalEventListeners();
+		const view = renderView();
+		await flushView();
+		await flushView();
+
+		dispatchKeydown(
+			makeKeydownEvent({ key: "ArrowRight", target: { tagName: "INPUT" } }),
+		);
+		await flushView();
+		expect(
+			findByTestId(view.root, "track-start-time-input-instrument-1").value,
+		).toBe("5000");
+
+		clickButton(findByTestId(view.root, "help-button"));
+		await flushView();
+		expect(findByText(view.root, "Ayuda del editor de pistas")).not.toBeNull();
+
+		dispatchKeydown(makeKeydownEvent({ key: "ArrowRight" }));
+		await flushView();
+		expect(
+			findByTestId(view.root, "track-start-time-input-instrument-1").value,
+		).toBe("5000");
+
+		view.unmount();
+	});
+
+	it("opens the help modal with the shortcuts reference and closes it from the close button", async () => {
+		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
+			{
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentId: "catalog-1",
+				songId: "song-123",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+				upload: { status: "COMPLETED" },
+			},
+		]);
+		repositoryGetInstrumentByIdMock.mockResolvedValueOnce({
+			id: "instrument-1",
+			name: "Guitarra principal",
+			instrumentId: "catalog-1",
+			songId: "song-123",
+			musicianId: "musician-1",
+			createdAt: "2026-07-15T10:00:00.000Z",
+			startTimeMs: 0,
+			video: {
+				id: "video-1",
+				songInstrumentId: "instrument-1",
+				url: "https://cdn.example/guitar.mp4",
+				duration: 12,
+				size: 456,
+				createdAt: "2026-07-15T10:02:00.000Z",
+			},
+			upload: { status: "COMPLETED" },
+		});
+
+		const view = renderView();
+		await flushView();
+		await flushView();
+
+		expect(queryByTestId(view.root, "help-button")).not.toBeNull();
+
+		clickButton(findByTestId(view.root, "help-button"));
+		await flushView();
+
+		expect(findByText(view.root, "Ayuda del editor de pistas")).not.toBeNull();
+		expect(findByText(view.root, "Atajos de teclado")).not.toBeNull();
+		expect(findByText(view.root, "Cómo funciona la edición de pistas")).not.toBeNull();
+
+		const closeButton = findElement(
+			view.root,
+			(node) => node.props.class === "btn-close",
+		);
+		if (!closeButton) {
+			throw new Error("Close button not found");
+		}
+		clickElement(closeButton);
+		await flushView();
+
+		expect(findByText(view.root, "Ayuda del editor de pistas")).toBeNull();
+
+		view.unmount();
+	});
+
+	it("toggles play/pause with Space and stops back to the start with Shift+Space", async () => {
+		vi.useFakeTimers();
+		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
+			{
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentId: "catalog-1",
+				songId: "song-123",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+				upload: { status: "COMPLETED" },
+			},
+		]);
+		repositoryGetInstrumentByIdMock.mockResolvedValueOnce({
+			id: "instrument-1",
+			name: "Guitarra principal",
+			instrumentId: "catalog-1",
+			songId: "song-123",
+			musicianId: "musician-1",
+			createdAt: "2026-07-15T10:00:00.000Z",
+			startTimeMs: 0,
+			video: {
+				id: "video-1",
+				songInstrumentId: "instrument-1",
+				url: "https://cdn.example/guitar.mp4",
+				duration: 12,
+				size: 456,
+				createdAt: "2026-07-15T10:02:00.000Z",
+			},
+			upload: { status: "COMPLETED" },
+		});
+
+		const { dispatchKeydown } = stubGlobalEventListeners();
+		const view = renderView();
+		await flushView();
+		await flushView();
+
+		const syncPlayer = findByTestId(view.root, "sync-audio-instrument-1");
+
+		dispatchKeydown(makeKeydownEvent({ key: " " }));
+		await flushView();
+		expect(syncPlayer.play).toHaveBeenCalled();
+
+		for (let index = 0; index < 3; index += 1) {
+			dispatchKeydown(makeKeydownEvent({ key: "ArrowRight", shiftKey: true }));
+		}
+		await flushView();
+		expect(
+			textContent(findByTestId(view.root, "transport-time-row")),
+		).toContain("00:03");
+
+		dispatchKeydown(makeKeydownEvent({ key: " ", shiftKey: true }));
+		await flushView();
+		expect(syncPlayer.pause).toHaveBeenCalled();
+		expect(
+			textContent(findByTestId(view.root, "transport-time-row")),
+		).toContain("00:00");
+
+		view.unmount();
+		vi.useRealTimers();
+	});
+
+	it("nudges playback with Shift+ArrowLeft/ArrowRight and jumps to the start with Home", async () => {
+		vi.useFakeTimers();
+		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
+			{
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentId: "catalog-1",
+				songId: "song-123",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+				upload: { status: "COMPLETED" },
+			},
+		]);
+		repositoryGetInstrumentByIdMock.mockResolvedValueOnce({
+			id: "instrument-1",
+			name: "Guitarra principal",
+			instrumentId: "catalog-1",
+			songId: "song-123",
+			musicianId: "musician-1",
+			createdAt: "2026-07-15T10:00:00.000Z",
+			startTimeMs: 0,
+			video: {
+				id: "video-1",
+				songInstrumentId: "instrument-1",
+				url: "https://cdn.example/guitar.mp4",
+				duration: 12,
+				size: 456,
+				createdAt: "2026-07-15T10:02:00.000Z",
+			},
+			upload: { status: "COMPLETED" },
+		});
+
+		const { dispatchKeydown } = stubGlobalEventListeners();
+		const view = renderView();
+		await flushView();
+		await flushView();
+
+		dispatchKeydown(makeKeydownEvent({ key: "ArrowRight", shiftKey: true }));
+		await flushView();
+		expect(
+			textContent(findByTestId(view.root, "transport-time-row")),
+		).toContain("00:01");
+
+		dispatchKeydown(makeKeydownEvent({ key: "ArrowLeft", shiftKey: true }));
+		await flushView();
+		expect(
+			textContent(findByTestId(view.root, "transport-time-row")),
+		).toContain("00:00");
+
+		dispatchKeydown(makeKeydownEvent({ key: "ArrowRight", shiftKey: true }));
+		await flushView();
+		dispatchKeydown(makeKeydownEvent({ key: "Home" }));
+		await flushView();
+		expect(
+			textContent(findByTestId(view.root, "transport-time-row")),
+		).toContain("00:00");
+
+		view.unmount();
+		vi.useRealTimers();
+	});
+
+	it("also accepts Cmd (metaKey) as an alternative to Ctrl for the modifier shortcuts", async () => {
+		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
+			{
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentId: "catalog-1",
+				songId: "song-123",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+				upload: { status: "COMPLETED" },
+			},
+		]);
+		repositoryGetInstrumentByIdMock.mockResolvedValueOnce({
+			id: "instrument-1",
+			name: "Guitarra principal",
+			instrumentId: "catalog-1",
+			songId: "song-123",
+			musicianId: "musician-1",
+			createdAt: "2026-07-15T10:00:00.000Z",
+			startTimeMs: 5000,
+			video: {
+				id: "video-1",
+				songInstrumentId: "instrument-1",
+				url: "https://cdn.example/guitar.mp4",
+				duration: 12,
+				size: 456,
+				createdAt: "2026-07-15T10:02:00.000Z",
+			},
+			upload: { status: "COMPLETED" },
+		});
+
+		const { dispatchKeydown } = stubGlobalEventListeners();
+		const view = renderView();
+		await flushView();
+		await flushView();
+
+		dispatchKeydown(
+			makeKeydownEvent({ key: "ArrowRight", ctrlKey: false, metaKey: true }),
+		);
+		await flushView();
+		expect(
+			findByTestId(view.root, "track-start-time-input-instrument-1").value,
+		).toBe("5100");
+
+		expect(
+			findByTestId(view.root, "track-mute-toggle-instrument-1").props[
+				"aria-pressed"
+			],
+		).toBe(false);
+		dispatchKeydown(
+			makeKeydownEvent({ key: "m", ctrlKey: false, metaKey: true }),
+		);
+		await flushView();
+		expect(
+			findByTestId(view.root, "track-mute-toggle-instrument-1").props[
+				"aria-pressed"
+			],
+		).toBe(true);
+
+		view.unmount();
 	});
 });

@@ -18,6 +18,7 @@ import { getYoutubeVideoId } from "../../utils/youtube.js";
 import { useYoutubeIframePlayer } from "../../composables/useYoutubeIframePlayer.js";
 import { useTrackWaveformAssets } from "../../composables/useTrackWaveformAssets.js";
 import { resamplePeaksToWidth } from "../../utils/audioPeaks.js";
+import { useModalFocusTrap } from "../../composables/useModalFocusTrap.js";
 
 interface EditorTrack {
 	id: string;
@@ -123,6 +124,11 @@ const MIN_TIMELINE_WINDOW_MS = 30000;
 const BASE_TIMELINE_WIDTH_PX = 720;
 const MIN_TIMELINE_ZOOM_PERCENT = 100;
 const MAX_TIMELINE_ZOOM_PERCENT = 400;
+const TIMELINE_ZOOM_STEP_PERCENT = 25;
+const TRACK_VOLUME_STEP = 0.1;
+const START_TIME_STEP_MS = 1000;
+const START_TIME_STEP_MS_CTRL = 100;
+const START_TIME_STEP_MS_CTRL_ALT = 10;
 const MIN_TIMELINE_MARKER_SPACING_PX = 72;
 const TIMELINE_MARKER_STEP_OPTIONS_SEC = [5, 10, 15, 30, 60, 120, 300, 600];
 const TIMELINE_ZOOM_STORAGE_KEY = "song-track-editor-zoom";
@@ -150,6 +156,8 @@ const timelineZoomPercent = ref(MIN_TIMELINE_ZOOM_PERCENT);
 const dragState = ref<TrackDragState | null>(null);
 const isZoomPopoverOpen = ref(false);
 const timelineScrollWrapperRef = ref<HTMLElement | null>(null);
+const isHelpModalOpen = ref(false);
+const helpModalRef = ref<HTMLElement | null>(null);
 
 const autosaveTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const trackControlTooltipTargets = new Map<string, Element>();
@@ -273,6 +281,29 @@ const originalVideoClipDurationLabel = computed(() => {
 
 	return t('dashboard.trackEditor.originalVideoBadge', { time: formatTime(originalVideoClipDurationMs.value / 1000) });
 });
+interface HelpShortcut {
+	keys: string[];
+	description: string;
+}
+const helpShortcuts = computed<HelpShortcut[]>(() => [
+	{ keys: ['Espacio'], description: t('dashboard.trackEditor.helpShortcutPlayPause') },
+	{ keys: ['Shift', 'Espacio'], description: t('dashboard.trackEditor.helpShortcutStop') },
+	{ keys: ['Home'], description: t('dashboard.trackEditor.helpShortcutGoToStart') },
+	{ keys: ['Shift', '→'], description: t('dashboard.trackEditor.helpShortcutForward') },
+	{ keys: ['Shift', '←'], description: t('dashboard.trackEditor.helpShortcutRewind') },
+	{ keys: ['→'], description: t('dashboard.trackEditor.helpShortcutStartForward1000') },
+	{ keys: ['Ctrl/⌘', '→'], description: t('dashboard.trackEditor.helpShortcutStartForward100') },
+	{ keys: ['Ctrl/⌘', 'Alt', '→'], description: t('dashboard.trackEditor.helpShortcutStartForward10') },
+	{ keys: ['←'], description: t('dashboard.trackEditor.helpShortcutStartBackward1000') },
+	{ keys: ['Ctrl/⌘', '←'], description: t('dashboard.trackEditor.helpShortcutStartBackward100') },
+	{ keys: ['Ctrl/⌘', 'Alt', '←'], description: t('dashboard.trackEditor.helpShortcutStartBackward10') },
+	{ keys: ['↑'], description: t('dashboard.trackEditor.helpShortcutVolumeUp') },
+	{ keys: ['Ctrl/⌘', '↑'], description: t('dashboard.trackEditor.helpShortcutZoomIn') },
+	{ keys: ['↓'], description: t('dashboard.trackEditor.helpShortcutVolumeDown') },
+	{ keys: ['Ctrl/⌘', '↓'], description: t('dashboard.trackEditor.helpShortcutZoomOut') },
+	{ keys: ['Ctrl/⌘', 'M'], description: t('dashboard.trackEditor.helpShortcutMute') },
+	{ keys: ['Ctrl/⌘', 'S'], description: t('dashboard.trackEditor.helpShortcutSolo') },
+]);
 
 function clampTimelineOffsetPx(offsetPx: number): number {
 	return Math.max(0, Math.min(timelineContentWidthPx.value, offsetPx));
@@ -899,6 +930,10 @@ function handleTimelineZoomInput(rawValue: string): void {
 	writeSavedTimelineZoom(songId.value, timelineZoomPercent.value);
 }
 
+function nudgeTimelineZoom(deltaPercent: number): void {
+	handleTimelineZoomInput(String(timelineZoomPercent.value + deltaPercent));
+}
+
 function handleTrackStartTimeInput(trackId: string, rawValue: string): void {
 	const nextValue = Number.parseInt(rawValue.trim(), 10);
 	if (!Number.isFinite(nextValue)) {
@@ -1029,6 +1064,16 @@ function closeZoomPopover(): void {
 function toggleZoomPopover(): void {
 	isZoomPopoverOpen.value = !isZoomPopoverOpen.value;
 }
+
+function openHelpModal(): void {
+	isHelpModalOpen.value = true;
+}
+
+function closeHelpModal(): void {
+	isHelpModalOpen.value = false;
+}
+
+useModalFocusTrap(helpModalRef, isHelpModalOpen, { onEscape: closeHelpModal });
 
 function handleTimelineRulerClick(event: TimelineSeekEventLike): void {
 	if (timelineContentWidthPx.value <= 0) {
@@ -1575,9 +1620,149 @@ watch(
 	{ deep: true },
 );
 
+function isTypingInFormField(target: EventTarget | null): boolean {
+	if (!target || typeof target !== "object") {
+		return false;
+	}
+
+	const element = target as { tagName?: string; isContentEditable?: boolean };
+	return (
+		element.tagName === "INPUT" ||
+		element.tagName === "TEXTAREA" ||
+		element.isContentEditable === true
+	);
+}
+
+interface ClosestCapableElement {
+	closest(selector: string): { blur?: () => void } | null;
+}
+
+function isClosestCapableElement(value: unknown): value is ClosestCapableElement {
+	return !!value && typeof (value as { closest?: unknown }).closest === "function";
+}
+
+function handleGlobalPointerdown(event: Event): void {
+	const target = event.target;
+	if (!isClosestCapableElement(target)) {
+		return;
+	}
+
+	const clickedControl = target.closest('button, [role="button"]');
+	if (!clickedControl || typeof clickedControl.blur !== "function") {
+		return;
+	}
+
+	// A mouse click leaves the control focused but the browser suppresses its
+	// focus-visible ring for mouse-originated focus — until an unrelated later
+	// keypress (e.g. Shift for a shortcut) makes the browser re-evaluate
+	// focus-visible and light it up. Dropping focus once the click settles avoids
+	// that; keyboard activation (Tab + Enter/Space) never goes through this
+	// listener, so it keeps showing the ring as expected.
+	if (typeof globalThis.requestAnimationFrame === "function") {
+		globalThis.requestAnimationFrame(() => {
+			if (typeof document !== "undefined" && document.activeElement === clickedControl) {
+				clickedControl.blur?.();
+			}
+		});
+	}
+}
+
+function handleGlobalKeydown(event: KeyboardEvent): void {
+	if (isHelpModalOpen.value || isTypingInFormField(event.target)) {
+		return;
+	}
+
+	const isCtrlOrCmd = event.ctrlKey || event.metaKey;
+
+	if (event.key === " " || event.key === "Spacebar") {
+		event.preventDefault();
+		if (event.shiftKey) {
+			isPlaying.value = false;
+			goToStart();
+			return;
+		}
+
+		togglePlayback();
+		return;
+	}
+
+	if (event.key === "Home") {
+		event.preventDefault();
+		goToStart();
+		return;
+	}
+
+	if (event.key === "ArrowRight" && event.shiftKey) {
+		event.preventDefault();
+		nudgePlayback(1);
+		return;
+	}
+
+	if (event.key === "ArrowLeft" && event.shiftKey) {
+		event.preventDefault();
+		nudgePlayback(-1);
+		return;
+	}
+
+	if (event.key === "ArrowUp" && isCtrlOrCmd) {
+		event.preventDefault();
+		nudgeTimelineZoom(TIMELINE_ZOOM_STEP_PERCENT);
+		return;
+	}
+
+	if (event.key === "ArrowDown" && isCtrlOrCmd) {
+		event.preventDefault();
+		nudgeTimelineZoom(-TIMELINE_ZOOM_STEP_PERCENT);
+		return;
+	}
+
+	const track = selectedTrack.value;
+	if (!track) {
+		return;
+	}
+
+	if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
+		event.preventDefault();
+		const stepMs =
+			isCtrlOrCmd && event.altKey
+				? START_TIME_STEP_MS_CTRL_ALT
+				: isCtrlOrCmd
+					? START_TIME_STEP_MS_CTRL
+					: START_TIME_STEP_MS;
+		const direction = event.key === "ArrowRight" ? 1 : -1;
+		updateTrackStartTime(track.id, track.startTimeMs + direction * stepMs);
+		return;
+	}
+
+	if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+		event.preventDefault();
+		const direction = event.key === "ArrowUp" ? 1 : -1;
+		setTrackVolume(
+			track.id,
+			Math.round((track.volume + direction * TRACK_VOLUME_STEP) * 100) / 100,
+		);
+		return;
+	}
+
+	if (isCtrlOrCmd && event.key.toLowerCase() === "m") {
+		event.preventDefault();
+		toggleTrackMute(track.id);
+		return;
+	}
+
+	if (isCtrlOrCmd && event.key.toLowerCase() === "s") {
+		event.preventDefault();
+		toggleTrackSolo(track.id);
+	}
+}
+
 onMounted(() => {
 	void loadTracks();
 	void syncTrackControlTooltips();
+	if (typeof globalThis.addEventListener === "function") {
+		globalThis.addEventListener("keydown", handleGlobalKeydown);
+		globalThis.addEventListener("pointerdown", handleGlobalPointerdown);
+	}
 });
 
 onUpdated(() => {
@@ -1586,6 +1771,10 @@ onUpdated(() => {
 
 onBeforeUnmount(() => {
 	isViewMounted = false;
+	if (typeof globalThis.removeEventListener === "function") {
+		globalThis.removeEventListener("keydown", handleGlobalKeydown);
+		globalThis.removeEventListener("pointerdown", handleGlobalPointerdown);
+	}
 	stopPlaybackTimer();
 	dragState.value = null;
 	disposeTrackControlTooltips();
@@ -1666,6 +1855,16 @@ onBeforeUnmount(() => {
 					>
 						{{ originalVideoClipDurationLabel }}
 					</span>
+					<button
+						type="button"
+						data-testid="help-button"
+						class="badge rounded-pill editor-summary-pill px-3 py-2 border-0 ms-auto d-inline-flex align-items-center gap-1"
+						:style="{ transform: 'none', translate: 'none' }"
+						@click="openHelpModal"
+					>
+						<i class="bi bi-question-circle" aria-hidden="true"></i>
+						{{ $t('dashboard.trackEditor.helpButtonLabel') }}
+					</button>
 				</div>
 				<div class="d-none" aria-hidden="true">
 					<audio
@@ -1780,7 +1979,7 @@ onBeforeUnmount(() => {
 										:aria-label="$t('dashboard.trackEditor.zoomVisuallyHidden')"
 										:min="MIN_TIMELINE_ZOOM_PERCENT"
 										:max="MAX_TIMELINE_ZOOM_PERCENT"
-										step="25"
+										:step="TIMELINE_ZOOM_STEP_PERCENT"
 										:value="timelineZoomPercent"
 										@input="handleTimelineZoomInput(String(($event.target as HTMLInputElement).value))"
 									/>
@@ -2117,6 +2316,69 @@ onBeforeUnmount(() => {
 								</div>
 							</section>
 						</template>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div v-if="isHelpModalOpen" class="modal-backdrop show"></div>
+		<div
+			v-if="isHelpModalOpen"
+			ref="helpModalRef"
+			class="modal d-block"
+			tabindex="-1"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="trackEditorHelpModalTitle"
+			@click.self="closeHelpModal"
+		>
+			<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h2 id="trackEditorHelpModalTitle" class="modal-title h5">
+							{{ $t('dashboard.trackEditor.helpModalTitle') }}
+						</h2>
+						<button
+							type="button"
+							class="btn-close"
+							:aria-label="$t('dashboard.trackEditor.helpCloseButton')"
+							@click="closeHelpModal"
+						></button>
+					</div>
+					<div class="modal-body">
+						<h3 class="h6">{{ $t('dashboard.trackEditor.helpShortcutsTitle') }}</h3>
+						<p class="small text-muted">{{ $t('dashboard.trackEditor.helpShortcutsScope') }}</p>
+						<div class="table-responsive mb-4">
+							<table class="table table-sm align-middle mb-0">
+								<tbody>
+									<tr
+										v-for="shortcut in helpShortcuts"
+										:key="shortcut.description"
+									>
+										<td class="text-nowrap">
+											<span
+												v-for="(key, index) in shortcut.keys"
+												:key="key"
+											>
+												<span v-if="index > 0" class="mx-1 text-muted">+</span>
+												<kbd>{{ key }}</kbd>
+											</span>
+										</td>
+										<td>{{ shortcut.description }}</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+						<h3 class="h6">{{ $t('dashboard.trackEditor.helpGuideTitle') }}</h3>
+						<ul class="small mb-0 ps-3">
+							<li>{{ $t('dashboard.trackEditor.helpGuideSelectTrack') }}</li>
+							<li>{{ $t('dashboard.trackEditor.helpGuideStartField') }}</li>
+							<li>{{ $t('dashboard.trackEditor.helpGuideDrag') }}</li>
+							<li>{{ $t('dashboard.trackEditor.helpGuideTimeReadout') }}</li>
+							<li>{{ $t('dashboard.trackEditor.helpGuideSoloMute') }}</li>
+							<li>{{ $t('dashboard.trackEditor.helpGuideZoom') }}</li>
+							<li>{{ $t('dashboard.trackEditor.helpGuideWaveform') }}</li>
+						</ul>
 					</div>
 				</div>
 			</div>
