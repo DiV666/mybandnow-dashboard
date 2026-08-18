@@ -186,6 +186,7 @@
       "selectedTrackStartsAt": "A pista seleccionada comeza en {time}.",
       "playTitle": "Play",
       "loadingAudioTitle": "Cargando o audio das pistas...",
+      "preparingTracks": "Preparando as pistas...",
       "pauseVisuallyHidden": "Pausar",
       "playVisuallyHidden": "Reproducir",
       "goToStartTitle": "Comezar dende o principio",

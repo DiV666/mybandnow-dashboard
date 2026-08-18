@@ -1,5 +1,8 @@
 import { onBeforeUnmount } from "vue";
 
+const YOUTUBE_API_LOAD_TIMEOUT_MS = 10000;
+const YOUTUBE_PLAYER_READY_TIMEOUT_MS = 10000;
+
 export interface YoutubePlayerLike {
 	getCurrentTime(): number;
 	seekTo(seconds: number, allowSeekAhead: boolean): void;
@@ -13,6 +16,10 @@ export interface YoutubePlayerLike {
 	destroy(): void;
 }
 
+interface YoutubePlayerErrorEvent {
+	data: number;
+}
+
 interface YoutubeIframeApi {
 	Player: new (
 		element: string | HTMLElement,
@@ -21,9 +28,16 @@ interface YoutubeIframeApi {
 			playerVars?: Record<string, unknown>;
 			events?: {
 				onReady?: (event: { target: YoutubePlayerLike }) => void;
+				onError?: (event: YoutubePlayerErrorEvent) => void;
 			};
 		},
 	) => YoutubePlayerLike;
+}
+
+function rejectAfter(ms: number, message: string): Promise<never> {
+	return new Promise((_resolve, reject) => {
+		setTimeout(() => reject(new Error(message)), ms);
+	});
 }
 
 interface YoutubeGlobals {
@@ -51,7 +65,7 @@ function loadYoutubeIframeApi(): Promise<YoutubeIframeApi> {
 	}
 
 	if (!youtubeIframeApiPromise) {
-		youtubeIframeApiPromise = new Promise((resolve) => {
+		youtubeIframeApiPromise = new Promise((resolve, reject) => {
 			const previousReadyCallback = youtubeGlobals.onYouTubeIframeAPIReady;
 			youtubeGlobals.onYouTubeIframeAPIReady = () => {
 				previousReadyCallback?.();
@@ -60,11 +74,25 @@ function loadYoutubeIframeApi(): Promise<YoutubeIframeApi> {
 
 			const script = document.createElement("script");
 			script.src = "https://www.youtube.com/iframe_api";
+			script.onerror = () => {
+				reject(new Error("Failed to load the YouTube IFrame API script"));
+			};
 			document.head.appendChild(script);
+		});
+		// A load failure shouldn't poison future attempts forever (e.g. a transient
+		// network blip): let the next call start over instead of reusing a dead promise.
+		youtubeIframeApiPromise.catch(() => {
+			youtubeIframeApiPromise = null;
 		});
 	}
 
-	return youtubeIframeApiPromise;
+	return Promise.race([
+		youtubeIframeApiPromise,
+		rejectAfter(
+			YOUTUBE_API_LOAD_TIMEOUT_MS,
+			"Timed out loading the YouTube IFrame API",
+		),
+	]);
 }
 
 export interface YoutubeSyncPlayer {
@@ -121,7 +149,7 @@ export function useYoutubeIframePlayer() {
 		videoId: string,
 	): Promise<YoutubeSyncPlayer> {
 		const youtubeApi = await loadYoutubeIframeApi();
-		return new Promise((resolve) => {
+		const playerReadyPromise = new Promise<YoutubeSyncPlayer>((resolve, reject) => {
 			ytPlayer = new youtubeApi.Player(element, {
 				videoId,
 				playerVars: {
@@ -132,9 +160,22 @@ export function useYoutubeIframePlayer() {
 					onReady: (event) => {
 						resolve(createSyncPlayerAdapter(event.target));
 					},
+					onError: (event) => {
+						reject(
+							new Error(`YouTube player failed to load the video (error code ${event.data})`),
+						);
+					},
 				},
 			});
 		});
+
+		return Promise.race([
+			playerReadyPromise,
+			rejectAfter(
+				YOUTUBE_PLAYER_READY_TIMEOUT_MS,
+				"Timed out waiting for the YouTube player to become ready",
+			),
+		]);
 	}
 
 	function destroyYoutubePlayer(): void {

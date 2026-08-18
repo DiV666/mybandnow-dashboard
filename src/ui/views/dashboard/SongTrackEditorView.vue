@@ -184,6 +184,13 @@ interface ButtonElementLike {
 
 const transportButtonRefs = new Map<string, ButtonElementLike>();
 
+interface ClassListElementLike {
+	classList: { toggle(className: string, force?: boolean): void };
+}
+
+let isPreparingTracksNow = true;
+let preparingTracksOverlayElement: ClassListElementLike | null = null;
+
 const songId = computed(() => String(route.params.songId ?? ""));
 const songTitle = computed(() => {
 	const title = route.query.title;
@@ -1181,6 +1188,28 @@ function applyTransportButtonsLoadingState(): void {
 	}
 }
 
+function isClassListElementLike(value: unknown): value is ClassListElementLike {
+	return (
+		!!value &&
+		typeof value === "object" &&
+		typeof (value as { classList?: { toggle?: unknown } }).classList?.toggle === "function"
+	);
+}
+
+function applyPreparingTracksOverlayVisibility(): void {
+	preparingTracksOverlayElement?.classList.toggle("show", isPreparingTracksNow);
+}
+
+function setPreparingTracksOverlayRef(element: unknown): void {
+	preparingTracksOverlayElement = isClassListElementLike(element) ? element : null;
+	applyPreparingTracksOverlayVisibility();
+}
+
+function updatePreparingTracksState(): void {
+	isPreparingTracksNow = isAnyTrackAudioLoadingNow();
+	applyPreparingTracksOverlayVisibility();
+}
+
 function setTrackAudioElementRef(trackId: string, element: unknown): void {
 	if (!isAudioElementLike(element)) {
 		trackAudioElementRefs.delete(trackId);
@@ -1317,6 +1346,8 @@ function getTrackToggleButtonStyle(): Record<string, string> {
 		lineHeight: "1.1",
 		width: "1.75rem",
 		height: "1.75rem",
+		transform: "none",
+		translate: "none",
 	};
 }
 
@@ -1478,6 +1509,7 @@ async function loadTracks(): Promise<void> {
 		for (const track of instrumentTracks) {
 			ensureTrackWaveformLoaded(track.video.url);
 		}
+		updatePreparingTracksState();
 		selectedTrackId.value =
 			instrumentTracks[0]?.id ?? newOriginalAudioTrack?.id ?? null;
 		currentTimeSec.value = 0;
@@ -1538,6 +1570,7 @@ watch(
 		redrawAllTrackWaveformCanvases();
 		applyAllTrackAudioSrcs();
 		applyTransportButtonsLoadingState();
+		updatePreparingTracksState();
 	},
 	{ deep: true },
 );
@@ -1604,7 +1637,18 @@ onBeforeUnmount(() => {
 			</div>
 		</div>
 
-		<div v-else class="card shadow-sm border-0 rounded-4 overflow-hidden" data-testid="timeline-editor-card">
+		<div v-else class="card shadow-sm border-0 rounded-4 overflow-hidden position-relative" data-testid="timeline-editor-card">
+			<div
+				:ref="(element) => setPreparingTracksOverlayRef(element)"
+				data-testid="preparing-tracks-overlay"
+				class="preparing-tracks-overlay position-absolute"
+				:style="{ inset: '0', zIndex: '10', backgroundColor: 'rgba(0, 0, 0, 0.35)' }"
+			>
+				<div class="bg-body border rounded-3 shadow-sm px-4 py-3 d-flex align-items-center gap-3">
+					<div class="spinner-border" role="status" aria-hidden="true"></div>
+					<span class="fw-semibold">{{ $t('dashboard.trackEditor.preparingTracks') }}</span>
+				</div>
+			</div>
 			<div class="card-body p-4 bg-body-tertiary bg-opacity-50">
 				<div
 					data-testid="editor-summary"
@@ -1772,7 +1816,7 @@ onBeforeUnmount(() => {
 										type="button"
 										:data-testid="`track-mute-toggle-${originalAudioTrack.id}`"
 										:ref="(element) => setTrackControlTooltipTarget(`mute-${originalAudioTrack!.id}`, element)"
-										:class="getTrackToggleButtonClass(originalAudioTrack.isMuted, 'btn-warning')"
+										:class="getTrackToggleButtonClass(originalAudioTrack.isMuted, 'btn-primary')"
 										:style="getTrackToggleButtonStyle()"
 										:aria-pressed="originalAudioTrack.isMuted"
 										data-bs-toggle="tooltip"
@@ -1861,7 +1905,7 @@ onBeforeUnmount(() => {
 										type="button"
 										class="btn btn-sm text-start px-0 py-0 border-0 flex-grow-1"
 										:class="selectedTrackId === track.id ? 'fw-semibold text-primary' : 'text-body'"
-										:style="{ minHeight: 'unset' }"
+										:style="{ minHeight: 'unset', transform: 'none', translate: 'none' }"
 										@click="selectTrack(track.id)"
 									>
 										<span
@@ -1923,7 +1967,7 @@ onBeforeUnmount(() => {
 												type="button"
 												:data-testid="`track-mute-toggle-${track.id}`"
 												:ref="(element) => setTrackControlTooltipTarget(`mute-${track.id}`, element)"
-												:class="getTrackToggleButtonClass(track.isMuted, 'btn-warning')"
+												:class="getTrackToggleButtonClass(track.isMuted, 'btn-primary')"
 												:style="getTrackToggleButtonStyle()"
 												:aria-pressed="track.isMuted"
 												data-bs-toggle="tooltip"
@@ -2116,5 +2160,15 @@ onBeforeUnmount(() => {
 	visibility: visible;
 	pointer-events: auto;
 	transition-delay: 0s;
+}
+
+.preparing-tracks-overlay {
+	display: none;
+}
+
+.preparing-tracks-overlay.show {
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }
 </style>

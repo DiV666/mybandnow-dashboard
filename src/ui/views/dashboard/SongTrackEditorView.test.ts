@@ -633,6 +633,51 @@ describe("SongTrackEditorView", () => {
 		view.unmount();
 	});
 
+	it("renders a blocking \"preparing tracks\" overlay over the editor card", async () => {
+		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
+			{
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentId: "catalog-1",
+				songId: "song-123",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+				upload: { status: "COMPLETED" },
+			},
+		]);
+		repositoryGetInstrumentByIdMock.mockResolvedValueOnce({
+			id: "instrument-1",
+			name: "Guitarra principal",
+			instrumentId: "catalog-1",
+			songId: "song-123",
+			musicianId: "musician-1",
+			createdAt: "2026-07-15T10:00:00.000Z",
+			startTimeMs: 0,
+			video: {
+				id: "video-1",
+				songInstrumentId: "instrument-1",
+				url: "https://cdn.example/guitar.mp4",
+				duration: 12,
+				size: 456,
+				createdAt: "2026-07-15T10:02:00.000Z",
+			},
+			upload: { status: "COMPLETED" },
+		});
+
+		const view = renderView();
+		await flushView();
+		await flushView();
+
+		const overlay = findByTestId(view.root, "preparing-tracks-overlay");
+		expect(String(overlay.props.class || "")).toContain("preparing-tracks-overlay");
+		expect(textContent(overlay)).toContain("Preparando pistas...");
+		expect(
+			findByTestId(view.root, "timeline-editor-card").props.class,
+		).toContain("position-relative");
+
+		view.unmount();
+	});
+
 	it("decodes each instrument track's audio once and reuses the same download to drive playback", async () => {
 		class FakeAudioContext {
 			decodeAudioData(): Promise<{
@@ -3491,7 +3536,7 @@ describe("SongTrackEditorView", () => {
 				findByTestId(view.root, "track-mute-toggle-instrument-1").props.class ||
 					"",
 			),
-		).toContain("btn-warning");
+		).toContain("btn-primary");
 		expect(
 			String(
 				findByTestId(view.root, "track-solo-toggle-instrument-1").props.class ||

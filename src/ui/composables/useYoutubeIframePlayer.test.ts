@@ -64,22 +64,30 @@ class FakeYtPlayer {
 	pauseCalls = 0;
 	destroyCalls = 0;
 	onReady: ((event: { target: FakeYtPlayer }) => void) | undefined;
+	onError: ((event: { data: number }) => void) | undefined;
 	elementId: string;
 	options: {
 		videoId: string;
-		events?: { onReady?: (event: { target: FakeYtPlayer }) => void };
+		events?: {
+			onReady?: (event: { target: FakeYtPlayer }) => void;
+			onError?: (event: { data: number }) => void;
+		};
 	};
 
 	constructor(
 		elementId: string,
 		options: {
 			videoId: string;
-			events?: { onReady?: (event: { target: FakeYtPlayer }) => void };
+			events?: {
+				onReady?: (event: { target: FakeYtPlayer }) => void;
+				onError?: (event: { data: number }) => void;
+			};
 		},
 	) {
 		this.elementId = elementId;
 		this.options = options;
 		this.onReady = options.events?.onReady;
+		this.onError = options.events?.onError;
 	}
 
 	getCurrentTime(): number {
@@ -124,6 +132,10 @@ class FakeYtPlayer {
 
 	fireReady(): void {
 		this.onReady?.({ target: this });
+	}
+
+	fireError(data: number): void {
+		this.onError?.({ data });
 	}
 }
 
@@ -202,5 +214,32 @@ describe("useYoutubeIframePlayer", () => {
 		unmount();
 
 		expect(fakePlayer.destroyCalls).toBe(1);
+	});
+
+	it("rejects instead of hanging forever when the player never becomes ready", async () => {
+		vi.useFakeTimers();
+		const { result } = withSetup(() => useYoutubeIframePlayer());
+
+		const playerPromise = result.createYoutubePlayer("yt-container", "abc123");
+		const assertion = expect(playerPromise).rejects.toThrow(
+			"Timed out waiting for the YouTube player to become ready",
+		);
+
+		await vi.advanceTimersByTimeAsync(10000);
+		await assertion;
+
+		vi.useRealTimers();
+	});
+
+	it("rejects immediately when the YouTube player reports an error", async () => {
+		const { result } = withSetup(() => useYoutubeIframePlayer());
+
+		const playerPromise = result.createYoutubePlayer("yt-container", "abc123");
+		await vi.waitFor(() => expect(createdPlayers).toHaveLength(1));
+		createdPlayers[0]?.fireError(2);
+
+		await expect(playerPromise).rejects.toThrow(
+			"YouTube player failed to load the video (error code 2)",
+		);
 	});
 });

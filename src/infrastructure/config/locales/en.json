@@ -186,6 +186,7 @@
       "selectedTrackStartsAt": "The selected track starts at {time}.",
       "playTitle": "Play",
       "loadingAudioTitle": "Loading track audio...",
+      "preparingTracks": "Preparing tracks...",
       "pauseVisuallyHidden": "Pause",
       "playVisuallyHidden": "Play",
       "goToStartTitle": "Go to the beginning",

@@ -186,6 +186,7 @@
       "selectedTrackStartsAt": "Aukeratutako pista {time}-tan hasten da.",
       "playTitle": "Play",
       "loadingAudioTitle": "Pisten audioa kargatzen...",
+      "preparingTracks": "Pistak prestatzen...",
       "pauseVisuallyHidden": "Pausatu",
       "playVisuallyHidden": "Erreproduzitu",
       "goToStartTitle": "Hasieratik hasi",
