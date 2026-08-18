@@ -206,6 +206,8 @@
       "saving": "Gordetzen",
       "saved": "Gordeta",
       "trackStartLabel": "Hasiera: {time}",
+      "originalAudioTrackName": "Jatorrizko bideoa (YouTube)",
+      "originalAudioPreviewNote": "Erreferentzia-pista: gainerakoekin sinkronizatzen da, baina ez du bideo-aurrebistarik.",
       "errors": {
         "missingInstrument": "Ezin izan da gorde: katalogoko tresna falta da.",
         "saveFailed": "Ezin izan da gorde.",

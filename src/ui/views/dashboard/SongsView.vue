@@ -433,6 +433,9 @@ function openSongTrackEditor(song: SongResponse): void {
 		params: { songId: song.id },
 		query: {
 			title: song.title,
+			...(song.originalVideoclipUrl
+				? { originalVideoclipUrl: song.originalVideoclipUrl }
+				: {}),
 			...(typeof song.originalVideoClipDurationSeconds === "number"
 				? {
 					originalVideoClipDurationSeconds: String(

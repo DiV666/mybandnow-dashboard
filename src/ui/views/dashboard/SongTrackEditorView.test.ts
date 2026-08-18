@@ -630,6 +630,145 @@ describe("SongTrackEditorView", () => {
 		view.unmount();
 	});
 
+	it("prepends the original YouTube audio as a synced reference track when the route provides the clip URL and duration", async () => {
+		class FakeYtPlayer {
+			currentTimeSec = 0;
+			mutedState = false;
+			onReady: ((event: { target: FakeYtPlayer }) => void) | undefined;
+			elementId: string;
+			options: {
+				videoId: string;
+				events?: { onReady?: (event: { target: FakeYtPlayer }) => void };
+			};
+
+			constructor(
+				elementId: string,
+				options: {
+					videoId: string;
+					events?: { onReady?: (event: { target: FakeYtPlayer }) => void };
+				},
+			) {
+				this.elementId = elementId;
+				this.options = options;
+				this.onReady = options.events?.onReady;
+				queueMicrotask(() => this.onReady?.({ target: this }));
+			}
+
+			getCurrentTime(): number {
+				return this.currentTimeSec;
+			}
+
+			seekTo(seconds: number): void {
+				this.currentTimeSec = seconds;
+			}
+
+			isMuted(): boolean {
+				return this.mutedState;
+			}
+
+			mute(): void {
+				this.mutedState = true;
+			}
+
+			unMute(): void {
+				this.mutedState = false;
+			}
+
+			playVideo(): void {}
+
+			pauseVideo(): void {}
+
+			destroy(): void {}
+		}
+
+		vi.stubGlobal("YT", { Player: FakeYtPlayer });
+
+		routeState.query = {
+			title: "Paint It Black",
+			originalVideoclipUrl: "https://www.youtube.com/watch?v=O4irXQhgMqg",
+			originalVideoClipDurationSeconds: "187",
+		};
+
+		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
+			{
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentId: "catalog-1",
+				songId: "song-123",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+				upload: { status: "COMPLETED" },
+			},
+		]);
+		repositoryGetInstrumentByIdMock.mockResolvedValueOnce({
+			id: "instrument-1",
+			name: "Guitarra principal",
+			instrumentId: "catalog-1",
+			songId: "song-123",
+			musicianId: "musician-1",
+			createdAt: "2026-07-15T10:00:00.000Z",
+			startTimeMs: 5000,
+			video: {
+				id: "video-1",
+				songInstrumentId: "instrument-1",
+				url: "https://cdn.example/guitar.mp4",
+				duration: 12,
+				size: 456,
+				createdAt: "2026-07-15T10:02:00.000Z",
+			},
+			upload: { status: "COMPLETED" },
+		});
+
+		const view = renderView();
+		try {
+			await flushView();
+			await flushView();
+
+			expect(
+				textContent(findByTestId(view.root, "original-audio-header-title")),
+			).toBe("Video original (YouTube)");
+			expect(
+				queryByTestId(view.root, "sync-audio-__original-audio__"),
+			).not.toBeNull();
+			expect(
+				queryByTestId(view.root, "track-solo-toggle-__original-audio__"),
+			).not.toBeNull();
+			expect(
+				queryByTestId(view.root, "track-mute-toggle-__original-audio__"),
+			).not.toBeNull();
+
+			// The reference track has no dedicated row/lane in the track list anymore.
+			expect(getTrackNamesInRenderedOrder(view.root)).toEqual([
+				"Guitarra principal",
+			]);
+			expect(
+				queryByTestId(view.root, "track-clip-__original-audio__"),
+			).toBeNull();
+			expect(
+				queryByTestId(view.root, "track-meta-__original-audio__"),
+			).toBeNull();
+
+			// The video preview defaults to the first real instrument track, not the reference audio.
+			expect(findByTestId(view.root, "selected-video").props.src).toBe(
+				"https://cdn.example/guitar.mp4",
+			);
+
+			clickButton(findByTestId(view.root, "track-mute-toggle-__original-audio__"));
+			await flushView();
+			expect(
+				findByTestId(view.root, "track-mute-toggle-__original-audio__").props[
+					"aria-pressed"
+				],
+			).toBe(true);
+		} finally {
+			routeState.query = {
+				title: "Paint It Black",
+				originalVideoClipDurationSeconds: undefined,
+			};
+			view.unmount();
+		}
+	});
+
 	it("renders an Audacity-like two-column lane layout with a centered passive preview area and shows a vertical global playhead in the track area", async () => {
 		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
 			{

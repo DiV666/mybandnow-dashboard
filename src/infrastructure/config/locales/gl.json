@@ -206,6 +206,8 @@
       "saving": "Gardando",
       "saved": "Gardado",
       "trackStartLabel": "Inicio: {time}",
+      "originalAudioTrackName": "Vídeo orixinal (YouTube)",
+      "originalAudioPreviewNote": "Pista de referencia: sincronízase co resto pero non ten vista previa de vídeo.",
       "errors": {
         "missingInstrument": "Non se puido gardar: falta o instrumento do catálogo.",
         "saveFailed": "Non se puido gardar.",

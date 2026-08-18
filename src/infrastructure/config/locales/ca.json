@@ -206,6 +206,8 @@
       "saving": "Desant",
       "saved": "Desat",
       "trackStartLabel": "Inici: {time}",
+      "originalAudioTrackName": "Vídeo original (YouTube)",
+      "originalAudioPreviewNote": "Pista de referència: se sincronitza amb la resta però no té vista prèvia de vídeo.",
       "errors": {
         "missingInstrument": "No s'ha pogut desar: falta l'instrument del catàleg.",
         "saveFailed": "No s'ha pogut desar.",

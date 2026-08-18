@@ -945,6 +945,7 @@ describe("SongsView", () => {
 			params: { songId: "song-1" },
 			query: {
 				title: "Paint It Black",
+				originalVideoclipUrl: "https://www.youtube.com/watch?v=O4irXQhgMqg",
 				originalVideoClipDurationSeconds: "187",
 			},
 		});

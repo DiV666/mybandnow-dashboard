@@ -206,6 +206,8 @@
       "saving": "Saving",
       "saved": "Saved",
       "trackStartLabel": "Start: {time}",
+      "originalAudioTrackName": "Original video (YouTube)",
+      "originalAudioPreviewNote": "Reference track: it syncs with the rest but has no video preview.",
       "errors": {
         "missingInstrument": "Couldn't save: the catalog instrument is missing.",
         "saveFailed": "Couldn't save.",

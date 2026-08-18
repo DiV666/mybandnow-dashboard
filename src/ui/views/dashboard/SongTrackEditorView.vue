@@ -14,6 +14,8 @@ import { useI18n } from "vue-i18n";
 import type { SongInstrumentDetailResponse } from "../../../domain/song/SongInstrumentResponse.js";
 import { container } from "../../bootstrap/container.js";
 import { useToastStore } from "../../stores/useToastStore.js";
+import { getYoutubeVideoId } from "../../utils/youtube.js";
+import { useYoutubeIframePlayer } from "../../composables/useYoutubeIframePlayer.js";
 
 interface EditorTrack {
 	id: string;
@@ -22,6 +24,7 @@ interface EditorTrack {
 	startTimeMs: number;
 	isMuted: boolean;
 	isSoloed: boolean;
+	isOriginalAudio?: boolean;
 	video: NonNullable<SongInstrumentDetailResponse["video"]>;
 }
 
@@ -119,6 +122,7 @@ const MAX_TIMELINE_ZOOM_PERCENT = 400;
 const MIN_TIMELINE_MARKER_SPACING_PX = 72;
 const TIMELINE_MARKER_STEP_OPTIONS_SEC = [5, 10, 15, 30, 60, 120, 300, 600];
 const TIMELINE_ZOOM_STORAGE_KEY = "song-track-editor-zoom";
+const ORIGINAL_AUDIO_TRACK_ID = "__original-audio__";
 
 const { t } = useI18n();
 const route = useRoute();
@@ -154,6 +158,11 @@ let playbackTimer: ReturnType<typeof setInterval> | null = null;
 let lastPlaybackTickMs = 0;
 let trackControlTooltips: TooltipInstance[] = [];
 let isViewMounted = true;
+let originalAudioPlayerRequestId = 0;
+let originalAudioPlayerHostElement: HTMLElement | null = null;
+
+const { createYoutubePlayer, destroyYoutubePlayer } = useYoutubeIframePlayer();
+const originalAudioPlayerHostRef = ref<HTMLElement | null>(null);
 
 const songId = computed(() => String(route.params.songId ?? ""));
 const songTitle = computed(() => {
@@ -177,9 +186,20 @@ const originalVideoClipDurationMs = computed(() => {
 
 	return Math.max(0, durationSeconds * 1000);
 });
+const originalVideoclipUrl = computed(() => {
+	const rawUrl = route.query.originalVideoclipUrl;
+	return typeof rawUrl === "string" ? rawUrl : "";
+});
+const originalAudioYoutubeVideoId = computed(() =>
+	getYoutubeVideoId(originalVideoclipUrl.value),
+);
 const selectedTrack = computed(
 	() => tracks.value.find((track) => track.id === selectedTrackId.value) ?? null,
 );
+const originalAudioTrack = computed(
+	() => tracks.value.find((track) => track.isOriginalAudio === true) ?? null,
+);
+const hasOriginalAudioTrack = computed(() => originalAudioTrack.value !== null);
 const timelineDurationSec = computed(() => {
 	return tracks.value.reduce((maxDuration, track) => {
 		const trackEndSec = track.startTimeMs / 1000 + track.video.duration;
@@ -706,7 +726,7 @@ function updateTrackStartTime(trackId: string, nextStartTimeMs: number): void {
 	let didChange = false;
 
 	tracks.value = tracks.value.map((track) => {
-		if (track.id !== trackId) {
+		if (track.id !== trackId || track.isOriginalAudio) {
 			return track;
 		}
 
@@ -895,7 +915,7 @@ function nudgePlayback(deltaSec: number): void {
 
 function startTrackDrag(trackId: string, event: TrackDragEventLike): void {
 	const track = tracks.value.find((candidate) => candidate.id === trackId);
-	if (!track) {
+	if (!track || track.isOriginalAudio) {
 		return;
 	}
 
@@ -1124,6 +1144,82 @@ async function syncTrackControlTooltips(): Promise<void> {
 	);
 }
 
+function createOriginalAudioTrack(): EditorTrack | null {
+	const videoId = originalAudioYoutubeVideoId.value;
+	const durationMs = originalVideoClipDurationMs.value;
+	if (!videoId || durationMs === null || durationMs <= 0) {
+		return null;
+	}
+
+	return {
+		id: ORIGINAL_AUDIO_TRACK_ID,
+		name: t('dashboard.trackEditor.originalAudioTrackName'),
+		instrumentId: null,
+		startTimeMs: 0,
+		isMuted: false,
+		isSoloed: false,
+		isOriginalAudio: true,
+		video: {
+			id: ORIGINAL_AUDIO_TRACK_ID,
+			songInstrumentId: songId.value,
+			url: originalVideoclipUrl.value,
+			duration: durationMs / 1000,
+			size: 0,
+			createdAt: "",
+		},
+	};
+}
+
+function detachOriginalAudioPlayerHostElement(): void {
+	originalAudioPlayerHostElement?.remove();
+	originalAudioPlayerHostElement = null;
+}
+
+function createOriginalAudioPlayerTargetElement(host: HTMLElement): HTMLElement {
+	if (typeof document === "undefined") {
+		return host;
+	}
+
+	const target = document.createElement("div");
+	host.appendChild(target);
+	return target;
+}
+
+async function setupOriginalAudioPlayer(videoId: string): Promise<void> {
+	const requestId = ++originalAudioPlayerRequestId;
+	destroyYoutubePlayer();
+	detachOriginalAudioPlayerHostElement();
+	await nextTick();
+	if (!isViewMounted || requestId !== originalAudioPlayerRequestId) {
+		return;
+	}
+
+	const host = originalAudioPlayerHostRef.value;
+	if (!host) {
+		return;
+	}
+
+	// The YouTube IFrame API replaces this element with its own iframe outside of
+	// Vue's control, so it must live in a plain DOM node Vue never re-diffs — otherwise
+	// Vue's patch can get confused about this node and corrupt sibling <audio> elements.
+	const target = createOriginalAudioPlayerTargetElement(host);
+	if (target !== host) {
+		originalAudioPlayerHostElement = target;
+	}
+
+	try {
+		const adapter = await createYoutubePlayer(target, videoId);
+		if (!isViewMounted || requestId !== originalAudioPlayerRequestId) {
+			return;
+		}
+
+		setSyncPlayerRef(ORIGINAL_AUDIO_TRACK_ID, adapter);
+	} catch {
+		// The original audio reference track is optional; a failed YouTube player
+		// shouldn't break the rest of the editor.
+	}
+}
+
 async function loadTracks(): Promise<void> {
 	isLoading.value = true;
 	errorMessage.value = "";
@@ -1136,7 +1232,8 @@ async function loadTracks(): Promise<void> {
 				getSongInstrumentDetailUseCase.run(songId.value, instrument.id),
 			),
 		);
-		tracks.value = details
+		const newOriginalAudioTrack = createOriginalAudioTrack();
+		const instrumentTracks = details
 			.filter(
 				(detail): detail is SongInstrumentDetailResponse & {
 					video: NonNullable<SongInstrumentDetailResponse["video"]>;
@@ -1151,12 +1248,24 @@ async function loadTracks(): Promise<void> {
 				isSoloed: false,
 				video: detail.video,
 			}));
-		selectedTrackId.value = tracks.value[0]?.id ?? null;
+		tracks.value = newOriginalAudioTrack
+			? [newOriginalAudioTrack, ...instrumentTracks]
+			: instrumentTracks;
+		selectedTrackId.value =
+			instrumentTracks[0]?.id ?? newOriginalAudioTrack?.id ?? null;
 		currentTimeSec.value = 0;
 		syncPlayerRefs.clear();
 		playerSyncStates.clear();
 		selectedPreviewSyncState = null;
 		shouldApplyInitialZoom = tracks.value.length > 0;
+
+		if (newOriginalAudioTrack) {
+			void setupOriginalAudioPlayer(originalAudioYoutubeVideoId.value as string);
+		} else {
+			originalAudioPlayerRequestId += 1;
+			destroyYoutubePlayer();
+			detachOriginalAudioPlayerHostElement();
+		}
 	} catch {
 		errorMessage.value = t('dashboard.trackEditor.errors.loadTracksFailed');
 		toastStore.error(errorMessage.value);
@@ -1279,20 +1388,25 @@ onBeforeUnmount(() => {
 				</div>
 				<div class="d-none" aria-hidden="true">
 					<audio
-						v-for="track in tracks"
+						v-for="track in tracks.filter((candidate) => !candidate.isOriginalAudio)"
 						:key="`sync-${track.id}`"
 						:data-testid="`sync-audio-${track.id}`"
 						:ref="(element) => setSyncPlayerRef(track.id, element as PlayerLike | null)"
 						:src="track.video.url"
 						preload="auto"
 					/>
+					<div
+						v-if="hasOriginalAudioTrack"
+						ref="originalAudioPlayerHostRef"
+						:data-testid="`sync-audio-${ORIGINAL_AUDIO_TRACK_ID}`"
+					></div>
 				</div>
 
 				<section class="d-flex justify-content-center mb-3">
 					<div class="w-100" style="max-width: 28rem;">
-						<div class="ratio ratio-16x9 overflow-hidden bg-dark-subtle border">
+						<div class="ratio ratio-16x9 overflow-hidden bg-dark-subtle border d-flex align-items-center justify-content-center">
 							<video
-								v-if="selectedTrack"
+								v-if="selectedTrack && !selectedTrack.isOriginalAudio"
 								:data-testid="'selected-video'"
 								:key="selectedTrack.id"
 								:ref="(element) => setSelectedPreviewRef(element as PlayerLike | null)"
@@ -1302,6 +1416,13 @@ onBeforeUnmount(() => {
 								playsinline
 								preload="metadata"
 							/>
+							<p
+								v-else-if="selectedTrack && selectedTrack.isOriginalAudio"
+								data-testid="original-audio-preview-note"
+								class="text-muted small text-center px-3 mb-0"
+							>
+								{{ $t('dashboard.trackEditor.originalAudioPreviewNote') }}
+							</p>
 						</div>
 						<p class="small text-muted mb-0 mt-2 text-center">
 							{{ $t('dashboard.trackEditor.selectedTrackStartsAt', { time: formatTime(selectedTrackStartSec) }) }}
@@ -1318,6 +1439,13 @@ onBeforeUnmount(() => {
 					}"
 				>
 					<section data-testid="track-header-left" class="border p-3 bg-body shadow-sm d-flex flex-column gap-2 position-relative">
+						<p
+							v-if="originalAudioTrack"
+							data-testid="original-audio-header-title"
+							class="small fw-semibold text-primary text-center mb-0"
+						>
+							{{ originalAudioTrack.name }}
+						</p>
 						<div class="d-flex align-items-center justify-content-between gap-3">
 							<div class="d-inline-flex align-items-center gap-2 flex-wrap">
 								<button type="button" class="border-0 bg-transparent p-0 text-body d-inline-flex align-items-center justify-content-center" :title="$t('dashboard.trackEditor.playTitle')" :style="{ lineHeight: '1', minHeight: 'unset', transform: 'none', translate: 'none' }" @click="togglePlayback">
@@ -1376,10 +1504,48 @@ onBeforeUnmount(() => {
 								</div>
 							</div>
 						</div>
-						<div data-testid="transport-time-row" class="small text-muted">
-							<span data-testid="timeline-current">{{ formatTime(currentTimeSec) }}</span>
-							 /
-							<span data-testid="timeline-duration">{{ formatTime(timelineDurationSec) }}</span>
+						<div
+							data-testid="transport-time-row"
+							class="small text-muted d-flex align-items-center justify-content-between gap-2"
+						>
+							<span>
+								<span data-testid="timeline-current">{{ formatTime(currentTimeSec) }}</span>
+								 /
+								<span data-testid="timeline-duration">{{ formatTime(timelineDurationSec) }}</span>
+							</span>
+							<div v-if="originalAudioTrack" class="d-flex align-items-center gap-1 flex-shrink-0">
+								<button
+									type="button"
+									:data-testid="`track-solo-toggle-${originalAudioTrack.id}`"
+									:ref="(element) => setTrackControlTooltipTarget(`solo-${originalAudioTrack!.id}`, element)"
+									:class="getTrackToggleButtonClass(originalAudioTrack.isSoloed, 'btn-primary')"
+									:style="getTrackToggleButtonStyle()"
+									:aria-pressed="originalAudioTrack.isSoloed"
+									data-bs-toggle="tooltip"
+									:data-bs-title="getTrackSoloTooltipLabel(originalAudioTrack)"
+									@click="toggleTrackSolo(originalAudioTrack.id)"
+								>
+									<span class="fw-semibold">S</span>
+									<span class="visually-hidden">{{ originalAudioTrack.isSoloed ? $t('dashboard.trackEditor.soloTooltipActive') : $t('dashboard.trackEditor.soloLabelInactive') }}</span>
+								</button>
+								<button
+									type="button"
+									:data-testid="`track-mute-toggle-${originalAudioTrack.id}`"
+									:ref="(element) => setTrackControlTooltipTarget(`mute-${originalAudioTrack!.id}`, element)"
+									:class="getTrackToggleButtonClass(originalAudioTrack.isMuted, 'btn-warning')"
+									:style="getTrackToggleButtonStyle()"
+									:aria-pressed="originalAudioTrack.isMuted"
+									data-bs-toggle="tooltip"
+									:data-bs-title="getTrackMuteTooltipLabel(originalAudioTrack)"
+									@click="toggleTrackMute(originalAudioTrack.id)"
+								>
+									<i
+										:class="originalAudioTrack.isMuted ? 'bi bi-volume-mute-fill' : 'bi bi-volume-up-fill'"
+										aria-hidden="true"
+									></i>
+									<span class="visually-hidden">{{ originalAudioTrack.isMuted ? $t('dashboard.trackEditor.muteTooltipActive') : $t('dashboard.trackEditor.muteLabelInactive') }}</span>
+								</button>
+							</div>
 						</div>
 					</section>
 					<section data-testid="track-header-right" class="border bg-body shadow-sm overflow-hidden position-relative">
@@ -1420,7 +1586,7 @@ onBeforeUnmount(() => {
 						class="d-grid gap-3"
 						:style="{ gridTemplateColumns: 'minmax(12.5rem, 12.5rem) minmax(0, 1fr)', width: '100%', minWidth: '0', gridColumn: '1 / -1' }"
 					>
-						<template v-for="track in tracks" :key="track.id">
+						<template v-for="track in tracks.filter((candidate) => !candidate.isOriginalAudio)" :key="track.id">
 							<section
 								:data-testid="`track-meta-${track.id}`"
 								:class="getTrackMetaCardClass(track)"
