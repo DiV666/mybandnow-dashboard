@@ -3343,13 +3343,13 @@ describe("SongTrackEditorView", () => {
 			"track-mute-toggle-instrument-2",
 		);
 
-		expect(String(firstSoloButton.props.class || "")).toContain("rounded-pill");
+		expect(String(firstSoloButton.props.class || "")).toContain("rounded-circle");
 		expect(firstSoloButton.props.style).toEqual(
 			expect.objectContaining({
 				minHeight: "unset",
 			}),
 		);
-		expect(String(firstMuteButton.props.class || "")).toContain("rounded-pill");
+		expect(String(firstMuteButton.props.class || "")).toContain("rounded-circle");
 		expect(String(firstSoloButton.props.class || "")).toContain(
 			"btn-outline-secondary",
 		);

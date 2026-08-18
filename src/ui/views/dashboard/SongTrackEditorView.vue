@@ -1272,9 +1272,8 @@ function getTrackToggleButtonClass(
 	return [
 		"btn",
 		"btn-sm",
-		"rounded-pill",
-		"px-2",
-		"py-0",
+		"rounded-circle",
+		"p-0",
 		isActive ? activeClass : "btn-outline-secondary",
 	];
 }
@@ -1283,8 +1282,8 @@ function getTrackToggleButtonStyle(): Record<string, string> {
 	return {
 		minHeight: "unset",
 		lineHeight: "1.1",
-		paddingTop: "0.2rem",
-		paddingBottom: "0.2rem",
+		width: "1.75rem",
+		height: "1.75rem",
 	};
 }
 
