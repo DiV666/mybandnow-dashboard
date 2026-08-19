@@ -242,6 +242,7 @@
       "saved": "Gardado",
       "originalAudioTrackName": "Vídeo orixinal (YouTube)",
       "originalAudioPreviewNote": "Pista de referencia: sincronízase co resto pero non ten vista previa de vídeo.",
+      "originalAudioPlayerError": "O audio de referencia (YouTube) non se puido cargar. Adoita deberse a un bloqueador de anuncios ou contido: desactívao para este sitio e recarga a páxina.",
       "errors": {
         "missingInstrument": "Non se puido gardar: falta o instrumento do catálogo.",
         "saveFailed": "Non se puido gardar.",

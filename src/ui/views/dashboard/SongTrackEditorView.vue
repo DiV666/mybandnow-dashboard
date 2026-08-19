@@ -176,6 +176,7 @@ let originalAudioPlayerHostElement: HTMLElement | null = null;
 
 const { createYoutubePlayer, destroyYoutubePlayer } = useYoutubeIframePlayer();
 const originalAudioPlayerHostRef = ref<HTMLElement | null>(null);
+const originalAudioPlayerError = ref(false);
 const {
 	states: trackWaveformStates,
 	getRawState: getTrackWaveformState,
@@ -1488,6 +1489,7 @@ async function setupOriginalAudioPlayer(videoId: string): Promise<void> {
 	const requestId = ++originalAudioPlayerRequestId;
 	destroyYoutubePlayer();
 	detachOriginalAudioPlayerHostElement();
+	originalAudioPlayerError.value = false;
 	await nextTick();
 	if (!isViewMounted || requestId !== originalAudioPlayerRequestId) {
 		return;
@@ -1513,9 +1515,17 @@ async function setupOriginalAudioPlayer(videoId: string): Promise<void> {
 		}
 
 		setSyncPlayerRef(ORIGINAL_AUDIO_TRACK_ID, adapter);
-	} catch {
+	} catch (error) {
+		if (!isViewMounted || requestId !== originalAudioPlayerRequestId) {
+			return;
+		}
+
 		// The original audio reference track is optional; a failed YouTube player
-		// shouldn't break the rest of the editor.
+		// shouldn't break the rest of the editor. Logging keeps the real cause (e.g. a
+		// content blocker preventing the YouTube iframe from loading) visible instead of
+		// failing completely silently.
+		console.error("Failed to set up the original audio YouTube player", error);
+		originalAudioPlayerError.value = true;
 	}
 }
 
@@ -1927,6 +1937,13 @@ onBeforeUnmount(() => {
 							class="small fw-semibold text-primary text-center mb-0"
 						>
 							{{ originalAudioTrack.name }}
+						</p>
+						<p
+							v-if="originalAudioTrack && originalAudioPlayerError"
+							data-testid="original-audio-player-error"
+							class="small text-warning text-center mb-0"
+						>
+							{{ $t('dashboard.trackEditor.originalAudioPlayerError') }}
 						</p>
 						<div class="d-flex align-items-center justify-content-between gap-3">
 							<div class="d-inline-flex align-items-center gap-2 flex-wrap">

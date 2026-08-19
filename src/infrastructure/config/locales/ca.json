@@ -242,6 +242,7 @@
       "saved": "Desat",
       "originalAudioTrackName": "Vídeo original (YouTube)",
       "originalAudioPreviewNote": "Pista de referència: se sincronitza amb la resta però no té vista prèvia de vídeo.",
+      "originalAudioPlayerError": "L'àudio de referència (YouTube) no s'ha pogut carregar. Sol ser per un bloquejador d'anuncis o contingut: desactiva'l per a aquest lloc i recarrega la pàgina.",
       "errors": {
         "missingInstrument": "No s'ha pogut desar: falta l'instrument del catàleg.",
         "saveFailed": "No s'ha pogut desar.",

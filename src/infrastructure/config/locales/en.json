@@ -242,6 +242,7 @@
       "saved": "Saved",
       "originalAudioTrackName": "Original video (YouTube)",
       "originalAudioPreviewNote": "Reference track: it syncs with the rest but has no video preview.",
+      "originalAudioPlayerError": "The reference audio (YouTube) couldn't load. This is often caused by an ad blocker or content blocker — disable it for this site and reload the page.",
       "errors": {
         "missingInstrument": "Couldn't save: the catalog instrument is missing.",
         "saveFailed": "Couldn't save.",

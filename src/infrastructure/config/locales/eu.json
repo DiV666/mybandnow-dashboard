@@ -242,6 +242,7 @@
       "saved": "Gordeta",
       "originalAudioTrackName": "Jatorrizko bideoa (YouTube)",
       "originalAudioPreviewNote": "Erreferentzia-pista: gainerakoekin sinkronizatzen da, baina ez du bideo-aurrebistarik.",
+      "originalAudioPlayerError": "Erreferentzia-audioa (YouTube) ez da kargatu. Askotan iragarki- edo eduki-blokeatzaile batek eragiten du: desgaitu ezazu gune honetarako eta birkargatu orria.",
       "errors": {
         "missingInstrument": "Ezin izan da gorde: katalogoko tresna falta da.",
         "saveFailed": "Ezin izan da gorde.",
