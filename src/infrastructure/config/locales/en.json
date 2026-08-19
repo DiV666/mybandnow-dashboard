@@ -367,6 +367,10 @@
       "profileLabel": "Musician profile",
       "avatarAlt": "Avatar placeholder for {name}",
       "activeMember": "Active band member",
+      "memberMenu": {
+        "toggle": "More actions for {name}",
+        "remove": "Remove member"
+      },
       "roles": {
         "admin": "Admin",
         "member": "Member"
@@ -385,10 +389,22 @@
         "addFailed": "We couldn't add the musician. Check the email and try again.",
         "addUnexpected": "An unexpected error occurred while adding the member.",
         "noBandSelected": "Select a band before adding members.",
-        "emptyEmail": "Enter the musician's email before confirming."
+        "emptyEmail": "Enter the musician's email before confirming.",
+        "removeOwner": "The band owner cannot be removed.",
+        "removeForbidden": "You don't have permission to remove this member.",
+        "removeUnexpected": "An unexpected error occurred while removing the member."
       },
       "success": {
-        "memberAdded": "Member added successfully."
+        "memberAdded": "Member added successfully.",
+        "memberRemoved": "Member removed successfully."
+      },
+      "removeModal": {
+        "title": "Remove member",
+        "confirmation": "Are you sure you want to remove {name} from the band? This action cannot be undone.",
+        "instrumentsNote": "The instruments {name} had assigned in this band's songs will be reassigned to the band's creator.",
+        "cancel": "Cancel",
+        "submitLoading": "Removing...",
+        "submit": "Remove member"
       }
     }
   },

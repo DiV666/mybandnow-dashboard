@@ -367,6 +367,10 @@
       "profileLabel": "Musikariaren profila",
       "avatarAlt": "{name}(r)en abatar-eredua",
       "activeMember": "Taldeko kide aktiboa",
+      "memberMenu": {
+        "toggle": "{name}(r)en ekintza gehiago",
+        "remove": "Kendu kidea"
+      },
       "roles": {
         "admin": "Admin",
         "member": "Kidea"
@@ -385,10 +389,22 @@
         "addFailed": "Ezin izan dugu musikaria gehitu. Egiaztatu helbide elektronikoa eta saiatu berriro.",
         "addUnexpected": "Ustekabeko errorea gertatu da kidea gehitzean.",
         "noBandSelected": "Aukeratu talde bat kideak gehitu aurretik.",
-        "emptyEmail": "Idatzi musikariaren helbide elektronikoa berretsi aurretik."
+        "emptyEmail": "Idatzi musikariaren helbide elektronikoa berretsi aurretik.",
+        "removeOwner": "Ezin da taldearen jabea kendu.",
+        "removeForbidden": "Ez duzu baimenik kide hau kentzeko.",
+        "removeUnexpected": "Ustekabeko errorea gertatu da kidea kentzean."
       },
       "success": {
-        "memberAdded": "Kidea ongi gehitu da."
+        "memberAdded": "Kidea ongi gehitu da.",
+        "memberRemoved": "Kidea ongi kendu da."
+      },
+      "removeModal": {
+        "title": "Kendu kidea",
+        "confirmation": "Ziur zaude {name} taldetik kendu nahi duzula? Ekintza hau ezin da desegin.",
+        "instrumentsNote": "{name}(e)k talde honetako kantetan esleituta zituen tresnak taldearen sortzaileari esleituko zaizkio.",
+        "cancel": "Utzi",
+        "submitLoading": "Kentzen...",
+        "submit": "Kendu kidea"
       }
     }
   },

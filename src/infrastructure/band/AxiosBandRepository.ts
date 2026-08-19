@@ -44,4 +44,8 @@ export class AxiosBandRepository implements BandRepository {
 			musicianEmail: musicianEmail.value,
 		});
 	}
+
+	async removeMember(bandId: string, musicianId: string): Promise<void> {
+		await httpClient.delete(`/v1/bands/${bandId}/members/${musicianId}`);
+	}
 }

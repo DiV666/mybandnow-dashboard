@@ -8,4 +8,5 @@ export interface BandRepository {
 	getMembers(bandId: string): Promise<BandMemberResponse[]>;
 	save(band: Band): Promise<void>;
 	addMember(bandId: string, musicianEmail: MusicianEmail): Promise<void>;
+	removeMember(bandId: string, musicianId: string): Promise<void>;
 }

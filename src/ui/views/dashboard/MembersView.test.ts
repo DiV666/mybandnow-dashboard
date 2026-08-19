@@ -6,6 +6,7 @@ const {
 	sessionStorage,
 	repositoryGetMembersMock,
 	repositoryAddMemberMock,
+	repositoryRemoveMemberMock,
 	musicianRepositoryGetByIdMock,
 	repositoryCtor,
 	musicianRepositoryCtor,
@@ -26,6 +27,8 @@ const {
 		>(),
 	repositoryAddMemberMock:
 		vi.fn<(bandId: string, musicianEmail: string) => Promise<void>>(),
+	repositoryRemoveMemberMock:
+		vi.fn<(bandId: string, musicianId: string) => Promise<void>>(),
 	musicianRepositoryGetByIdMock:
 		vi.fn<
 			(
@@ -54,6 +57,10 @@ vi.mock("../../../infrastructure/band/AxiosBandRepository.js", () => ({
 
 		async addMember(bandId: string, musicianEmail: string): Promise<void> {
 			return repositoryAddMemberMock(bandId, musicianEmail);
+		}
+
+		async removeMember(bandId: string, musicianId: string): Promise<void> {
+			return repositoryRemoveMemberMock(bandId, musicianId);
 		}
 
 		async getAll(): Promise<never[]> {
@@ -341,6 +348,18 @@ function findByTestId(root: TestElementNode, testId: string): TestElementNode {
 	return element;
 }
 
+function countByTestId(root: TestElementNode, testId: string): number {
+	let count = root.props["data-testid"] === testId ? 1 : 0;
+
+	for (const child of root.children) {
+		if (isElementNode(child)) {
+			count += countByTestId(child, testId);
+		}
+	}
+
+	return count;
+}
+
 function findButtonByText(
 	root: TestElementNode,
 	label: string,
@@ -407,6 +426,7 @@ describe("MembersView", () => {
 		repositoryGetMembersMock.mockReset();
 		repositoryGetMembersMock.mockResolvedValue([]);
 		repositoryAddMemberMock.mockReset();
+		repositoryRemoveMemberMock.mockReset();
 		musicianRepositoryGetByIdMock.mockReset();
 		useToastStore().clear();
 		repositoryCtor.mockReset();
@@ -604,6 +624,133 @@ describe("MembersView", () => {
 			expect.objectContaining({
 				variant: "success",
 				message: "Miembro agregado correctamente.",
+			}),
+		]);
+		view.unmount();
+	});
+
+	it("does not show the member menu for the band admin", async () => {
+		repositoryGetMembersMock.mockResolvedValueOnce([
+			{ musicianId: "musician-1", role: "ADMIN" },
+			{ musicianId: "musician-2", role: "MEMBER" },
+		]);
+		musicianRepositoryGetByIdMock
+			.mockResolvedValueOnce({
+				id: "musician-1",
+				name: "John Frusciante",
+				username: "johnny",
+			})
+			.mockResolvedValueOnce({
+				id: "musician-2",
+				name: "Flea",
+				username: "flea",
+			});
+		const view = renderMembersView(() => {
+			const store = useBandStore();
+			store.selectBand("band-1");
+		});
+
+		await flushView();
+
+		expect(countByTestId(view.root, "member-menu-toggle")).toBe(1);
+		view.unmount();
+	});
+
+	it("removes a member and refreshes the list after confirming the removal", async () => {
+		repositoryGetMembersMock
+			.mockResolvedValueOnce([
+				{ musicianId: "musician-1", role: "ADMIN" },
+				{ musicianId: "musician-2", role: "MEMBER" },
+			])
+			.mockResolvedValueOnce([{ musicianId: "musician-1", role: "ADMIN" }]);
+		musicianRepositoryGetByIdMock
+			.mockResolvedValueOnce({
+				id: "musician-1",
+				name: "John Frusciante",
+				username: "johnny",
+			})
+			.mockResolvedValueOnce({
+				id: "musician-2",
+				name: "Flea",
+				username: "flea",
+			})
+			.mockResolvedValueOnce({
+				id: "musician-1",
+				name: "John Frusciante",
+				username: "johnny",
+			});
+		repositoryRemoveMemberMock.mockResolvedValue(undefined);
+		const view = renderMembersView(() => {
+			const store = useBandStore();
+			store.selectBand("band-1");
+		});
+
+		await flushView();
+		expect(textContent(view.root)).toContain("Flea");
+
+		clickButton(findByTestId(view.root, "member-menu-toggle"));
+		await flushView();
+		clickButton(findByTestId(view.root, "remove-member-button"));
+		await flushView();
+		clickButton(findByTestId(view.root, "confirm-remove-member-button"));
+		await flushView();
+		await flushView();
+
+		expect(repositoryRemoveMemberMock).toHaveBeenCalledWith(
+			"band-1",
+			"musician-2",
+		);
+		expect(repositoryGetMembersMock).toHaveBeenNthCalledWith(1, "band-1");
+		expect(repositoryGetMembersMock).toHaveBeenNthCalledWith(2, "band-1");
+		expect(textContent(view.root)).not.toContain("Flea");
+		expect(queryByTestId(view.root, "remove-member-modal")).toBeNull();
+		expect(useToastStore().toasts).toEqual([
+			expect.objectContaining({
+				variant: "success",
+				message: "Miembro eliminado correctamente.",
+			}),
+		]);
+		view.unmount();
+	});
+
+	it("shows a permission error and keeps the member listed when removal is forbidden", async () => {
+		repositoryGetMembersMock.mockResolvedValueOnce([
+			{ musicianId: "musician-2", role: "MEMBER" },
+		]);
+		musicianRepositoryGetByIdMock.mockResolvedValueOnce({
+			id: "musician-2",
+			name: "Flea",
+			username: "flea",
+		});
+		repositoryRemoveMemberMock.mockRejectedValueOnce({
+			response: { status: 403 },
+		});
+		const view = renderMembersView(() => {
+			const store = useBandStore();
+			store.selectBand("band-1");
+		});
+
+		await flushView();
+
+		clickButton(findByTestId(view.root, "member-menu-toggle"));
+		await flushView();
+		clickButton(findByTestId(view.root, "remove-member-button"));
+		await flushView();
+		clickButton(findByTestId(view.root, "confirm-remove-member-button"));
+		await flushView();
+		await flushView();
+
+		expect(repositoryRemoveMemberMock).toHaveBeenCalledWith(
+			"band-1",
+			"musician-2",
+		);
+		expect(repositoryGetMembersMock).toHaveBeenCalledTimes(1);
+		expect(textContent(view.root)).toContain("Flea");
+		expect(queryByTestId(view.root, "remove-member-modal")).not.toBeNull();
+		expect(useToastStore().toasts).toEqual([
+			expect.objectContaining({
+				variant: "error",
+				message: "No tenés permiso para eliminar a este miembro.",
 			}),
 		]);
 		view.unmount();

@@ -367,6 +367,10 @@
       "profileLabel": "Perfil de músic",
       "avatarAlt": "Avatar de mostra de {name}",
       "activeMember": "Integrant actiu del grup",
+      "memberMenu": {
+        "toggle": "Més accions per a {name}",
+        "remove": "Elimina el membre"
+      },
       "roles": {
         "admin": "Admin",
         "member": "Membre"
@@ -385,10 +389,22 @@
         "addFailed": "No hem pogut afegir el músic. Verifica el correu i torna-ho a provar.",
         "addUnexpected": "S'ha produït un error inesperat en afegir el membre.",
         "noBandSelected": "Selecciona un grup abans d'afegir membres.",
-        "emptyEmail": "Escriu el correu del músic abans de confirmar."
+        "emptyEmail": "Escriu el correu del músic abans de confirmar.",
+        "removeOwner": "No es pot eliminar el propietari del grup.",
+        "removeForbidden": "No tens permís per eliminar aquest membre.",
+        "removeUnexpected": "S'ha produït un error inesperat en eliminar el membre."
       },
       "success": {
-        "memberAdded": "Membre afegit correctament."
+        "memberAdded": "Membre afegit correctament.",
+        "memberRemoved": "Membre eliminat correctament."
+      },
+      "removeModal": {
+        "title": "Elimina el membre",
+        "confirmation": "Segur que vols eliminar {name} del grup? Aquesta acció no es pot desfer.",
+        "instrumentsNote": "Els instruments que {name} tenia assignats a les cançons d'aquest grup passaran a estar associats al creador del grup.",
+        "cancel": "Cancel·la",
+        "submitLoading": "Eliminant...",
+        "submit": "Elimina el membre"
       }
     }
   },

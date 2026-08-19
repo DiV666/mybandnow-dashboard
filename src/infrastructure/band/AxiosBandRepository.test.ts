@@ -54,4 +54,16 @@ describe("AxiosBandRepository", () => {
 			musicianEmail: "artist@example.com",
 		});
 	});
+
+	it("should delete the member from the band", async () => {
+		const deleteSpy = vi
+			.spyOn(httpClient, "delete")
+			.mockResolvedValue({ data: undefined });
+
+		await repository.removeMember("band-123", "musician-1");
+
+		expect(deleteSpy).toHaveBeenCalledWith(
+			"/v1/bands/band-123/members/musician-1",
+		);
+	});
 });

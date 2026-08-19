@@ -2,6 +2,7 @@ import { AddBandMemberUseCase } from "../../application/band/AddBandMemberUseCas
 import { CreateBandUseCase } from "../../application/band/CreateBandUseCase.js";
 import { GetBandMembersUseCase } from "../../application/band/GetBandMembersUseCase.js";
 import { GetMyBandsUseCase } from "../../application/band/GetMyBandsUseCase.js";
+import { RemoveBandMemberUseCase } from "../../application/band/RemoveBandMemberUseCase.js";
 import { LoginUseCase } from "../../application/auth/LoginUseCase.js";
 import { GetInstrumentByIdUseCase } from "../../application/instrument/GetInstrumentByIdUseCase.js";
 import { GetInstrumentsUseCase } from "../../application/instrument/GetInstrumentsUseCase.js";
@@ -62,6 +63,7 @@ const inviteSongInstrumentMusicianUseCase = new InviteSongInstrumentMusicianUseC
 	songRepository,
 );
 const loginUseCase = new LoginUseCase(authRepository);
+const removeBandMemberUseCase = new RemoveBandMemberUseCase(bandRepository);
 const requestSongVideoclipUseCase = new RequestSongVideoclipUseCase(songRepository);
 const updateSongInstrumentUseCase = new UpdateSongInstrumentUseCase(songRepository);
 const updateSongInstrumentVideoStartTimeUseCase = new UpdateSongInstrumentVideoStartTimeUseCase(
@@ -99,6 +101,7 @@ export const container = {
 		getSongInstrumentsUseCase,
 		inviteSongInstrumentMusicianUseCase,
 		loginUseCase,
+		removeBandMemberUseCase,
 		requestSongVideoclipUseCase,
 		updateSongInstrumentUseCase,
 		updateSongInstrumentVideoStartTimeUseCase,

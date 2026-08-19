@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
 	bandMemberRoles,
@@ -18,13 +18,18 @@ interface MemberCardViewModel {
 	role: string;
 	roleClass: string;
 	avatarInitials: string;
+	isAdmin: boolean;
 }
 
 const { t } = useI18n();
 const bandStore = useBandStore();
 const toastStore = useToastStore();
-const { addBandMemberUseCase, getBandMembersUseCase, getMusicianByIdUseCase } =
-	container.useCases;
+const {
+	addBandMemberUseCase,
+	getBandMembersUseCase,
+	getMusicianByIdUseCase,
+	removeBandMemberUseCase,
+} = container.useCases;
 
 const members = ref<MemberCardViewModel[]>([]);
 const isLoadingMembers = ref(false);
@@ -35,6 +40,47 @@ const errorMsg = ref("");
 const isSubmitting = ref(false);
 const selectedBandId = computed(() => bandStore.selectedBandId);
 const addMemberModalRef = ref<HTMLElement | null>(null);
+const memberToRemove = ref<MemberCardViewModel | null>(null);
+const isRemoveMemberModalOpen = ref(false);
+const isRemovingMember = ref(false);
+const removeMemberModalRef = ref<HTMLElement | null>(null);
+const openMemberMenuId = ref<string | null>(null);
+const memberMenuContainers = new Map<string, unknown>();
+
+type MaybeContainedNode = {
+	contains?: (node: unknown) => boolean;
+	parentNode?: MaybeContainedNode | null;
+	parent?: MaybeContainedNode | null;
+};
+
+function isNodeWithinContainer(target: unknown, container: unknown): boolean {
+	if (!target || !container) {
+		return false;
+	}
+
+	const containerNode = container as MaybeContainedNode;
+	if (typeof containerNode.contains === "function" && containerNode.contains(target)) {
+		return true;
+	}
+
+	let current: MaybeContainedNode | null = target as MaybeContainedNode;
+	while (current) {
+		if (current === container) {
+			return true;
+		}
+		current = current.parentNode ?? current.parent ?? null;
+	}
+
+	return false;
+}
+
+function setMemberMenuContainerRef(memberId: string, el: unknown): void {
+	if (el) {
+		memberMenuContainers.set(memberId, el);
+	} else {
+		memberMenuContainers.delete(memberId);
+	}
+}
 
 function getAvatarInitials(name: string): string {
 	const parts = name
@@ -92,6 +138,7 @@ async function loadMembers(bandId: string | null): Promise<void> {
 					role: mappedRole.role,
 					roleClass: mappedRole.roleClass,
 					avatarInitials: getAvatarInitials(musician.name),
+					isAdmin: member.role === bandMemberRoles.ADMIN,
 				} satisfies MemberCardViewModel;
 			}),
 		);
@@ -193,6 +240,108 @@ async function handleAddMember(): Promise<void> {
 		isSubmitting.value = false;
 	}
 }
+
+function toggleMemberMenu(memberId: string): void {
+	openMemberMenuId.value = openMemberMenuId.value === memberId ? null : memberId;
+}
+
+function closeMemberMenu(): void {
+	openMemberMenuId.value = null;
+}
+
+function handleDocumentClick(event: MouseEvent): void {
+	const openId = openMemberMenuId.value;
+	if (!openId) {
+		return;
+	}
+
+	const container = memberMenuContainers.get(openId) ?? null;
+	if (!isNodeWithinContainer(event.target, container)) {
+		closeMemberMenu();
+	}
+}
+
+function handleDocumentKeydown(event: KeyboardEvent): void {
+	if (event.key === "Escape") {
+		closeMemberMenu();
+	}
+}
+
+function hasDocumentEventTarget(): boolean {
+	return (
+		typeof document !== "undefined" &&
+		typeof document.addEventListener === "function" &&
+		typeof document.removeEventListener === "function"
+	);
+}
+
+onMounted(() => {
+	if (!hasDocumentEventTarget()) {
+		return;
+	}
+
+	document.addEventListener("click", handleDocumentClick);
+	document.addEventListener("keydown", handleDocumentKeydown);
+});
+
+onBeforeUnmount(() => {
+	if (!hasDocumentEventTarget()) {
+		return;
+	}
+
+	document.removeEventListener("click", handleDocumentClick);
+	document.removeEventListener("keydown", handleDocumentKeydown);
+});
+
+function openRemoveMemberModal(member: MemberCardViewModel): void {
+	closeMemberMenu();
+	memberToRemove.value = member;
+	isRemoveMemberModalOpen.value = true;
+}
+
+function closeRemoveMemberModal(): void {
+	isRemoveMemberModalOpen.value = false;
+	memberToRemove.value = null;
+	isRemovingMember.value = false;
+}
+
+useModalFocusTrap(removeMemberModalRef, isRemoveMemberModalOpen, {
+	onEscape: closeRemoveMemberModal,
+});
+
+function mapRemoveMemberErrorMessage(error: unknown): string {
+	if (isHttpErrorLike(error) && error.response?.status === 400) {
+		return t("views.members.errors.removeOwner");
+	}
+
+	if (isHttpErrorLike(error) && error.response?.status === 403) {
+		return t("views.members.errors.removeForbidden");
+	}
+
+	return t("views.members.errors.removeUnexpected");
+}
+
+async function handleRemoveMember(): Promise<void> {
+	const bandId = selectedBandId.value;
+	const member = memberToRemove.value;
+
+	if (!bandId || !member) {
+		return;
+	}
+
+	isRemovingMember.value = true;
+
+	try {
+		await removeBandMemberUseCase.run(bandId, member.id);
+		await loadMembers(bandId);
+		toastStore.success(t("views.members.success.memberRemoved"));
+		closeRemoveMemberModal();
+	} catch (error: unknown) {
+		const message = mapRemoveMemberErrorMessage(error);
+		toastStore.error(message);
+		isRemovingMember.value = false;
+	}
+}
 </script>
 
 <template>
@@ -269,7 +418,43 @@ async function handleAddMember(): Promise<void> {
                   <p class="text-uppercase text-body-secondary fw-semibold small mb-1">{{ $t('views.members.profileLabel') }}</p>
                   <h3 class="h6 mb-0">{{ member.name }}</h3>
                 </div>
-                <span class="badge rounded-pill member-role-badge" :class="member.roleClass">{{ member.role }}</span>
+
+                <div class="d-flex align-items-center gap-2">
+                  <span class="badge rounded-pill member-role-badge" :class="member.roleClass">{{ member.role }}</span>
+
+                  <div
+                    v-if="!member.isAdmin"
+                    :ref="(el) => setMemberMenuContainerRef(member.id, el)"
+                    class="member-menu position-relative"
+                  >
+                    <button
+                      type="button"
+                      class="btn btn-sm member-menu-toggle"
+                      data-testid="member-menu-toggle"
+                      :aria-expanded="openMemberMenuId === member.id"
+                      :aria-label="$t('views.members.memberMenu.toggle', { name: member.name })"
+                      aria-haspopup="true"
+                      @click="toggleMemberMenu(member.id)"
+                    >
+                      <span aria-hidden="true">&#8942;</span>
+                    </button>
+
+                    <div
+                      v-if="openMemberMenuId === member.id"
+                      class="dropdown-menu dropdown-menu-end show member-menu-panel"
+                      data-testid="member-menu-panel"
+                    >
+                      <button
+                        type="button"
+                        class="dropdown-item text-danger-emphasis"
+                        data-testid="remove-member-button"
+                        @click="openRemoveMemberModal(member)"
+                      >
+                        {{ $t('views.members.memberMenu.remove') }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div class="card-body p-4 d-flex flex-column gap-3 member-card-body">
@@ -286,7 +471,6 @@ async function handleAddMember(): Promise<void> {
                     <p class="text-body-secondary small mb-0">{{ $t('views.members.activeMember') }}</p>
                   </div>
                 </div>
-
               </div>
             </article>
           </div>
@@ -340,6 +524,48 @@ async function handleAddMember(): Promise<void> {
               </button>
             </div>
           </form>
+        </div>
+      </div>
+    </div>
+
+    <div
+      v-if="isRemoveMemberModalOpen && memberToRemove"
+      ref="removeMemberModalRef"
+      class="modal d-block"
+      tabindex="-1"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="remove-member-modal-title"
+      data-testid="remove-member-modal"
+    >
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 id="remove-member-modal-title" class="modal-title h5 mb-0">{{ $t('views.members.removeModal.title') }}</h2>
+            <button type="button" class="btn-close" :aria-label="$t('views.members.modal.close')" :disabled="isRemovingMember" @click="closeRemoveMemberModal" />
+          </div>
+
+          <div class="modal-body">
+            <p>{{ $t('views.members.removeModal.confirmation', { name: memberToRemove.name }) }}</p>
+            <p class="text-body-secondary small mb-0">
+              {{ $t('views.members.removeModal.instrumentsNote', { name: memberToRemove.name }) }}
+            </p>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" :disabled="isRemovingMember" @click="closeRemoveMemberModal">
+              {{ $t('views.members.removeModal.cancel') }}
+            </button>
+            <button
+              type="button"
+              class="btn btn-danger"
+              data-testid="confirm-remove-member-button"
+              :disabled="isRemovingMember"
+              @click="handleRemoveMember"
+            >
+              {{ isRemovingMember ? $t('views.members.removeModal.submitLoading') : $t('views.members.removeModal.submit') }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -409,6 +635,55 @@ async function handleAddMember(): Promise<void> {
   width: 72px;
   height: 72px;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+}
+
+.member-menu-toggle,
+.member-menu-toggle.btn-sm {
+  width: 2rem;
+  height: 2rem;
+  min-height: 2rem;
+  aspect-ratio: 1;
+  flex-shrink: 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--bs-body-color);
+  outline: none;
+  box-shadow: none;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.member-menu-toggle:hover,
+.member-menu-toggle:focus,
+.member-menu-toggle:focus-visible,
+.member-menu-toggle:active,
+.member-menu-toggle:not(:disabled):active,
+.member-menu-toggle[aria-expanded="true"] {
+  background: rgba(var(--bs-primary-rgb), 0.06);
+  color: var(--bs-body-color);
+  outline: none;
+  box-shadow: none;
+}
+
+[data-bs-theme="dark"] .member-menu-toggle:hover,
+[data-bs-theme="dark"] .member-menu-toggle:focus,
+[data-bs-theme="dark"] .member-menu-toggle:focus-visible,
+[data-bs-theme="dark"] .member-menu-toggle:active,
+[data-bs-theme="dark"] .member-menu-toggle:not(:disabled):active,
+[data-bs-theme="dark"] .member-menu-toggle[aria-expanded="true"] {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.member-menu-panel {
+  min-width: 12rem;
+  right: 0;
+  top: calc(100% + 0.25rem);
 }
 
 
