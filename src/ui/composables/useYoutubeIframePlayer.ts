@@ -20,6 +20,24 @@ interface YoutubePlayerErrorEvent {
 	data: number;
 }
 
+interface YoutubePlayerStateChangeEvent {
+	data: number;
+}
+
+// https://developers.google.com/youtube/iframe_api_reference#Playback_status
+const YOUTUBE_PLAYER_STATE_NAMES: Record<number, string> = {
+	[-1]: "UNSTARTED",
+	0: "ENDED",
+	1: "PLAYING",
+	2: "PAUSED",
+	3: "BUFFERING",
+	5: "CUED",
+};
+
+function describeYoutubePlayerState(state: number): string {
+	return YOUTUBE_PLAYER_STATE_NAMES[state] ?? `UNKNOWN(${state})`;
+}
+
 interface YoutubeIframeApi {
 	Player: new (
 		element: string | HTMLElement,
@@ -29,6 +47,7 @@ interface YoutubeIframeApi {
 			events?: {
 				onReady?: (event: { target: YoutubePlayerLike }) => void;
 				onError?: (event: YoutubePlayerErrorEvent) => void;
+				onStateChange?: (event: YoutubePlayerStateChangeEvent) => void;
 			};
 		},
 	) => YoutubePlayerLike;
@@ -166,6 +185,15 @@ export function useYoutubeIframePlayer() {
 					onError: (event) => {
 						reject(
 							new Error(`YouTube player failed to load the video (error code ${event.data})`),
+						);
+					},
+					// The IFrame API's playVideo() is a fire-and-forget postMessage: unlike a native
+					// <video>.play(), it never rejects or calls onError when playback is blocked (e.g.
+					// by the browser's or YouTube's own autoplay policy). Logging state transitions is
+					// the only way to see that from the host page.
+					onStateChange: (event) => {
+						console.debug(
+							`YouTube player state changed: ${describeYoutubePlayerState(event.data)}`,
 						);
 					},
 				},
