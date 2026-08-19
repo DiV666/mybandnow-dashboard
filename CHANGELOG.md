@@ -4,6 +4,12 @@ Todos los cambios notables de este proyecto se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.6.2] - 2026-08-19
+
+### Corregido
+
+- Eliminado el sufijo redundante "(Songs / Tracks)" del título de la vista de gestión de canciones, ya innecesario con las traducciones.
+
 ## [0.6.1] - 2026-08-19
 
 ### Corregido
