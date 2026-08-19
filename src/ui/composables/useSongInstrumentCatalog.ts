@@ -68,7 +68,9 @@ export function useSongInstrumentCatalog(useCases: UseSongInstrumentCatalogUseCa
           return;
         }
 
-        availableInstruments.value = instruments;
+        availableInstruments.value = [...instruments].sort((a, b) =>
+          a.name.value.localeCompare(b.name.value),
+        );
       } catch {
         if (isComposableMounted) {
           availableInstruments.value = [];

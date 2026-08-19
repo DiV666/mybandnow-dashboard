@@ -10,7 +10,7 @@ export class AxiosInstrumentRepository implements InstrumentRepository {
 		const response = await httpClient.get<{
 			items: InstrumentPrimitives[];
 			total: number;
-		}>("/v1/instruments");
+		}>("/v1/instruments", { params: { limit: 100 } });
 
 		return response.data.items.map(Instrument.fromPrimitives);
 	}

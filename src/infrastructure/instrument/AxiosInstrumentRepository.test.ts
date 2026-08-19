@@ -27,7 +27,7 @@ describe("AxiosInstrumentRepository", () => {
 
 		const instruments = await repository.getAll();
 
-		expect(getSpy).toHaveBeenCalledWith("/v1/instruments");
+		expect(getSpy).toHaveBeenCalledWith("/v1/instruments", { params: { limit: 100 } });
 		expect(instruments).toEqual([
 			Instrument.fromPrimitives({
 				id: "catalog-1",
