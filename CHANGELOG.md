@@ -4,6 +4,13 @@ Todos los cambios notables de este proyecto se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.7.3] - 2026-08-19
+
+### Corregido
+
+- El registro de estado del reproductor de YouTube usaba `console.debug`, que Chrome oculta por defecto (nivel "Verbose"); ahora usa `console.log`.
+- Se registran los dos retornos silenciosos restantes al configurar el audio de referencia de YouTube (elemento contenedor aún no montado, petición obsoleta por un remount).
+
 ## [0.7.2] - 2026-08-19
 
 ### Corregido
