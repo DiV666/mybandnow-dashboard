@@ -4,6 +4,13 @@ Todos los cambios notables de este proyecto se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.6.3] - 2026-08-19
+
+### Corregido
+
+- El selector de instrumentos del formulario de creación de instrumento de canción ahora se ordena alfabéticamente.
+- La petición del catálogo de instrumentos (`GET /v1/instruments`) ahora incluye `limit=100` para evitar que la paginación por defecto del backend oculte instrumentos.
+
 ## [0.6.2] - 2026-08-19
 
 ### Corregido
