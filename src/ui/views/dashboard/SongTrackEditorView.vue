@@ -1496,11 +1496,13 @@ async function setupOriginalAudioPlayer(videoId: string): Promise<void> {
 	originalAudioPlayerError.value = false;
 	await nextTick();
 	if (!isViewMounted || requestId !== originalAudioPlayerRequestId) {
+		console.warn("Skipped setting up the original audio YouTube player: request superseded");
 		return;
 	}
 
 	const host = originalAudioPlayerHostRef.value;
 	if (!host) {
+		console.warn("Skipped setting up the original audio YouTube player: host element not mounted");
 		return;
 	}
 

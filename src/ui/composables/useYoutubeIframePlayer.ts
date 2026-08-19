@@ -191,8 +191,11 @@ export function useYoutubeIframePlayer() {
 					// <video>.play(), it never rejects or calls onError when playback is blocked (e.g.
 					// by the browser's or YouTube's own autoplay policy). Logging state transitions is
 					// the only way to see that from the host page.
+					// console.log, not console.debug: Chrome's console hides "Verbose"-level
+					// messages behind an opt-in filter, so a debug-level log here would be
+					// invisible by default.
 					onStateChange: (event) => {
-						console.debug(
+						console.log(
 							`YouTube player state changed: ${describeYoutubePlayerState(event.data)}`,
 						);
 					},
