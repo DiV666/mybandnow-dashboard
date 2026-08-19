@@ -4,6 +4,21 @@ Todos los cambios notables de este proyecto se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.6.1] - 2026-08-19
+
+### Corregido
+
+- Al fallar el `PUT` del vídeo a la URL firmada de almacenamiento (p. ej. por CORS), el intento de subida ya no se queda huérfano en estado `PENDING`: se cancela automáticamente en el backend.
+- El error genérico "No se pudo iniciar la subida del vídeo" se sustituye por un mensaje específico cuando el fallo es de red/CORS.
+- El toast de error al iniciar la subida ya no se duplica con el aviso que muestra la propia modal.
+
+### Cambiado
+
+- El icono de error en el listado de instrumentos ahora solo aparece cuando el backend marca la subida como fallida (`FAILED`), no ante fallos locales de red.
+- Colores de las píldoras de estado de subida: "Pendiente de validación" usa el color primario y "Procesando" usa naranja (antes al revés), legibles tanto en modo claro como oscuro.
+- La barra de progreso de la modal de subida ahora llega al 100% y se cierra justo tras confirmar la subida, en vez de cerrarse a mitad de proceso.
+- Añadido un indicador de actividad (spinner) junto a las píldoras "Pendiente de validación" y "Procesando".
+
 ## [0.6.0] - 2026-08-17
 
 ### Añadido
