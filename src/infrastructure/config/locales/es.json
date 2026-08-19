@@ -114,7 +114,7 @@
         "upload": "Subir video"
       },
       "unassigned": "Sin asignar",
-      "pageTitle": "Gestión de Canciones (Songs / Tracks)",
+      "pageTitle": "Gestión de Canciones",
       "pageDescription": "Crea una canción dentro de la banda seleccionada.",
       "listTitle": "Canciones de la banda",
       "songCount": "{count} canción | {count} canciones",

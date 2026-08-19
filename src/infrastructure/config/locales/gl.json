@@ -114,7 +114,7 @@
         "upload": "Subir vídeo"
       },
       "unassigned": "Sen asignar",
-      "pageTitle": "Xestión de Cancións (Songs / Tracks)",
+      "pageTitle": "Xestión de Cancións",
       "pageDescription": "Crea unha canción dentro do grupo seleccionado.",
       "listTitle": "Cancións do grupo",
       "songCount": "{count} canción | {count} cancións",

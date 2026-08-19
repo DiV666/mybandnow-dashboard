@@ -114,7 +114,7 @@
         "upload": "Upload video"
       },
       "unassigned": "Unassigned",
-      "pageTitle": "Song Management (Songs / Tracks)",
+      "pageTitle": "Song Management",
       "pageDescription": "Create a song within the selected band.",
       "listTitle": "Band songs",
       "songCount": "{count} song | {count} songs",

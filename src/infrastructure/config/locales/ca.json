@@ -114,7 +114,7 @@
         "upload": "Puja el vídeo"
       },
       "unassigned": "Sense assignar",
-      "pageTitle": "Gestió de Cançons (Songs / Tracks)",
+      "pageTitle": "Gestió de Cançons",
       "pageDescription": "Crea una cançó dins del grup seleccionat.",
       "listTitle": "Cançons del grup",
       "songCount": "{count} cançó | {count} cançons",
