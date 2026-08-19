@@ -172,7 +172,9 @@
       "originalVideoclipUrlPlaceholder": "https://www.youtube.com/watch?v=...",
       "creatingLoading": "Sortzen...",
       "inviteMusicianFormAriaLabel": "Gonbidatu musikaria helbide elektronikoz",
-      "videoPreviewTitle": "{songTitle} · {instrumentName}"
+      "videoPreviewTitle": "{songTitle} · {instrumentName} · {musicianName}",
+      "videoclipNotImplementedTitle": "Eginbidea ez dago erabilgarri",
+      "videoclipNotImplementedMessage": "Ekintza hau oraindik ez dago inplementatuta."
     },
     "trackEditor": {
       "defaultTitle": "Pista editorea",

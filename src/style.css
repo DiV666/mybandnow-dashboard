@@ -433,6 +433,11 @@ h6,
 	--bs-btn-active-border-color: rgba(255, 255, 255, 0.75);
 }
 
+.text-bg-orange {
+	color: #ffffff !important;
+	background-color: #f57c00 !important;
+}
+
 .card,
 .modal-content {
 	border: 1px solid var(--rock-surface-border);

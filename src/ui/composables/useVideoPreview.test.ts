@@ -90,18 +90,27 @@ describe("useVideoPreview", () => {
 	function createComposable(
 		getEffectiveVideo: (songId: string, instrumentId: string) => SongInstrumentVideoResponse | null,
 		getSongInstrumentDisplayName: (instrument: SongInstrumentListItemResponse) => string,
+		getSongInstrumentMusicianDisplayName: (
+			instrument: SongInstrumentListItemResponse,
+		) => string = vi.fn().mockReturnValue("Jane Doe"),
 	) {
 		return withSetup(() =>
-			useVideoPreview({ getEffectiveVideo, getSongInstrumentDisplayName }),
+			useVideoPreview({
+				getEffectiveVideo,
+				getSongInstrumentDisplayName,
+				getSongInstrumentMusicianDisplayName,
+			}),
 		);
 	}
 
 	it("fills activeVideoPreview with the video url and translated title when a video is available", () => {
 		const getEffectiveVideo = vi.fn().mockReturnValue({ url: "https://example.com/video.mp4" });
 		const getSongInstrumentDisplayName = vi.fn().mockReturnValue("Guitar");
+		const getSongInstrumentMusicianDisplayName = vi.fn().mockReturnValue("Jane Doe");
 		const { activeVideoPreview, openVideoPreview } = createComposable(
 			getEffectiveVideo,
 			getSongInstrumentDisplayName,
+			getSongInstrumentMusicianDisplayName,
 		);
 		const song = makeSong({ id: "song-1", title: "My Song" });
 		const instrument = makeInstrument({ id: "instrument-1" });
@@ -111,16 +120,18 @@ describe("useVideoPreview", () => {
 		expect(getEffectiveVideo).toHaveBeenCalledWith("song-1", "instrument-1");
 		expect(activeVideoPreview.value).toEqual({
 			url: "https://example.com/video.mp4",
-			title: "My Song · Guitar",
+			title: "My Song · Guitar · Jane Doe",
 		});
 	});
 
 	it("does nothing when no video is available", () => {
 		const getEffectiveVideo = vi.fn().mockReturnValue(null);
 		const getSongInstrumentDisplayName = vi.fn().mockReturnValue("Guitar");
+		const getSongInstrumentMusicianDisplayName = vi.fn().mockReturnValue("Jane Doe");
 		const { activeVideoPreview, openVideoPreview } = createComposable(
 			getEffectiveVideo,
 			getSongInstrumentDisplayName,
+			getSongInstrumentMusicianDisplayName,
 		);
 		const song = makeSong();
 		const instrument = makeInstrument();
@@ -129,6 +140,7 @@ describe("useVideoPreview", () => {
 
 		expect(activeVideoPreview.value).toBeNull();
 		expect(getSongInstrumentDisplayName).not.toHaveBeenCalled();
+		expect(getSongInstrumentMusicianDisplayName).not.toHaveBeenCalled();
 	});
 
 	it("clears activeVideoPreview on close", () => {

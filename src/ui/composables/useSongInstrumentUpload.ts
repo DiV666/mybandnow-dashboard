@@ -639,7 +639,7 @@ export function useSongInstrumentUpload(deps: UseSongInstrumentUploadDeps) {
     }
 
     if (upload?.status === songInstrumentUploadStatuses.PENDING) {
-      return 'text-bg-warning';
+      return 'text-bg-orange';
     }
 
     if (upload?.status === songInstrumentUploadStatuses.READY) {
@@ -657,7 +657,7 @@ export function useSongInstrumentUpload(deps: UseSongInstrumentUploadDeps) {
       return 'text-bg-secondary';
     }
 
-    return hasSongInstrumentVideo(songId, instrumentId) ? 'text-bg-success' : 'text-bg-warning';
+    return hasSongInstrumentVideo(songId, instrumentId) ? 'text-bg-success' : 'text-bg-orange';
   }
 
   function getSongInstrumentAvailabilityTestId(songId: string, instrumentId: string): string {

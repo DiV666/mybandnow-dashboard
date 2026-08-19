@@ -9,13 +9,15 @@ import type { SongResponse } from '../../domain/song/SongResponse.js';
 interface UseVideoPreviewDeps {
   getEffectiveVideo: (songId: string, instrumentId: string) => SongInstrumentVideoResponse | null;
   getSongInstrumentDisplayName: (instrument: SongInstrumentListItemResponse) => string;
+  getSongInstrumentMusicianDisplayName: (instrument: SongInstrumentListItemResponse) => string;
 }
 
 /**
  * Manages the song-instrument video preview modal state, resolving the effective video and title.
  */
 export function useVideoPreview(deps: UseVideoPreviewDeps) {
-  const { getEffectiveVideo, getSongInstrumentDisplayName } = deps;
+  const { getEffectiveVideo, getSongInstrumentDisplayName, getSongInstrumentMusicianDisplayName } =
+    deps;
   const { t } = useI18n();
 
   const activeVideoPreview = ref<{ url: string; title: string } | null>(null);
@@ -35,6 +37,7 @@ export function useVideoPreview(deps: UseVideoPreviewDeps) {
       title: t('dashboard.songs.videoPreviewTitle', {
         songTitle: song.title,
         instrumentName: getSongInstrumentDisplayName(instrument),
+        musicianName: getSongInstrumentMusicianDisplayName(instrument),
       }),
     };
   }

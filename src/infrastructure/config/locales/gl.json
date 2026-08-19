@@ -172,7 +172,9 @@
       "originalVideoclipUrlPlaceholder": "https://www.youtube.com/watch?v=...",
       "creatingLoading": "Creando...",
       "inviteMusicianFormAriaLabel": "Convidar músico por correo",
-      "videoPreviewTitle": "{songTitle} · {instrumentName}"
+      "videoPreviewTitle": "{songTitle} · {instrumentName} · {musicianName}",
+      "videoclipNotImplementedTitle": "Función non dispoñible",
+      "videoclipNotImplementedMessage": "Esta acción aínda non está implementada."
     },
     "trackEditor": {
       "defaultTitle": "Editor de pistas",

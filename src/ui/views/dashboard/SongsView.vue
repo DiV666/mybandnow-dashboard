@@ -25,7 +25,6 @@ import { useCreateSong } from "../../composables/useCreateSong.js";
 import { useSongInstrumentDetails } from "../../composables/useSongInstrumentDetails.js";
 import { useVideoPreview } from "../../composables/useVideoPreview.js";
 import { useAddSongInstrument } from "../../composables/useAddSongInstrument.js";
-import { useRequestSongVideoclip } from "../../composables/useRequestSongVideoclip.js";
 import { useSongInstrumentUpload } from "../../composables/useSongInstrumentUpload.js";
 import { useAssignMusician } from "../../composables/useAssignMusician.js";
 import { useEditSongInstrument } from "../../composables/useEditSongInstrument.js";
@@ -64,7 +63,6 @@ const {
 	uploadSongInstrumentVideoUseCase,
 	cancelSongInstrumentUploadUseCase,
 	confirmSongInstrumentUploadUseCase,
-	requestSongVideoclipUseCase,
 } = container.useCases;
 
 const {
@@ -116,12 +114,22 @@ const {
 	handleCreateSong,
 } = useCreateSong({ createSongUseCase, selectedBand, onCreated: loadSongs });
 
-const { isRequestingVideoclip, requestSongVideoclip } = useRequestSongVideoclip({
-	requestSongVideoclipUseCase,
-});
+const isVideoclipNotImplementedModalOpen = ref(false);
+
+function openVideoclipNotImplementedModal(): void {
+	isVideoclipNotImplementedModalOpen.value = true;
+}
+
+function closeVideoclipNotImplementedModal(): void {
+	isVideoclipNotImplementedModalOpen.value = false;
+}
 
 const { activeVideoPreview, videoPreviewModalRef, openVideoPreview, closeVideoPreview } =
-	useVideoPreview({ getEffectiveVideo, getSongInstrumentDisplayName });
+	useVideoPreview({
+		getEffectiveVideo,
+		getSongInstrumentDisplayName,
+		getSongInstrumentMusicianDisplayName,
+	});
 
 const {
 	songInstrumentUploads,
@@ -585,19 +593,9 @@ useModalFocusTrap(
                       <button
                         type="button"
                         class="btn btn-outline-success btn-sm d-inline-flex align-items-center gap-2"
-                        :disabled="isRequestingVideoclip(song.id)"
-                        @click="requestSongVideoclip(song.id)"
+                        @click="openVideoclipNotImplementedModal"
                       >
-                        <span
-                          v-if="isRequestingVideoclip(song.id)"
-                          class="spinner-border spinner-border-sm"
-                          aria-hidden="true"
-                        ></span>
-                        {{
-                          isRequestingVideoclip(song.id)
-                            ? $t('dashboard.songs.generatingVideoclip')
-                            : $t('dashboard.songs.generateVideoclip')
-                        }}
+                        {{ $t('dashboard.songs.generateVideoclip') }}
                       </button>
                     </div>
                   </div>
@@ -1239,8 +1237,48 @@ useModalFocusTrap(
               data-testid="video-preview-player"
               :src="activeVideoPreview.url"
               controls
+              autoplay
               class="video-preview-player"
             ></video>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="isVideoclipNotImplementedModalOpen" class="modal-backdrop show"></div>
+    <div
+      v-if="isVideoclipNotImplementedModalOpen"
+      class="modal d-block"
+      tabindex="-1"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="videoclipNotImplementedModalTitle"
+      @click.self="closeVideoclipNotImplementedModal"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 id="videoclipNotImplementedModalTitle" class="modal-title h6">
+              {{ $t('dashboard.songs.videoclipNotImplementedTitle') }}
+            </h2>
+            <button
+              type="button"
+              class="btn-close"
+              :aria-label="$t('dashboard.songs.close')"
+              @click="closeVideoclipNotImplementedModal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <p class="mb-0">{{ $t('dashboard.songs.videoclipNotImplementedMessage') }}</p>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-primary"
+              @click="closeVideoclipNotImplementedModal"
+            >
+              {{ $t('dashboard.songs.close') }}
+            </button>
           </div>
         </div>
       </div>
