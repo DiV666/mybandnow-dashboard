@@ -139,11 +139,13 @@ const {
 	cancelAllSongInstrumentPolls,
 	extractUploadErrorDetails,
 	getSongInstrumentUploadErrorMessage,
+	getSongInstrumentBackendUploadErrorMessage,
 	getSongInstrumentStatusMessage,
 	shouldShowSongInstrumentProgress,
 	hasSongInstrumentVideo,
 	getSongInstrumentAvailabilityLabel,
 	getSongInstrumentAvailabilityBadgeClass,
+	isSongInstrumentAvailabilityBusy,
 	getSongInstrumentAvailabilityTestId,
 	shouldShowSongInstrumentUploadForm,
 	isSongInstrumentUploadDisabled,
@@ -639,19 +641,25 @@ useModalFocusTrap(
                               <div class="d-inline-flex align-items-center gap-2">
                                 <span
                                   :data-testid="getSongInstrumentAvailabilityTestId(song.id, instrument.id)"
-                                  class="badge rounded-pill"
+                                  class="badge rounded-pill d-inline-flex align-items-center gap-1"
                                   :class="getSongInstrumentAvailabilityBadgeClass(song.id, instrument.id)"
                                 >
+                                  <span
+                                    v-if="isSongInstrumentAvailabilityBusy(song.id, instrument.id)"
+                                    class="spinner-border spinner-border-sm"
+                                    role="status"
+                                    aria-hidden="true"
+                                  ></span>
                                   {{ getSongInstrumentAvailabilityLabel(song.id, instrument.id) }}
                                 </span>
                                 <span
-                                  v-if="getSongInstrumentUploadErrorMessage(song.id, instrument)"
+                                  v-if="getSongInstrumentBackendUploadErrorMessage(song.id, instrument)"
                                   ref="songActionTooltipTargets"
                                   class="d-inline-flex align-items-center justify-content-center text-danger"
                                   tabindex="0"
                                   data-bs-toggle="tooltip"
-                                  :data-bs-title="getSongInstrumentUploadErrorMessage(song.id, instrument)"
-                                  :aria-label="getSongInstrumentUploadErrorMessage(song.id, instrument)"
+                                  :data-bs-title="getSongInstrumentBackendUploadErrorMessage(song.id, instrument)"
+                                  :aria-label="getSongInstrumentBackendUploadErrorMessage(song.id, instrument)"
                                 >
                                   <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
                                 </span>

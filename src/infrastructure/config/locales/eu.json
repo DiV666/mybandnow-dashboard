@@ -39,6 +39,7 @@
         "corruptedMp4": "Fitxategia ez da baliozko MP4 bat edo hondatuta dago.",
         "fileTooLarge": "Fitxategiak baimendutako gehienezko tamaina gainditzen du.",
         "uploadTimeout": "Igoerak luzeegi jo du. Saiatu berriro.",
+        "uploadNetworkError": "Ezin izan da bideo biltegiratzearekin konektatu. Egiaztatu zure konexioa eta saiatu berriro.",
         "uploadCanceled": "Igoera bertan behera utzi da amaitu aurretik.",
         "profileRequired": "Zure profila sortu behar duzu bideoak igo aurretik.",
         "notAssignedMusician": "Tresna honi esleitutako pertsonak soilik igo dezake bideoa.",

@@ -402,6 +402,10 @@ h6,
 	box-shadow: 0 0.75rem 1.5rem rgba(255, 219, 60, 0.22);
 }
 
+[data-bs-theme="dark"] .text-bg-primary {
+	color: #131313 !important;
+}
+
 [data-bs-theme="dark"] .btn-outline-primary {
 	--bs-btn-color: #ffdb3c;
 	--bs-btn-border-color: rgba(255, 219, 60, 0.45);

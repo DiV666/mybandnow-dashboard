@@ -117,7 +117,12 @@ export function useSongInstrumentDetails(deps: UseSongInstrumentDetailsDeps) {
     songId: string,
     instrumentId: string,
   ): SongInstrumentVideoResponse | null {
-    return getSongInstrumentDetail(songId, instrumentId)?.video ?? null;
+    const detailVideo = getSongInstrumentDetail(songId, instrumentId)?.video ?? null;
+    if (detailVideo) {
+      return detailVideo;
+    }
+
+    return getSongInstrument(songId, instrumentId)?.video ?? null;
   }
 
   function getSongInstrument(

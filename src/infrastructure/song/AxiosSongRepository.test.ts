@@ -340,6 +340,38 @@ describe("AxiosSongRepository", () => {
 		);
 	});
 
+	it("should cancel the upload attempt and rethrow the original error when the PUT to the signed URL fails", async () => {
+		const postSpy = vi
+			.spyOn(httpClient, "post")
+			.mockResolvedValueOnce({
+				data: {
+					uploadId: "upload-789",
+					uploadUrl: "https://storage.example/signed-upload",
+				},
+			} as never)
+			.mockResolvedValueOnce({ data: undefined } as never);
+		const putError = new Error("Network Error blocked by CORS policy");
+		const putSpy = vi.spyOn(axios, "put").mockRejectedValue(putError);
+		const videoFile = new File(["video-bytes"], "riff.mp4", {
+			type: "video/mp4",
+		});
+
+		await expect(
+			repository.uploadInstrumentVideo(
+				new SongId("song-123"),
+				new SongInstrumentId("instrument-456"),
+				new SongInstrumentVideoFile(videoFile),
+			),
+		).rejects.toBe(putError);
+
+		expect(putSpy).toHaveBeenCalledOnce();
+		expect(postSpy).toHaveBeenNthCalledWith(
+			2,
+			"/v1/songs/song-123/instruments/instrument-456/upload/upload-789/cancel",
+		);
+		expect(postSpy).toHaveBeenCalledTimes(2);
+	});
+
 	it("should cancel the active upload attempt for the selected song instrument", async () => {
 		const postSpy = vi
 			.spyOn(httpClient, "post")

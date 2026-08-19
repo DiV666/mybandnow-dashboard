@@ -69,6 +69,7 @@ export type SongInstrumentListItemResponse = SongInstrumentCatalogReference &
 		songId: string;
 		musicianId: string;
 		createdAt: string;
+		video: SongInstrumentVideoResponse | null;
 		upload: SongInstrumentUploadResponse | null;
 	};
 

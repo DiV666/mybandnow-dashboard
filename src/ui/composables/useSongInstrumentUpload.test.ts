@@ -224,7 +224,7 @@ describe("useSongInstrumentUpload", () => {
 
 		it("maps the upload error instead of leaking the raw error message", async () => {
 			const songs = ref<SongResponse[]>([makeSong()]);
-			const { handleUploadSongInstrumentVideo, handleSongInstrumentVideoSelection, toastStore } =
+			const { handleUploadSongInstrumentVideo, handleSongInstrumentVideoSelection, getSongInstrumentUploadState, toastStore } =
 				createComposable(songs);
 			handleSongInstrumentVideoSelection("song-1", "instrument-1", {
 				target: { files: [makeMp4File()] },
@@ -235,10 +235,13 @@ describe("useSongInstrumentUpload", () => {
 
 			await handleUploadSongInstrumentVideo("song-1", "instrument-1");
 
-			expect(toastStore.toasts[0].message).toBe(
+			const state = getSongInstrumentUploadState("song-1", "instrument-1");
+			expect(state.errorMsg).toBe(
 				"Only the person assigned to this instrument can upload the video.",
 			);
-			expect(toastStore.toasts[0].message).not.toContain("raw backend detail");
+			expect(state.errorMsg).not.toContain("raw backend detail");
+			// The upload modal stays open and already surfaces this message; a toast would be redundant.
+			expect(toastStore.toasts).toEqual([]);
 		});
 	});
 

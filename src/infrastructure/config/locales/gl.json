@@ -39,6 +39,7 @@
         "corruptedMp4": "O ficheiro non é un MP4 válido ou está danado.",
         "fileTooLarge": "O ficheiro supera o tamaño máximo permitido.",
         "uploadTimeout": "A subida tardou demasiado. Téntao de novo.",
+        "uploadNetworkError": "Non se puido conectar co almacenamento de vídeo. Comproba a túa conexión e téntao de novo.",
         "uploadCanceled": "A subida cancelouse antes de rematar.",
         "profileRequired": "Necesitas crear o teu perfil antes de subir vídeos.",
         "notAssignedMusician": "Só a persoa asignada a este instrumento pode subir o vídeo.",

@@ -39,6 +39,7 @@
         "corruptedMp4": "The file is not a valid MP4 or is corrupted.",
         "fileTooLarge": "The file exceeds the maximum allowed size.",
         "uploadTimeout": "The upload took too long. Please try again.",
+        "uploadNetworkError": "We couldn't connect to the video storage. Check your connection and try again.",
         "uploadCanceled": "The upload was canceled before finishing.",
         "profileRequired": "You need to create your profile before uploading videos.",
         "notAssignedMusician": "Only the person assigned to this instrument can upload the video.",

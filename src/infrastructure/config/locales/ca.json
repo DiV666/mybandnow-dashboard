@@ -39,6 +39,7 @@
         "corruptedMp4": "El fitxer no és un MP4 vàlid o està malmès.",
         "fileTooLarge": "El fitxer supera la mida màxima permesa.",
         "uploadTimeout": "La pujada ha trigat massa. Torna-ho a provar.",
+        "uploadNetworkError": "No s'ha pogut connectar amb l'emmagatzematge de vídeo. Comprova la teva connexió i torna-ho a provar.",
         "uploadCanceled": "La pujada s'ha cancel·lat abans d'acabar.",
         "profileRequired": "Necessites crear el teu perfil abans de pujar vídeos.",
         "notAssignedMusician": "Només la persona assignada a aquest instrument pot pujar el vídeo.",

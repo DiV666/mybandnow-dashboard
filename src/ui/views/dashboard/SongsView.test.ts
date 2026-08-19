@@ -3690,6 +3690,12 @@ describe("SongsView", () => {
 		expect(
 			queryByTestId(view.root, "upload-progress-song-1-instrument-1"),
 		).toBeNull();
+		expect(useToastStore().toasts).toEqual([
+			expect.objectContaining({
+				variant: "error",
+				message: "El archivo supera el tamaño máximo permitido.",
+			}),
+		]);
 		expect(
 			findTooltipTargetByLabel(view.root, "El archivo supera el tamaño máximo permitido.")
 				.type,

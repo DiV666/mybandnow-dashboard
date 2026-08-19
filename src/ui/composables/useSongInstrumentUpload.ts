@@ -323,6 +323,13 @@ export function useSongInstrumentUpload(deps: UseSongInstrumentUploadDeps) {
     }
 
     if (
+      details.status === undefined &&
+      (code.includes('err_network') || message.includes('network error'))
+    ) {
+      return t('dashboard.songs.errors.uploadNetworkError');
+    }
+
+    if (
       details.name === 'AbortError' ||
       combined.includes('upload aborted by client') ||
       code.includes('err_canceled') ||
@@ -359,6 +366,28 @@ export function useSongInstrumentUpload(deps: UseSongInstrumentUploadDeps) {
       return uploadState.errorMsg;
     }
 
+    const upload = getEffectiveUpload(songId, instrument);
+    if (upload?.status === songInstrumentUploadStatuses.FAILED) {
+      return mapUploadErrorMessage(
+        {
+          message: upload.errorMessage,
+          code: upload.errorCode,
+        },
+        t('dashboard.songs.errors.uploadFailedGeneric'),
+      );
+    }
+
+    return '';
+  }
+
+  // Unlike getSongInstrumentUploadErrorMessage, this ignores the local/transient errorMsg (e.g.
+  // a CORS or network failure on the PUT to the storage bucket, which never reaches the backend
+  // and gets cancelled rather than marked FAILED) and only reflects an upload the backend itself
+  // persisted as FAILED (a real validation error: size, codec, duration, corrupted file, etc.).
+  function getSongInstrumentBackendUploadErrorMessage(
+    songId: string,
+    instrument: SongInstrumentListItemResponse,
+  ): string {
     const upload = getEffectiveUpload(songId, instrument);
     if (upload?.status === songInstrumentUploadStatuses.FAILED) {
       return mapUploadErrorMessage(
@@ -518,7 +547,7 @@ export function useSongInstrumentUpload(deps: UseSongInstrumentUploadDeps) {
       const upload = instrument ? getEffectiveUpload(songId, instrument) : null;
       const cap =
         uploadState.progressStage === songInstrumentUploadProgressStages.REQUEST
-          ? 36
+          ? 92
           : getSongInstrumentProgressCap(upload);
       const nextProgress = Math.min(
         cap,
@@ -639,7 +668,7 @@ export function useSongInstrumentUpload(deps: UseSongInstrumentUploadDeps) {
     }
 
     if (upload?.status === songInstrumentUploadStatuses.PENDING) {
-      return 'text-bg-orange';
+      return 'text-bg-primary';
     }
 
     if (upload?.status === songInstrumentUploadStatuses.READY) {
@@ -647,7 +676,7 @@ export function useSongInstrumentUpload(deps: UseSongInstrumentUploadDeps) {
     }
 
     if (upload?.status === songInstrumentUploadStatuses.PROCESSING) {
-      return 'text-bg-primary';
+      return 'text-bg-orange';
     }
 
     if (
@@ -658,6 +687,16 @@ export function useSongInstrumentUpload(deps: UseSongInstrumentUploadDeps) {
     }
 
     return hasSongInstrumentVideo(songId, instrumentId) ? 'text-bg-success' : 'text-bg-orange';
+  }
+
+  function isSongInstrumentAvailabilityBusy(songId: string, instrumentId: string): boolean {
+    const instrument = getSongInstrument(songId, instrumentId);
+    const upload = instrument ? getEffectiveUpload(songId, instrument) : null;
+
+    return (
+      upload?.status === songInstrumentUploadStatuses.PENDING ||
+      upload?.status === songInstrumentUploadStatuses.PROCESSING
+    );
   }
 
   function getSongInstrumentAvailabilityTestId(songId: string, instrumentId: string): string {
@@ -1046,11 +1085,16 @@ export function useSongInstrumentUpload(deps: UseSongInstrumentUploadDeps) {
         isSubmitting: false,
         successMsg: '',
       });
+      // The file is fully uploaded and confirmed at this point (uploadSongInstrumentVideoUseCase
+      // covers POST /upload, the PUT to storage, and POST /confirm), so the modal's own job is
+      // done: show it reaching 100% before closing. Backend validation/processing continues after
+      // that, tracked separately by the row's status pill via the scheduled poll below.
+      completeSongInstrumentProgress(songId, instrumentId);
+      closeSongInstrumentUploadModal();
       startSongInstrumentBackendProgress(songId, instrumentId, {
         status: songInstrumentUploadStatuses.PENDING,
       });
       scheduleSongInstrumentPoll(songId, instrumentId, 1);
-      closeSongInstrumentUploadModal();
     } catch (error: unknown) {
       const message = mapUploadErrorMessage(
         extractUploadErrorDetails(error),
@@ -1062,7 +1106,8 @@ export function useSongInstrumentUpload(deps: UseSongInstrumentUploadDeps) {
         isSubmitting: false,
         successMsg: '',
       });
-      showErrorToast(message);
+      // No toast here: the upload modal stays open on failure and already surfaces this same
+      // message via getSongInstrumentUploadErrorMessage, so a toast would just duplicate it.
       setSongInstrumentUploadStatus(songId, instrumentId, null);
     }
   }
@@ -1081,6 +1126,7 @@ export function useSongInstrumentUpload(deps: UseSongInstrumentUploadDeps) {
     extractUploadErrorDetails,
     mapUploadErrorMessage,
     getSongInstrumentUploadErrorMessage,
+    getSongInstrumentBackendUploadErrorMessage,
     getSongInstrumentStatusMessage,
     getSongInstrumentProgressCap,
     getSongInstrumentProgressFloor,
@@ -1094,6 +1140,7 @@ export function useSongInstrumentUpload(deps: UseSongInstrumentUploadDeps) {
     hasSongInstrumentVideo,
     getSongInstrumentAvailabilityLabel,
     getSongInstrumentAvailabilityBadgeClass,
+    isSongInstrumentAvailabilityBusy,
     getSongInstrumentAvailabilityTestId,
     shouldShowSongInstrumentUploadForm,
     isSongInstrumentUploadDisabled,

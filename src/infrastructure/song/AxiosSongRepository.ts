@@ -130,17 +130,21 @@ export class AxiosSongRepository implements SongRepository {
 		const { data } = await httpClient.post<{ uploadId: string; uploadUrl: string }>(
 			uploadPath,
 		);
+		const uploadId = new SongInstrumentUploadId(data.uploadId);
 
-		await axios.put(data.uploadUrl, videoFile.value, {
-			headers: { "Content-Type": "video/mp4" },
-			timeout: 120000,
-		});
+		try {
+			await axios.put(data.uploadUrl, videoFile.value, {
+				headers: { "Content-Type": "video/mp4" },
+				timeout: 120000,
+			});
+		} catch (error) {
+			await this.cancelInstrumentUpload(songId, instrumentId, uploadId).catch((cancelError) => {
+				console.error("Failed to cancel the orphaned upload attempt after a PUT failure", cancelError);
+			});
+			throw error;
+		}
 
-		await this.confirmInstrumentUpload(
-			songId,
-			instrumentId,
-			new SongInstrumentUploadId(data.uploadId),
-		);
+		await this.confirmInstrumentUpload(songId, instrumentId, uploadId);
 	}
 
 	async cancelInstrumentUpload(
