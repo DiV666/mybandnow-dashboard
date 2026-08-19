@@ -5,6 +5,7 @@ const YOUTUBE_PLAYER_READY_TIMEOUT_MS = 10000;
 
 export interface YoutubePlayerLike {
 	getCurrentTime(): number;
+	getDuration(): number;
 	seekTo(seconds: number, allowSeekAhead: boolean): void;
 	isMuted(): boolean;
 	mute(): void;
@@ -38,18 +39,26 @@ function describeYoutubePlayerState(state: number): string {
 	return YOUTUBE_PLAYER_STATE_NAMES[state] ?? `UNKNOWN(${state})`;
 }
 
+interface YoutubePlayerReadyEvent {
+	target: YoutubePlayerLike;
+}
+
+interface YoutubePlayerEvents {
+	onReady?: (event: YoutubePlayerReadyEvent) => void;
+	onError?: (event: YoutubePlayerErrorEvent) => void;
+	onStateChange?: (event: YoutubePlayerStateChangeEvent) => void;
+}
+
+interface YoutubePlayerOptions {
+	videoId: string;
+	playerVars?: Record<string, unknown>;
+	events?: YoutubePlayerEvents;
+}
+
 interface YoutubeIframeApi {
 	Player: new (
 		element: string | HTMLElement,
-		options: {
-			videoId: string;
-			playerVars?: Record<string, unknown>;
-			events?: {
-				onReady?: (event: { target: YoutubePlayerLike }) => void;
-				onError?: (event: YoutubePlayerErrorEvent) => void;
-				onStateChange?: (event: YoutubePlayerStateChangeEvent) => void;
-			};
-		},
+		options: YoutubePlayerOptions,
 	) => YoutubePlayerLike;
 }
 
@@ -121,6 +130,7 @@ export interface YoutubeSyncPlayer {
 	currentTime: number;
 	muted: boolean;
 	volume: number;
+	readonly durationSec: number;
 	play: () => void;
 	pause: () => void;
 }
@@ -149,6 +159,9 @@ function createSyncPlayerAdapter(ytPlayer: YoutubePlayerLike): YoutubeSyncPlayer
 		},
 		set volume(volume: number) {
 			ytPlayer.setVolume(Math.round(volume * 100));
+		},
+		get durationSec(): number {
+			return ytPlayer.getDuration();
 		},
 		play(): void {
 			ytPlayer.playVideo();

@@ -833,6 +833,10 @@ describe("SongTrackEditorView", () => {
 				return this.currentTimeSec;
 			}
 
+			getDuration(): number {
+				return 187;
+			}
+
 			seekTo(seconds: number): void {
 				this.currentTimeSec = seconds;
 			}
@@ -951,6 +955,118 @@ describe("SongTrackEditorView", () => {
 				originalVideoClipDurationSeconds: undefined,
 			};
 			view.unmount();
+		}
+	});
+
+	it("still sets up the original audio reference track when the backend has no stored duration, backfilling it from the YouTube player", async () => {
+		class FakeYtPlayer {
+			onReady: ((event: { target: FakeYtPlayer }) => void) | undefined;
+
+			constructor(
+				_element: string,
+				options: { events?: { onReady?: (event: { target: FakeYtPlayer }) => void } },
+			) {
+				this.onReady = options.events?.onReady;
+				queueMicrotask(() => this.onReady?.({ target: this }));
+			}
+
+			getCurrentTime(): number {
+				return 0;
+			}
+
+			getDuration(): number {
+				return 187;
+			}
+
+			seekTo(): void {}
+
+			isMuted(): boolean {
+				return false;
+			}
+
+			mute(): void {}
+
+			unMute(): void {}
+
+			getVolume(): number {
+				return 100;
+			}
+
+			setVolume(): void {}
+
+			playVideo(): void {}
+
+			pauseVideo(): void {}
+
+			destroy(): void {}
+		}
+
+		vi.stubGlobal("YT", { Player: FakeYtPlayer });
+
+		routeState.query = {
+			title: "Paint It Black",
+			originalVideoclipUrl: "https://www.youtube.com/watch?v=O4irXQhgMqg",
+			originalVideoClipDurationSeconds: undefined,
+		};
+
+		repositoryGetInstrumentsBySongIdMock.mockResolvedValueOnce([
+			{
+				id: "instrument-1",
+				name: "Guitarra principal",
+				instrumentId: "catalog-1",
+				songId: "song-123",
+				musicianId: "musician-1",
+				createdAt: "2026-07-15T10:00:00.000Z",
+				upload: { status: "COMPLETED" },
+			},
+		]);
+		repositoryGetInstrumentByIdMock.mockResolvedValueOnce({
+			id: "instrument-1",
+			name: "Guitarra principal",
+			instrumentId: "catalog-1",
+			songId: "song-123",
+			musicianId: "musician-1",
+			createdAt: "2026-07-15T10:00:00.000Z",
+			startTimeMs: 0,
+			video: {
+				id: "video-1",
+				songInstrumentId: "instrument-1",
+				url: "https://cdn.example/guitar.mp4",
+				duration: 12,
+				size: 456,
+				createdAt: "2026-07-15T10:02:00.000Z",
+			},
+			upload: { status: "COMPLETED" },
+		});
+
+		const view = renderView();
+		try {
+			await flushView();
+			await flushView();
+			await flushView();
+
+			expect(
+				textContent(findByTestId(view.root, "original-audio-header-title")),
+			).toBe("Video original (YouTube)");
+			expect(
+				queryByTestId(view.root, "sync-audio-__original-audio__"),
+			).not.toBeNull();
+			expect(
+				queryByTestId(view.root, "original-audio-player-error"),
+			).toBeNull();
+
+			// The 12s instrument clip alone would cap the timeline at 00:12; once the
+			// YouTube player reports its real duration, the reference track stretches it.
+			expect(textContent(findByTestId(view.root, "timeline-duration"))).toBe(
+				"03:07",
+			);
+
+			view.unmount();
+		} finally {
+			routeState.query = {
+				title: "Paint It Black",
+				originalVideoClipDurationSeconds: undefined,
+			};
 		}
 	});
 

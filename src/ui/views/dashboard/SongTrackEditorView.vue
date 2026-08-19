@@ -1449,10 +1449,14 @@ async function syncTrackControlTooltips(): Promise<void> {
 
 function createOriginalAudioTrack(): EditorTrack | null {
 	const videoId = originalAudioYoutubeVideoId.value;
-	const durationMs = originalVideoClipDurationMs.value;
-	if (!videoId || durationMs === null || durationMs <= 0) {
+	if (!videoId) {
 		return null;
 	}
+
+	// The backend's stored duration can be missing (e.g. it was never enriched for
+	// older songs); the YouTube player reports its own duration once ready, and
+	// applyOriginalAudioTrackDuration patches the track with it at that point.
+	const durationMs = originalVideoClipDurationMs.value;
 
 	return {
 		id: ORIGINAL_AUDIO_TRACK_ID,
@@ -1467,11 +1471,23 @@ function createOriginalAudioTrack(): EditorTrack | null {
 			id: ORIGINAL_AUDIO_TRACK_ID,
 			songInstrumentId: songId.value,
 			url: originalVideoclipUrl.value,
-			duration: durationMs / 1000,
+			duration: durationMs !== null && durationMs > 0 ? durationMs / 1000 : 0,
 			size: 0,
 			createdAt: "",
 		},
 	};
+}
+
+function applyOriginalAudioTrackDuration(durationSec: number): void {
+	if (!Number.isFinite(durationSec) || durationSec <= 0) {
+		return;
+	}
+
+	tracks.value = tracks.value.map((track) =>
+		track.id === ORIGINAL_AUDIO_TRACK_ID && track.video.duration !== durationSec
+			? { ...track, video: { ...track.video, duration: durationSec } }
+			: track,
+	);
 }
 
 function detachOriginalAudioPlayerHostElement(): void {
@@ -1521,6 +1537,13 @@ async function setupOriginalAudioPlayer(videoId: string): Promise<void> {
 		}
 
 		setSyncPlayerRef(ORIGINAL_AUDIO_TRACK_ID, adapter);
+		// A failure reading the duration shouldn't be treated as the player itself failing:
+		// the player is already usable at this point, only the timeline length backfill is lost.
+		try {
+			applyOriginalAudioTrackDuration(adapter.durationSec);
+		} catch (durationError) {
+			console.warn("Failed to read the original audio YouTube player duration", durationError);
+		}
 	} catch (error) {
 		if (!isViewMounted || requestId !== originalAudioPlayerRequestId) {
 			return;
