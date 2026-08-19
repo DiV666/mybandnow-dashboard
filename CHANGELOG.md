@@ -4,6 +4,12 @@ Todos los cambios notables de este proyecto se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.7.1] - 2026-08-19
+
+### Corregido
+
+- El fallo al cargar el reproductor de YouTube del audio de referencia (bloqueadores de anuncios/contenido, red, restricciones de inserción) ya no se silenciaba: ahora se registra en consola y se muestra un aviso en el editor de pistas.
+
 ## [0.7.0] - 2026-08-19
 
 ### Añadido
