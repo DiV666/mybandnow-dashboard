@@ -4,6 +4,12 @@ Todos los cambios notables de este proyecto se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.6.4] - 2026-08-19
+
+### Corregido
+
+- El listado de instrumentos volvía vacío porque el `limit` se enviaba como query param plano; el backend solo lo acepta dentro del parámetro `criteria` (JSON), lo que hacía fallar la petición silenciosamente.
+
 ## [0.6.3] - 2026-08-19
 
 ### Corregido
