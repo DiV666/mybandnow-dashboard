@@ -4,6 +4,12 @@ Todos los cambios notables de este proyecto se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.7.0] - 2026-08-19
+
+### Añadido
+
+- Opción "Eliminar miembro" en un menú de tres puntos en cada tarjeta del listado de miembros de la banda (oculto en la fila del admin), con modal de confirmación que avisa de que los instrumentos que el músico tuviera asignados en canciones de la banda pasarán al creador de la banda.
+
 ## [0.6.4] - 2026-08-19
 
 ### Corregido
