@@ -4,6 +4,12 @@ Todos los cambios notables de este proyecto se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.7.4] - 2026-08-19
+
+### Corregido
+
+- Las canciones cuya duración del videoclip original no se guardó en el backend perdían por completo la pista de referencia de audio de YouTube. Ahora solo se exige la URL del vídeo; la duración real se obtiene del propio reproductor de YouTube (`getDuration()`) en cuanto está listo.
+
 ## [0.7.3] - 2026-08-19
 
 ### Corregido
