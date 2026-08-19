@@ -301,7 +301,10 @@ async function loadSongInstruments(
 	const entries = await Promise.all(
 		songList.map(async (song) => {
 			const instruments = await getSongInstrumentsUseCase.run(song.id);
-			return [song.id, instruments] as const;
+			const sortedInstruments = [...instruments].sort((a, b) =>
+				a.createdAt.localeCompare(b.createdAt),
+			);
+			return [song.id, sortedInstruments] as const;
 		}),
 	);
 

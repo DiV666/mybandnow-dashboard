@@ -518,7 +518,9 @@ function syncTrackPlayer(
 		return;
 	}
 
-	void player.play?.();
+	// Browsers can reject play() (e.g. a muted/backgrounded element paused to save power);
+	// the playback timer retries on the next tick, so a rejection here is not an error.
+	void player.play?.()?.catch(() => {});
 }
 
 function syncAllPlayers(
@@ -614,7 +616,9 @@ function syncSelectedPreview(
 		return;
 	}
 
-	void previewPlayer.play?.();
+	// Browsers can reject play() (e.g. a muted/backgrounded element paused to save power);
+	// the playback timer retries on the next tick, so a rejection here is not an error.
+	void previewPlayer.play?.()?.catch(() => {});
 }
 
 function setSelectedPreviewRef(player: PlayerLike | null): void {
@@ -1542,7 +1546,8 @@ async function loadTracks(): Promise<void> {
 			),
 		);
 		const newOriginalAudioTrack = createOriginalAudioTrack();
-		const instrumentTracks = details
+		const instrumentTracks = [...details]
+			.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
 			.filter(
 				(detail): detail is SongInstrumentDetailResponse & {
 					video: NonNullable<SongInstrumentDetailResponse["video"]>;

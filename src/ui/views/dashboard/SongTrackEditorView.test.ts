@@ -3668,8 +3668,8 @@ describe("SongTrackEditorView", () => {
 		await flushView();
 
 		expect(getTrackNamesInRenderedOrder(view.root)).toEqual([
-			"Bajo",
 			"Guitarra principal",
+			"Bajo",
 		]);
 		expect(findByTestId(view.root, "track-clip-instrument-2").props).toEqual(
 			expect.objectContaining({
@@ -3681,8 +3681,8 @@ describe("SongTrackEditorView", () => {
 		await flushView();
 
 		expect(getTrackNamesInRenderedOrder(view.root)).toEqual([
-			"Bajo",
 			"Guitarra principal",
+			"Bajo",
 		]);
 		expect(findByTestId(view.root, "track-clip-instrument-2").props).toEqual(
 			expect.objectContaining({
