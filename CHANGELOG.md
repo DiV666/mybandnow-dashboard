@@ -4,6 +4,17 @@ Todos los cambios notables de este proyecto se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.7.2] - 2026-08-19
+
+### Corregido
+
+- El orden de las pistas de instrumentos en el editor de pistas podía cambiar entre visitas porque dependía del orden crudo devuelto por el backend; ahora se ordenan por fecha de creación, igual que en el listado de canciones.
+- Se captura el rechazo de `play()` en las pistas y en la vista previa cuando el navegador pausa un elemento silenciado en segundo plano para ahorrar batería, evitando el error `AbortError` sin capturar en consola.
+
+### Añadido
+
+- Registro en consola de los cambios de estado del reproductor de YouTube (`onStateChange`), ya que `playVideo()` no informa de bloqueos de reproducción de ninguna otra forma.
+
 ## [0.7.1] - 2026-08-19
 
 ### Corregido
