@@ -970,6 +970,16 @@ useModalFocusTrap(
                   :disabled="isSongInstrumentUploadDisabled(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument)"
                   @change="handleSongInstrumentVideoSelection(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument.id, $event)"
                 >
+                <div class="form-text">
+                  <div class="fw-semibold">{{ $t('dashboard.songs.uploadRequirementsTitle') }}</div>
+                  <ul class="mb-0 ps-3">
+                    <li>{{ $t('dashboard.songs.uploadRequirementCodec') }}</li>
+                    <li>{{ $t('dashboard.songs.uploadRequirementDuration') }}</li>
+                    <li>{{ $t('dashboard.songs.uploadRequirementSize') }}</li>
+                    <li>{{ $t('dashboard.songs.uploadRequirementLighting') }}</li>
+                    <li>{{ $t('dashboard.songs.uploadRequirementGreenScreen') }}</li>
+                  </ul>
+                </div>
               </div>
               <div
                 v-if="shouldShowSongInstrumentProgress(activeSongInstrumentUploadModalContext.song.id, activeSongInstrumentUploadModalContext.instrument.id)"
