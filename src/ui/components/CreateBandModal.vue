@@ -122,7 +122,6 @@ async function handleCreateBand() {
 <style scoped>
 .create-band-modal-backdrop {
   z-index: var(--rock-z-create-band-backdrop);
-  background-color: rgba(0, 0, 0, 0.55);
 }
 
 .create-band-modal {

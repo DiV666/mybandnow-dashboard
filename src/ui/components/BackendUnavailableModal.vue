@@ -76,7 +76,6 @@ useModalFocusTrap(modalRef, isOpen, { onEscape: closeModal });
 <style scoped>
 .backend-unavailable-modal-backdrop {
   z-index: var(--rock-z-backend-unavailable-backdrop);
-  background-color: rgba(0, 0, 0, 0.55);
 }
 
 .backend-unavailable-modal {

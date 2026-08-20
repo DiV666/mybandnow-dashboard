@@ -127,7 +127,6 @@ const handleSubmit = async () => {
 <style scoped>
 .complete-profile-modal-backdrop {
   z-index: var(--rock-z-complete-profile-backdrop);
-  background-color: rgba(0, 0, 0, 0.7);
 }
 
 .complete-profile-modal {
