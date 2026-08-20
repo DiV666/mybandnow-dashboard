@@ -1019,6 +1019,10 @@ onBeforeUnmount(() => {
 
   .dashboard-main--with-sidebar {
     flex: 1 1 auto;
+    /* Bootstrap's ".row > *" sets width:100% on every column; left as "auto" that basis
+       doesn't fit next to the sidebar's fixed width and the item wraps onto its own line
+       below it instead of shrinking. Overriding width lets flex-grow size it correctly. */
+    width: auto;
     min-width: 0;
   }
 }
