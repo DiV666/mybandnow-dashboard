@@ -19,6 +19,7 @@ import { useYoutubeIframePlayer } from "../../composables/useYoutubeIframePlayer
 import { useTrackWaveformAssets } from "../../composables/useTrackWaveformAssets.js";
 import { resamplePeaksToWidth } from "../../utils/audioPeaks.js";
 import { useModalFocusTrap } from "../../composables/useModalFocusTrap.js";
+import { getCurrentTheme, THEMES } from "../../theme/theme.js";
 
 interface EditorTrack {
 	id: string;
@@ -173,6 +174,7 @@ let trackControlTooltips: TooltipInstance[] = [];
 let isViewMounted = true;
 let originalAudioPlayerRequestId = 0;
 let originalAudioPlayerHostElement: HTMLElement | null = null;
+let themeObserver: MutationObserver | null = null;
 
 const { createYoutubePlayer, destroyYoutubePlayer } = useYoutubeIframePlayer();
 const originalAudioPlayerHostRef = ref<HTMLElement | null>(null);
@@ -1317,11 +1319,16 @@ function drawTrackWaveformCanvas(trackId: string): void {
 
 	const peaks = resamplePeaksToWidth(state.asset.peaks, widthPx);
 	const midY = heightPx / 2;
-	context.fillStyle = "rgba(255, 255, 255, 0.55)";
+	// A fixed white fill was unreadable against the clip's light background in the light
+	// theme. Keyed off the theme rather than the clip's text color so the waveform stays a
+	// neutral gray instead of turning the selected-track accent color.
+	context.fillStyle = getCurrentTheme() === THEMES.dark ? "#ffffff" : "#212529";
+	context.globalAlpha = 0.55;
 	for (let x = 0; x < peaks.length; x += 1) {
 		const barHeight = Math.max(1, peaks[x] * heightPx);
 		context.fillRect(x, midY - barHeight / 2, 1, barHeight);
 	}
+	context.globalAlpha = 1;
 }
 
 function redrawAllTrackWaveformCanvases(): void {
@@ -1803,6 +1810,15 @@ onMounted(() => {
 		globalThis.addEventListener("keydown", handleGlobalKeydown);
 		globalThis.addEventListener("pointerdown", handleGlobalPointerdown);
 	}
+	if (typeof MutationObserver === "function" && typeof document !== "undefined") {
+		themeObserver = new MutationObserver(() => {
+			redrawAllTrackWaveformCanvases();
+		});
+		themeObserver.observe(document.documentElement, {
+			attributes: true,
+			attributeFilter: ["data-bs-theme"],
+		});
+	}
 });
 
 onUpdated(() => {
@@ -1815,6 +1831,8 @@ onBeforeUnmount(() => {
 		globalThis.removeEventListener("keydown", handleGlobalKeydown);
 		globalThis.removeEventListener("pointerdown", handleGlobalPointerdown);
 	}
+	themeObserver?.disconnect();
+	themeObserver = null;
 	stopPlaybackTimer();
 	dragState.value = null;
 	disposeTrackControlTooltips();
