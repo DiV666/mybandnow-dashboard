@@ -4,6 +4,13 @@ Todos los cambios notables de este proyecto se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.7.7] - 2026-08-20
+
+### Corregido
+
+- Las modales de "Crear canción" y previsualización de vídeo en el listado de canciones dibujaban dos backdrops superpuestos (uno propio y el compartido de `isAnyModalOpen`), viéndose mucho más oscuras que el resto.
+- Las modales de "Agregar miembro" y "Eliminar miembro" en el listado de miembros no tenían ningún backdrop.
+
 ## [0.7.6] - 2026-08-20
 
 ### Corregido
