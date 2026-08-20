@@ -4,6 +4,12 @@ Todos los cambios notables de este proyecto se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.7.6] - 2026-08-20
+
+### Corregido
+
+- El contenido principal del dashboard (canciones, miembros, videoclips...) se quedaba en blanco: el ancho fijo del sidebar hacía que el área principal saltara a una línea por debajo del sidebar, fuera de la pantalla visible, en vez de encogerse junto a él.
+
 ## [0.7.5] - 2026-08-20
 
 ### Corregido
