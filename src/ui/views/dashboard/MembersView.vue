@@ -478,6 +478,7 @@ async function handleRemoveMember(): Promise<void> {
       </div>
     </section>
 
+    <div v-if="isAddMemberModalOpen" class="modal-backdrop show"></div>
     <div
       v-if="isAddMemberModalOpen"
       ref="addMemberModalRef"
@@ -528,6 +529,7 @@ async function handleRemoveMember(): Promise<void> {
       </div>
     </div>
 
+    <div v-if="isRemoveMemberModalOpen && memberToRemove" class="modal-backdrop show"></div>
     <div
       v-if="isRemoveMemberModalOpen && memberToRemove"
       ref="removeMemberModalRef"

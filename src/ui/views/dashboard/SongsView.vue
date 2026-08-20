@@ -1216,9 +1216,7 @@ useModalFocusTrap(
         </div>
       </div>
     </div>
-    <div v-if="isCreateSongModalOpen" class="modal-backdrop show"></div>
 
-    <div v-if="activeVideoPreview" class="modal-backdrop show"></div>
     <div
       v-if="activeVideoPreview"
       ref="videoPreviewModalRef"
