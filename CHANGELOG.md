@@ -4,6 +4,16 @@ Todos los cambios notables de este proyecto se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.7.8] - 2026-08-20
+
+### Añadido
+
+- Placeholder ("Guitarra solista") en el campo de título de pista al añadir un instrumento a una canción.
+
+### Corregido
+
+- La forma de onda de las pistas en el editor no se veía bien en el tema claro (blanco fijo sobre fondo claro); ahora usa un gris fijo según el tema activo en vez del color del texto de la pista, para no heredar el color rojo de selección.
+
 ## [0.7.7] - 2026-08-20
 
 ### Corregido
