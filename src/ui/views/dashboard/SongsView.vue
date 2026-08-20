@@ -772,6 +772,7 @@ useModalFocusTrap(
                     v-model="songInstrumentForms[activeSongInstrumentFormSong.id].name"
                     type="text"
                     class="form-control form-control-sm"
+                    :placeholder="$t('dashboard.songs.instrumentNamePlaceholder')"
                     :disabled="songInstrumentForms[activeSongInstrumentFormSong.id].isSubmitting"
                     required
                   >
