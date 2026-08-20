@@ -148,6 +148,7 @@
       "cancel": "Cancelar",
       "select": "Seleccionar",
       "addInstrumentModalTitle": "Engadir instrumento a {songTitle}",
+      "instrumentNamePlaceholder": "Guitarra solista",
       "selectInstrumentOption": "Selecciona un instrumento",
       "addingLoading": "Engadindo...",
       "saveInstrument": "Gardar instrumento",

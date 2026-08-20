@@ -148,6 +148,7 @@
       "cancel": "Cancel·la",
       "select": "Selecciona",
       "addInstrumentModalTitle": "Afegeix un instrument a {songTitle}",
+      "instrumentNamePlaceholder": "Guitarra solista",
       "selectInstrumentOption": "Selecciona un instrument",
       "addingLoading": "Afegint...",
       "saveInstrument": "Desa l'instrument",

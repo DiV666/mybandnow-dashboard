@@ -148,6 +148,7 @@
       "cancel": "Utzi",
       "select": "Aukeratu",
       "addInstrumentModalTitle": "Gehitu tresna {songTitle}-ri",
+      "instrumentNamePlaceholder": "Gitarra solista",
       "selectInstrumentOption": "Aukeratu tresna bat",
       "addingLoading": "Gehitzen...",
       "saveInstrument": "Gorde tresna",

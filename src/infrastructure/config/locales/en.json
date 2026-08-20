@@ -148,6 +148,7 @@
       "cancel": "Cancel",
       "select": "Select",
       "addInstrumentModalTitle": "Add instrument to {songTitle}",
+      "instrumentNamePlaceholder": "Lead guitar",
       "selectInstrumentOption": "Select an instrument",
       "addingLoading": "Adding...",
       "saveInstrument": "Save instrument",
