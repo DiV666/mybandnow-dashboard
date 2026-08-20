@@ -417,7 +417,7 @@ onBeforeUnmount(() => {
       <nav
         v-if="shouldShowBandShell"
         id="sidebarMenu"
-        class="col-md-3 col-lg-2 d-md-block dashboard-sidebar sidebar offcanvas-md offcanvas-start"
+        class="d-md-block dashboard-sidebar sidebar offcanvas-md offcanvas-start"
         tabindex="-1"
         :aria-label="$t('layouts.dashboard.sidebarNavLabel')"
       >
@@ -608,7 +608,7 @@ onBeforeUnmount(() => {
         tabindex="-1"
         :class="[
           'dashboard-main py-4',
-          shouldShowBandShell ? 'col-md-9 ms-sm-auto col-lg-10 px-md-4' : 'col-12 px-4 px-lg-5',
+          shouldShowBandShell ? 'dashboard-main--with-sidebar px-md-4' : 'col-12 px-4 px-lg-5',
         ]"
       >
         <router-view />
@@ -1008,6 +1008,18 @@ onBeforeUnmount(() => {
   .dashboard-main {
     height: 100%;
     overflow-y: auto;
+  }
+
+  /* Fixed sidebar width instead of a Bootstrap %-of-viewport column: it should stay put
+     as the window resizes, only changing at an explicit breakpoint, not continuously. */
+  .dashboard-sidebar {
+    flex: 0 0 auto;
+    width: 300px;
+  }
+
+  .dashboard-main--with-sidebar {
+    flex: 1 1 auto;
+    min-width: 0;
   }
 }
 </style>
