@@ -4,6 +4,13 @@ Todos los cambios notables de este proyecto se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.7.5] - 2026-08-20
+
+### Corregido
+
+- El menú lateral del dashboard usaba columnas de Bootstrap con ancho porcentual, por lo que se reducía o crecía continuamente al redimensionar la ventana; ahora tiene un ancho fijo (300px) a partir del breakpoint `md`.
+- Los backdrops de "Completa tu perfil", "Backend no disponible" y "Crear banda" tenían cada uno una opacidad distinta a la del resto de modales (p. ej. "Añadir instrumento"); ahora usan todos la misma opacidad estándar.
+
 ## [0.7.4] - 2026-08-19
 
 ### Corregido
