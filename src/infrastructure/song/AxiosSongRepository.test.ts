@@ -261,6 +261,21 @@ describe("AxiosSongRepository", () => {
 		);
 	});
 
+	it("should delete the selected song instrument", async () => {
+		const deleteSpy = vi
+			.spyOn(httpClient, "delete")
+			.mockResolvedValue({ data: undefined } as never);
+
+		await repository.deleteInstrument(
+			new SongId("song-123"),
+			new SongInstrumentId("instrument-456"),
+		);
+
+		expect(deleteSpy).toHaveBeenCalledWith(
+			"/v1/songs/song-123/instruments/instrument-456",
+		);
+	});
+
 	it("should patch the selected song instrument musician assignment endpoint", async () => {
 		const patchSpy = vi
 			.spyOn(httpClient, "patch")

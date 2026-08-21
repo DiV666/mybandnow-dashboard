@@ -1000,7 +1000,7 @@ describe("SongsView", () => {
 		expect(findByText(view.root, "Paint It Black")).not.toBeNull();
 		const table = findElement(view.root, (node) => node.type === "table");
 		expect(table).not.toBeNull();
-		expect(bootstrapTooltipCtor).toHaveBeenCalledTimes(3);
+		expect(bootstrapTooltipCtor).toHaveBeenCalledTimes(4);
 		expect(findTooltipTargetByLabel(view.root, "Editar").type).toBe("span");
 		expect(findTooltipTargetByLabel(view.root, "Editar").props.tabindex).toBe(
 			"0",
@@ -1011,11 +1011,17 @@ describe("SongsView", () => {
 		expect(findTooltipTargetByLabel(view.root, "Asignar músico").type).toBe(
 			"button",
 		);
+		expect(findTooltipTargetByLabel(view.root, "Eliminar").type).toBe(
+			"button",
+		);
 		expect(
 			String(findTooltipTargetByLabel(view.root, "Subir vídeo").props.class),
 		).toContain("song-instrument-action");
 		expect(
 			String(findTooltipTargetByLabel(view.root, "Asignar músico").props.class),
+		).toContain("song-instrument-action");
+		expect(
+			String(findTooltipTargetByLabel(view.root, "Eliminar").props.class),
 		).toContain("song-instrument-action");
 		expect(
 			String(findTooltipTargetByLabel(view.root, "Editar").props.class),

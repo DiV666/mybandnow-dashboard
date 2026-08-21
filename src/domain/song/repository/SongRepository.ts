@@ -36,6 +36,10 @@ export interface SongRepository {
 		instrumentId: SongInstrumentId,
 		payload: UpdateSongInstrumentVideoPayload,
 	): Promise<void>;
+	deleteInstrument(
+		songId: SongId,
+		instrumentId: SongInstrumentId,
+	): Promise<void>;
 	assignMusician(
 		songId: SongId,
 		instrumentId: SongInstrumentId,

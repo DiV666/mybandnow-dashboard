@@ -28,6 +28,7 @@ import { useAddSongInstrument } from "../../composables/useAddSongInstrument.js"
 import { useSongInstrumentUpload } from "../../composables/useSongInstrumentUpload.js";
 import { useAssignMusician } from "../../composables/useAssignMusician.js";
 import { useEditSongInstrument } from "../../composables/useEditSongInstrument.js";
+import { useDeleteSongInstrument } from "../../composables/useDeleteSongInstrument.js";
 
 type SongInstrumentMap = Record<string, SongInstrumentListItemResponse[]>;
 type TooltipTarget = Element;
@@ -63,6 +64,7 @@ const {
 	uploadSongInstrumentVideoUseCase,
 	cancelSongInstrumentUploadUseCase,
 	confirmSongInstrumentUploadUseCase,
+	deleteSongInstrumentUseCase,
 } = container.useCases;
 
 const {
@@ -234,6 +236,21 @@ const {
 	extractUploadErrorDetails,
 });
 
+const {
+	activeDeleteInstrumentModal,
+	deleteInstrumentModalRef,
+	activeDeleteInstrumentModalContext,
+	openDeleteInstrumentModal,
+	closeDeleteInstrumentModal,
+	handleDeleteInstrumentSubmit,
+} = useDeleteSongInstrument({
+	deleteSongInstrumentUseCase,
+	songs,
+	songInstruments,
+	getSongInstrument,
+	extractUploadErrorDetails,
+});
+
 const isAnyModalOpen = computed(
 	() =>
 		isCreateSongModalOpen.value ||
@@ -241,6 +258,7 @@ const isAnyModalOpen = computed(
 		activeSongInstrumentUploadModalContext.value !== null ||
 		activeAssignMusicianModalContext.value !== null ||
 		activeEditInstrumentModalContext.value !== null ||
+		activeDeleteInstrumentModalContext.value !== null ||
 		activeVideoPreview.value !== null,
 );
 
@@ -510,6 +528,11 @@ useModalFocusTrap(
 	{ onEscape: closeEditInstrumentModal },
 );
 useModalFocusTrap(
+	deleteInstrumentModalRef,
+	computed(() => activeDeleteInstrumentModalContext.value !== null && activeDeleteInstrumentModal.value !== null),
+	{ onEscape: closeDeleteInstrumentModal },
+);
+useModalFocusTrap(
 	videoPreviewModalRef,
 	computed(() => activeVideoPreview.value !== null),
 	{ onEscape: closeVideoPreview },
@@ -722,6 +745,19 @@ useModalFocusTrap(
                             >
                               <i class="bi bi-person" aria-hidden="true"></i>
                             </button>
+                            <button
+                              ref="songActionTooltipTargets"
+                              type="button"
+                              class="song-instrument-action btn btn-sm btn-outline-danger d-inline-flex align-items-center justify-content-center px-2 rounded-2"
+                              :data-testid="`delete-instrument-button-${instrument.id}`"
+                              data-bs-toggle="tooltip"
+                              :data-bs-title="$t('dashboard.songs.delete')"
+                              :aria-label="$t('dashboard.songs.delete')"
+                              :disabled="!song.id || !instrument.id"
+                              @click="openDeleteInstrumentModal(song.id, instrument.id)"
+                            >
+                              <i class="bi bi-trash" aria-hidden="true"></i>
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -925,6 +961,66 @@ useModalFocusTrap(
               </button>
             </div>
           </form>
+        </div>
+      </div>
+    </div>
+
+    <div
+      v-if="activeDeleteInstrumentModalContext && activeDeleteInstrumentModal"
+      ref="deleteInstrumentModalRef"
+      class="modal d-block"
+      tabindex="-1"
+      role="dialog"
+      aria-modal="true"
+      data-testid="delete-instrument-modal"
+      :aria-labelledby="`deleteInstrumentModalTitle-${activeDeleteInstrumentModal.instrumentId}`"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 :id="`deleteInstrumentModalTitle-${activeDeleteInstrumentModal.instrumentId}`" class="modal-title h5">
+              {{ $t('dashboard.songs.deleteInstrumentModalTitle', { name: activeDeleteInstrumentModalContext.instrument.name }) }}
+            </h4>
+            <button
+              type="button"
+              class="btn-close"
+              :aria-label="$t('dashboard.songs.close')"
+              :disabled="activeDeleteInstrumentModal.isSubmitting"
+              @click="closeDeleteInstrumentModal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <p class="mb-0">
+              {{ $t('dashboard.songs.deleteInstrumentConfirmation', { name: activeDeleteInstrumentModalContext.instrument.name }) }}
+            </p>
+            <p v-if="activeDeleteInstrumentModal.errorMsg" class="text-danger-emphasis small mt-2 mb-0">
+              {{ activeDeleteInstrumentModal.errorMsg }}
+            </p>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              :disabled="activeDeleteInstrumentModal.isSubmitting"
+              @click="closeDeleteInstrumentModal"
+            >
+              {{ $t('dashboard.songs.cancel') }}
+            </button>
+            <button
+              type="button"
+              class="btn btn-danger"
+              data-testid="confirm-delete-instrument-button"
+              :disabled="activeDeleteInstrumentModal.isSubmitting"
+              @click="handleDeleteInstrumentSubmit"
+            >
+              <span
+                v-if="activeDeleteInstrumentModal.isSubmitting"
+                class="spinner-border spinner-border-sm me-2"
+                aria-hidden="true"
+              ></span>
+              {{ activeDeleteInstrumentModal.isSubmitting ? $t('dashboard.songs.deletingLoading') : $t('dashboard.songs.deleteInstrument') }}
+            </button>
+          </div>
         </div>
       </div>
     </div>

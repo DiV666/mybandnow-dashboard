@@ -90,6 +90,15 @@ export class AxiosSongRepository implements SongRepository {
 		);
 	}
 
+	async deleteInstrument(
+		songId: SongId,
+		instrumentId: SongInstrumentId,
+	): Promise<void> {
+		await httpClient.delete(
+			`/v1/songs/${songId.value}/instruments/${instrumentId.value}`,
+		);
+	}
+
 	async assignMusician(
 		songId: SongId,
 		instrumentId: SongInstrumentId,
@@ -133,13 +142,18 @@ export class AxiosSongRepository implements SongRepository {
 		const uploadId = new SongInstrumentUploadId(data.uploadId);
 
 		try {
+			// Raw axios.put, not httpClient: this PUT goes straight to a signed GCS URL, which
+			// must not carry httpClient's interceptor-injected auth/correlation headers meant
+			// for our own API.
 			await axios.put(data.uploadUrl, videoFile.value, {
 				headers: { "Content-Type": "video/mp4" },
 				timeout: 120000,
 			});
 		} catch (error) {
-			await this.cancelInstrumentUpload(songId, instrumentId, uploadId).catch((cancelError) => {
-				console.error("Failed to cancel the orphaned upload attempt after a PUT failure", cancelError);
+			await this.cancelInstrumentUpload(songId, instrumentId, uploadId).catch(() => {
+				// The error itself may carry the signed upload URL/headers; keep the log message
+				// free of that detail.
+				console.error("Failed to cancel the orphaned upload attempt after a PUT failure");
 			});
 			throw error;
 		}
