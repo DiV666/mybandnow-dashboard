@@ -322,7 +322,8 @@
     "videoclips": {
       "title": "Xestión de Videoclips",
       "newVideoclip": "Novo Videoclip",
-      "comingSoon": "Proximamente: Mestura de pistas e visualización dos videoclips finais."
+      "comingSoon": "Proximamente: Mestura de pistas e visualización dos videoclips finais.",
+      "pageDescription": "Consulta e xera os videoclips finais das cancións da túa banda."
     },
     "bands": {
       "title": "Xestión de Grupos (Bands)",
@@ -330,7 +331,8 @@
       "comingSoon": "Proximamente: Listaxe e CRUD de Grupos orquestrado desde a capa de Aplicación (Use Cases)."
     },
     "createFirstBand": {
-      "title": "Benvido a Mybandnow!",
+      "title": "Benvido a My Band Now!",
+      "pageTitle": "Crea a túa primeira banda",
       "description": "Parece que aínda non formas parte de ningún grupo.",
       "descriptionLine2": "Podes crear o teu primeiro grupo musical agora ou continuar e facelo máis tarde.",
       "createBand": "Crear un grupo",
@@ -419,7 +421,7 @@
   "public": {
     "landing": {
       "title": "Plataforma Colaborativa de Videoclips",
-      "description": "Mybandnow permíteche crear videoclips musicais a distancia. Mestura pistas de diferentes músicos e xera un produto final profesional.",
+      "description": "My Band Now permíteche crear videoclips musicais a distancia. Mestura pistas de diferentes músicos e xera un produto final profesional.",
       "cta": "Comezar agora",
       "heroAlt": "Músicos colaborando a distancia nun videoclip",
       "howItWorks": {
@@ -439,11 +441,11 @@
         },
         "step4": {
           "title": "Xera o videoclip",
-          "description": "Mybandnow monta automaticamente o vídeo final combinando audio e imaxe de cada músico."
+          "description": "My Band Now monta automaticamente o vídeo final combinando audio e imaxe de cada músico."
         }
       },
       "benefits": {
-        "title": "Por que escoller Mybandnow",
+        "title": "Por que escoller My Band Now",
         "subtitle": "Pensado para bandas que queren crear sen fronteiras",
         "remote": {
           "title": "Sen límites de distancia",
@@ -459,12 +461,12 @@
         },
         "video": {
           "title": "Videoclip incluído",
-          "description": "Non só obtés o audio: Mybandnow xera tamén o vídeo final listo para compartir."
+          "description": "Non só obtés o audio: My Band Now xera tamén o vídeo final listo para compartir."
         }
       },
       "finalCta": {
         "title": "Preparado para crear o teu próximo videoclip?",
-        "description": "Únete a Mybandnow e comeza a colaborar coa túa banda hoxe mesmo."
+        "description": "Únete a My Band Now e comeza a colaborar coa túa banda hoxe mesmo."
       }
     }
   },

@@ -322,7 +322,8 @@
     "videoclips": {
       "title": "Videoclip Management",
       "newVideoclip": "New Videoclip",
-      "comingSoon": "Coming soon: Track mixing and final videoclip preview."
+      "comingSoon": "Coming soon: Track mixing and final videoclip preview.",
+      "pageDescription": "View and generate the final videoclips for your band's songs."
     },
     "bands": {
       "title": "Band Management",
@@ -330,7 +331,8 @@
       "comingSoon": "Coming soon: Band listing and CRUD orchestrated from the Application layer (Use Cases)."
     },
     "createFirstBand": {
-      "title": "Welcome to Mybandnow!",
+      "title": "Welcome to My Band Now!",
+      "pageTitle": "Create your first band",
       "description": "It looks like you're not part of any band yet.",
       "descriptionLine2": "You can create your first band now or continue and do it later.",
       "createBand": "Create a band",
@@ -419,7 +421,7 @@
   "public": {
     "landing": {
       "title": "Collaborative Videoclip Platform",
-      "description": "Mybandnow lets you create music videoclips remotely. Mix tracks from different musicians and generate a professional final product.",
+      "description": "My Band Now lets you create music videoclips remotely. Mix tracks from different musicians and generate a professional final product.",
       "cta": "Get started",
       "heroAlt": "Musicians collaborating remotely on a videoclip",
       "howItWorks": {
@@ -439,11 +441,11 @@
         },
         "step4": {
           "title": "Generate the videoclip",
-          "description": "Mybandnow automatically assembles the final video combining audio and footage from each musician."
+          "description": "My Band Now automatically assembles the final video combining audio and footage from each musician."
         }
       },
       "benefits": {
-        "title": "Why choose Mybandnow",
+        "title": "Why choose My Band Now",
         "subtitle": "Built for bands who want to create without borders",
         "remote": {
           "title": "No distance limits",
@@ -459,12 +461,12 @@
         },
         "video": {
           "title": "Videoclip included",
-          "description": "You don't just get the audio: Mybandnow also generates the final video, ready to share."
+          "description": "You don't just get the audio: My Band Now also generates the final video, ready to share."
         }
       },
       "finalCta": {
         "title": "Ready to create your next videoclip?",
-        "description": "Join Mybandnow and start collaborating with your band today."
+        "description": "Join My Band Now and start collaborating with your band today."
       }
     }
   },

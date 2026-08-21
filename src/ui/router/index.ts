@@ -13,11 +13,19 @@ const routes: Array<RouteRecordRaw> = [
 				path: "",
 				name: "Landing",
 				component: () => import("../views/public/LandingView.vue"),
+				meta: {
+					titleKey: "public.landing.title",
+					descriptionKey: "public.landing.description",
+				},
 			},
 			{
 				path: "login",
 				name: "Login",
 				component: () => import("../views/auth/LoginView.vue"),
+				meta: {
+					titleKey: "auth.login.title",
+					descriptionKey: "auth.login.description",
+				},
 			},
 		],
 	},
@@ -25,6 +33,10 @@ const routes: Array<RouteRecordRaw> = [
 		path: "/session-closed",
 		name: "SessionClosed",
 		component: () => import("../views/SessionClosedView.vue"),
+		meta: {
+			titleKey: "views.sessionClosed.title",
+			descriptionKey: "views.sessionClosed.description",
+		},
 	},
 	{
 		path: "/dashboard",
@@ -40,31 +52,56 @@ const routes: Array<RouteRecordRaw> = [
 				name: "CreateFirstBand",
 				component: () =>
 					import("../views/dashboard/band/CreateFirstBandView.vue"),
+				meta: {
+					titleKey: "views.createFirstBand.pageTitle",
+					descriptionKey: "views.createFirstBand.description",
+				},
 			},
 			{
 				path: "members",
 				name: "MembersManager",
 				component: () => import("../views/dashboard/MembersView.vue"),
+				meta: {
+					titleKey: "views.members.title",
+					descriptionKey: "views.members.description",
+				},
 			},
 			{
 				path: "profile",
 				name: "Profile",
 				component: () => import("../views/dashboard/ProfileView.vue"),
+				meta: {
+					titleKey: "views.profile.title",
+					descriptionKey: "views.profile.description",
+				},
 			},
 			{
 				path: "songs",
 				name: "SongsManager",
 				component: () => import("../views/dashboard/SongsView.vue"),
+				meta: {
+					titleKey: "dashboard.songs.pageTitle",
+					descriptionKey: "dashboard.songs.pageDescription",
+				},
 			},
 			{
 				path: "songs/:songId/tracks",
 				name: "SongTrackEditor",
 				component: () => import("../views/dashboard/SongTrackEditorView.vue"),
+				// Title is set dynamically from the song name (see useDocumentMeta) since
+				// each song gets its own tab title instead of a fixed one.
+				meta: {
+					descriptionKey: "dashboard.trackEditor.subtitle",
+				},
 			},
 			{
 				path: "videoclips",
 				name: "VideoclipsManager",
 				component: () => import("../views/dashboard/VideoclipsView.vue"),
+				meta: {
+					titleKey: "views.videoclips.title",
+					descriptionKey: "views.videoclips.pageDescription",
+				},
 			},
 		],
 	},

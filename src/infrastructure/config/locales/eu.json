@@ -322,7 +322,8 @@
     "videoclips": {
       "title": "Bideoklip Kudeaketa",
       "newVideoclip": "Bideoklip berria",
-      "comingSoon": "Laster: Pisten nahasketa eta amaierako bideoklipen ikuspegia."
+      "comingSoon": "Laster: Pisten nahasketa eta amaierako bideoklipen ikuspegia.",
+      "pageDescription": "Ikusi eta sortu zure taldearen abestien azken bideoklipak."
     },
     "bands": {
       "title": "Talde Kudeaketa (Bands)",
@@ -330,7 +331,8 @@
       "comingSoon": "Laster: Taldeen zerrenda eta CRUDa Aplikazio geruzatik (Use Cases) kudeatuta."
     },
     "createFirstBand": {
-      "title": "Ongi etorri Mybandnow-era!",
+      "title": "Ongi etorri My Band Now-era!",
+      "pageTitle": "Sortu zure lehen taldea",
       "description": "Badirudi oraindik ez zarela talde bateko partaide.",
       "descriptionLine2": "Zure lehen talde musikala orain sor dezakezu edo jarraitu eta gero egin.",
       "createBand": "Sortu taldea",
@@ -419,7 +421,7 @@
   "public": {
     "landing": {
       "title": "Bideoklipetarako Lankidetza Plataforma",
-      "description": "Mybandnow-ek urrutitik musika bideoklipak sortzeko aukera ematen dizu. Nahastu musikari desberdinen pistak eta sortu azken produktu profesional bat.",
+      "description": "My Band Now-ek urrutitik musika bideoklipak sortzeko aukera ematen dizu. Nahastu musikari desberdinen pistak eta sortu azken produktu profesional bat.",
       "cta": "Hasi orain",
       "heroAlt": "Musikariak urrutitik bideoklip batean elkarlanean",
       "howItWorks": {
@@ -439,11 +441,11 @@
         },
         "step4": {
           "title": "Sortu bideoklipa",
-          "description": "Mybandnow-ek automatikoki muntatzen du azken bideoa, musikari bakoitzaren audioa eta irudia konbinatuz."
+          "description": "My Band Now-ek automatikoki muntatzen du azken bideoa, musikari bakoitzaren audioa eta irudia konbinatuz."
         }
       },
       "benefits": {
-        "title": "Zergatik aukeratu Mybandnow",
+        "title": "Zergatik aukeratu My Band Now",
         "subtitle": "Mugarik gabe sortu nahi duten taldeentzat pentsatua",
         "remote": {
           "title": "Distantzia-mugarik ez",
@@ -459,12 +461,12 @@
         },
         "video": {
           "title": "Bideoklipa barne",
-          "description": "Ez duzu audioa bakarrik jasoko: Mybandnow-ek azken bideoa ere sortzen du, partekatzeko prest."
+          "description": "Ez duzu audioa bakarrik jasoko: My Band Now-ek azken bideoa ere sortzen du, partekatzeko prest."
         }
       },
       "finalCta": {
         "title": "Zure hurrengo bideoklipa sortzeko prest?",
-        "description": "Sartu Mybandnow-en eta hasi zure taldearekin elkarlanean gaur bertan."
+        "description": "Sartu My Band Now-en eta hasi zure taldearekin elkarlanean gaur bertan."
       }
     }
   },

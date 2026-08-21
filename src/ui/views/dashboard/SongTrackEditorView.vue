@@ -186,7 +186,7 @@ const {
 } = useTrackWaveformAssets();
 const trackWaveformCanvasRefs = new Map<string, HTMLCanvasElement>();
 const trackAudioElementRefs = new Map<string, { src: string }>();
-const trackLaneScrollWrapperRefs = new Map<string, HTMLElement>();
+const trackLaneScrollWrapperRefs = new Map<string, ScrollWrapperElementLike>();
 let isSyncingTimelineScroll = false;
 
 interface ButtonElementLike {
@@ -1183,6 +1183,10 @@ interface AudioElementLike {
 	src: string;
 }
 
+interface ScrollWrapperElementLike {
+	scrollLeft: number;
+}
+
 function isAudioElementLike(value: unknown): value is AudioElementLike {
 	return !!value && typeof value === "object";
 }
@@ -1274,8 +1278,12 @@ function setTrackAudioElementRef(trackId: string, element: unknown): void {
 	applyTrackAudioSrc(trackId);
 }
 
+function isScrollWrapperElementLike(value: unknown): value is ScrollWrapperElementLike {
+	return !!value && typeof value === "object" && typeof (value as { scrollLeft?: unknown }).scrollLeft === "number";
+}
+
 function setTrackLaneScrollWrapperRef(trackId: string, element: unknown): void {
-	if (!(element instanceof HTMLElement)) {
+	if (!isScrollWrapperElementLike(element)) {
 		trackLaneScrollWrapperRefs.delete(trackId);
 		return;
 	}
@@ -1286,7 +1294,7 @@ function setTrackLaneScrollWrapperRef(trackId: string, element: unknown): void {
 // Each lane (ruler + one per track) scrolls independently in the DOM; this mirrors
 // scrollLeft from whichever one the user just scrolled onto every other one. The guard
 // flag stops the scrollLeft writes below from re-triggering this same handler.
-function syncTimelineScroll(sourceElement: HTMLElement | null): void {
+function syncTimelineScroll(sourceElement: ScrollWrapperElementLike | null): void {
 	if (!sourceElement || isSyncingTimelineScroll) {
 		return;
 	}
