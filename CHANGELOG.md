@@ -4,6 +4,12 @@ Todos los cambios notables de este proyecto se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.7.11] - 2026-08-21
+
+### Añadido
+
+- El scroll horizontal de la regla del timeline y de cada carril de pista ahora está sincronizado: al desplazar cualquiera de ellos, los demás se mueven a la misma posición.
+
 ## [0.7.10] - 2026-08-21
 
 ### Corregido

@@ -186,6 +186,8 @@ const {
 } = useTrackWaveformAssets();
 const trackWaveformCanvasRefs = new Map<string, HTMLCanvasElement>();
 const trackAudioElementRefs = new Map<string, { src: string }>();
+const trackLaneScrollWrapperRefs = new Map<string, HTMLElement>();
+let isSyncingTimelineScroll = false;
 
 interface ButtonElementLike {
 	disabled: boolean;
@@ -1272,6 +1274,38 @@ function setTrackAudioElementRef(trackId: string, element: unknown): void {
 	applyTrackAudioSrc(trackId);
 }
 
+function setTrackLaneScrollWrapperRef(trackId: string, element: unknown): void {
+	if (!(element instanceof HTMLElement)) {
+		trackLaneScrollWrapperRefs.delete(trackId);
+		return;
+	}
+
+	trackLaneScrollWrapperRefs.set(trackId, element);
+}
+
+// Each lane (ruler + one per track) scrolls independently in the DOM; this mirrors
+// scrollLeft from whichever one the user just scrolled onto every other one. The guard
+// flag stops the scrollLeft writes below from re-triggering this same handler.
+function syncTimelineScroll(sourceElement: HTMLElement | null): void {
+	if (!sourceElement || isSyncingTimelineScroll) {
+		return;
+	}
+
+	isSyncingTimelineScroll = true;
+	const scrollLeft = sourceElement.scrollLeft;
+
+	if (timelineScrollWrapperRef.value && timelineScrollWrapperRef.value !== sourceElement) {
+		timelineScrollWrapperRef.value.scrollLeft = scrollLeft;
+	}
+	for (const wrapper of trackLaneScrollWrapperRefs.values()) {
+		if (wrapper !== sourceElement) {
+			wrapper.scrollLeft = scrollLeft;
+		}
+	}
+
+	isSyncingTimelineScroll = false;
+}
+
 function getTrackWaveformCanvasWidthPx(track: EditorTrack): number {
 	return Math.max(1, Math.round(getTrackWidthPx(track)));
 }
@@ -2121,7 +2155,12 @@ onBeforeUnmount(() => {
 						</div>
 					</section>
 					<section data-testid="track-header-right" class="border bg-body shadow-sm overflow-hidden position-relative">
-						<div ref="timelineScrollWrapperRef" data-testid="timeline-scroll-wrapper" class="overflow-x-auto overflow-y-hidden h-100 d-flex align-items-stretch">
+						<div
+							ref="timelineScrollWrapperRef"
+							data-testid="timeline-scroll-wrapper"
+							class="overflow-x-auto overflow-y-hidden h-100 d-flex align-items-stretch"
+							@scroll="syncTimelineScroll($event.target as HTMLElement)"
+						>
 							<div
 								data-testid="timeline-scroll-content"
 								class="position-relative overflow-hidden h-100"
@@ -2319,7 +2358,12 @@ onBeforeUnmount(() => {
 								:style="{ padding: '0', width: '100%', minHeight: '4rem', cursor: 'pointer' }"
 								@click="selectTrack(track.id)"
 							>
-								<div :data-testid="`track-lane-scroll-wrapper-${track.id}`" class="overflow-x-auto overflow-y-hidden w-100 h-100 d-flex align-items-stretch">
+								<div
+									:ref="(element) => setTrackLaneScrollWrapperRef(track.id, element)"
+									:data-testid="`track-lane-scroll-wrapper-${track.id}`"
+									class="overflow-x-auto overflow-y-hidden w-100 h-100 d-flex align-items-stretch"
+									@scroll="syncTimelineScroll($event.target as HTMLElement)"
+								>
 									<div
 										class="position-relative overflow-hidden h-100"
 										:style="{
