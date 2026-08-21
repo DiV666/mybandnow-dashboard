@@ -4,6 +4,13 @@ Todos los cambios notables de este proyecto se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.7.12] - 2026-08-21
+
+### Añadido
+
+- Icono para eliminar un instrumento desde su fila en el listado de canciones, con modal de confirmación. Solo el creador de la banda puede eliminarlo (permiso aplicado por el backend).
+- Icono para eliminar una canción completa junto a sus otras acciones, con modal de confirmación.
+
 ## [0.7.11] - 2026-08-21
 
 ### Añadido
