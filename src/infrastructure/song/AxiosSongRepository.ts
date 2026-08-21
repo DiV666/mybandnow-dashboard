@@ -35,6 +35,10 @@ export class AxiosSongRepository implements SongRepository {
 		return response.data.items;
 	}
 
+	async deleteSong(songId: SongId): Promise<void> {
+		await httpClient.delete(`/v1/songs/${songId.value}`);
+	}
+
 	async saveInstrument(
 		songId: SongId,
 		instrument: SongInstrument,

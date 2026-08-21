@@ -18,6 +18,7 @@ import type { SongVideoclipId } from "../value-object/SongVideoclipId.js";
 export interface SongRepository {
 	save(bandId: string, song: Song): Promise<void>;
 	getByBandId(bandId: string): Promise<SongResponse[]>;
+	deleteSong(songId: SongId): Promise<void>;
 	saveInstrument(songId: SongId, instrument: SongInstrument): Promise<void>;
 	getInstrumentsBySongId(
 		songId: SongId,

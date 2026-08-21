@@ -15,6 +15,7 @@ import { ConfirmSongInstrumentUploadUseCase } from "../../application/song/Confi
 import { CreateSongInstrumentUseCase } from "../../application/song/CreateSongInstrumentUseCase.js";
 import { CreateSongUseCase } from "../../application/song/CreateSongUseCase.js";
 import { DeleteSongInstrumentUseCase } from "../../application/song/DeleteSongInstrumentUseCase.js";
+import { DeleteSongUseCase } from "../../application/song/DeleteSongUseCase.js";
 import { GetBandSongsUseCase } from "../../application/song/GetBandSongsUseCase.js";
 import { GetSongInstrumentDetailUseCase } from "../../application/song/GetSongInstrumentDetailUseCase.js";
 import { GetSongInstrumentsUseCase } from "../../application/song/GetSongInstrumentsUseCase.js";
@@ -50,6 +51,7 @@ const createProfileUseCase = new CreateProfileUseCase(musicianRepository);
 const createSongInstrumentUseCase = new CreateSongInstrumentUseCase(songRepository);
 const createSongUseCase = new CreateSongUseCase(songRepository);
 const deleteSongInstrumentUseCase = new DeleteSongInstrumentUseCase(songRepository);
+const deleteSongUseCase = new DeleteSongUseCase(songRepository);
 const getBandMembersUseCase = new GetBandMembersUseCase(bandRepository);
 const getBandSongsUseCase = new GetBandSongsUseCase(songRepository);
 const getInstrumentByIdUseCase = new GetInstrumentByIdUseCase(instrumentRepository);
@@ -93,6 +95,7 @@ export const container = {
 		createSongInstrumentUseCase,
 		createSongUseCase,
 		deleteSongInstrumentUseCase,
+		deleteSongUseCase,
 		getBandMembersUseCase,
 		getBandSongsUseCase,
 		getInstrumentByIdUseCase,

@@ -77,6 +77,16 @@ describe("AxiosSongRepository", () => {
 		]);
 	});
 
+	it("should delete the selected song", async () => {
+		const deleteSpy = vi
+			.spyOn(httpClient, "delete")
+			.mockResolvedValue({ data: undefined } as never);
+
+		await repository.deleteSong(new SongId("song-123"));
+
+		expect(deleteSpy).toHaveBeenCalledWith("/v1/songs/song-123");
+	});
+
 	it("should send the selected song id and instrument payload when creating a song instrument", async () => {
 		const postSpy = vi
 			.spyOn(httpClient, "post")

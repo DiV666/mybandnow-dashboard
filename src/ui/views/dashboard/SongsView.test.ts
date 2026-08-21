@@ -1000,7 +1000,7 @@ describe("SongsView", () => {
 		expect(findByText(view.root, "Paint It Black")).not.toBeNull();
 		const table = findElement(view.root, (node) => node.type === "table");
 		expect(table).not.toBeNull();
-		expect(bootstrapTooltipCtor).toHaveBeenCalledTimes(4);
+		expect(bootstrapTooltipCtor).toHaveBeenCalledTimes(5);
 		expect(findTooltipTargetByLabel(view.root, "Editar").type).toBe("span");
 		expect(findTooltipTargetByLabel(view.root, "Editar").props.tabindex).toBe(
 			"0",
