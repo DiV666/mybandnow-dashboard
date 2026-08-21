@@ -4,6 +4,12 @@ Todos los cambios notables de este proyecto se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.7.10] - 2026-08-21
+
+### Corregido
+
+- El contenido del editor de pistas desaparecía al subir el zoom: el ancho fijo del timeline zoomado hacía que el área principal saltara a una línea por debajo del sidebar (fuera de la pantalla visible) porque `flex-basis: auto` no ignora el contenido al decidir el salto de línea, aunque `min-width: 0` ya estuviera presente.
+
 ## [0.7.9] - 2026-08-20
 
 ### Añadido

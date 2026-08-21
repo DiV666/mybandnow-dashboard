@@ -1018,7 +1018,11 @@ onBeforeUnmount(() => {
   }
 
   .dashboard-main--with-sidebar {
-    flex: 1 1 auto;
+    /* flex-basis 0 (not auto) so the wrap decision ignores this item's content size —
+       otherwise a wide child (e.g. the track editor timeline at high zoom) inflates the
+       hypothetical main size past the row's width and forces main onto its own line below
+       the sidebar, even though min-width:0 lets it shrink fine once wrapping is avoided. */
+    flex: 1 1 0%;
     /* Bootstrap's ".row > *" sets width:100% on every column; left as "auto" that basis
        doesn't fit next to the sidebar's fixed width and the item wraps onto its own line
        below it instead of shrinking. Overriding width lets flex-grow size it correctly. */
